@@ -1,7 +1,7 @@
 # SRS — Questions for Developer Team
 
 > **Purpose:** These questions need team input to finalize the SRS and begin implementation.
-> **Status:** Open
+> **Status:** Updated for v0.2 — covers all MVP modules
 > **Date:** July 6, 2026
 
 ---
@@ -20,6 +20,19 @@
 10. [Project Structure](#10-project-structure)
 11. [Error Handling & Logging](#11-error-handling--logging)
 12. [Module Planning](#12-module-planning)
+13. [Module-Specific Questions](#13-module-specific-questions-for-next-srs-iteration)
+    - 13.1 Student Management & Admission
+    - 13.2 Attendance Management
+    - 13.3 Result Management
+    - 13.4 Notice Board
+    - 13.5 Notification System
+    - 13.6 Reports
+    - 13.7 Settings
+    - 13.8 Dashboard
+    - 13.9 Cross-Cutting: User & Permission Management
+    - 13.10 Cross-Cutting: Module Management
+    - 13.11 Cross-Cutting: Audit Logging
+    - 13.12 Multi-Tenant & Data Isolation
 
 ---
 
@@ -293,7 +306,156 @@ src/
 
 ---
 
-## Summary of Decisions Needed Before SRS v1.0
+## 13. Module-Specific Questions (for Next SRS Iteration)
+
+The following questions are specifically needed to write detailed SRS sections for each remaining MVP module.
+
+### 13.1 Student Management & Admission
+
+| # | Question | Options / Notes |
+|---|---|---|
+| 95 | Admission form — public or authenticated? | PRD says "Student fills admission form" but no parent portal exists in MVP. Is there a public-facing page with no login required? |
+| 96 | CAPTCHA / anti-bot for admission form? | If public, should we add CAPTCHA (Google reCAPTCHA, Cloudflare Turnstile, hCaptcha)? |
+| 97 | What fields on the admission form? | Full list: student name, DOB, gender, guardian details, address, documents, previous school, etc. Need final field list |
+| 98 | Documents upload in admission? | Student photo, birth certificate, previous report card — allowed formats and size limits |
+| 99 | Admission form validation rules? | Required vs optional fields, minimum age validation, phone/email format |
+| 100 | Temporary admission table TTL mechanism? | Cron job vs database event vs app-level scheduler? Interval? |
+| 101 | Permanent registration number generation — atomicity? | Use DB sequence, `SELECT FOR UPDATE`, or application-level lock? |
+| 102 | Roll number assignment strategy? | Sequential per section (reset each year), or gaps allowed? Manual override flow? |
+| 103 | Bulk promotion workflow — UI flow? | Select from class → preview students → confirm. What about students not promoted (held back)? |
+| 104 | Student import from Excel — template format? | Columns, required fields, validation on import, error reporting (which rows failed?) |
+| 105 | Student status lifecycle? | `active` → `transferred` / `dropped_out` / `graduated`. Can a student be re-activated? |
+| 106 | Transfer Certificate (TC) — data source? | Generated from student data or manually entered fields? PDF template? |
+| 107 | Soft delete — restore flow? | Can School Admin restore a soft-deleted student? UI for viewing deleted students? |
+
+### 13.2 Attendance Management
+
+| # | Question | Options / Notes |
+|---|---|---|
+| 108 | Attendance marking — granularity? | Present/Absent only, or include: Late, Excused, Holiday? |
+| 109 | Attendance edit window? | PRD says "same day only" configurable. What's the MVP default? |
+| 110 | Month closure — who triggers it? | Manual (School Admin) or automatic (cron at month end)? |
+| 111 | Attendance report — percentage calculation? | (Days present / Total days) × 100? What about Sundays/holidays — exclude from total? |
+| 112 | SMS for absentees — immediate or batch? | Sent immediately on save, or queued and sent in batches? |
+| 113 | Bulk attendance? | Mark attendance for an entire class at once (all present, then mark absentees) |
+| 114 | Attendance for non-teaching days? | How to handle weekends, holidays — skip or mark as holiday? |
+
+### 13.3 Result Management
+
+| # | Question | Options / Notes |
+|---|---|---|
+| 115 | Grading system? | Numeric marks only, grade-based (A/B/C/D/F), or both configurable per exam? |
+| 116 | Exam types? | PRD lists Midterm, Final, Quiz. Fixed types or user-defined? |
+| 117 | Subject management — per class? | Subjects defined per class or globally? Shared subjects across sections? |
+| 118 | Marks entry UI — single student or grid? | Enter per student one-by-one, or grid view (students × subjects) for bulk entry? |
+| 119 | Pass/fail criteria? | Minimum percentage per subject? Overall average? Configurable? |
+| 120 | Rank calculation — tie handling? | Same marks = same rank, then skip next? (e.g., 1, 2, 2, 4) |
+| 121 | Publish/unpublish workflow? | Does publishing trigger SMS/email to all parents? Unpublish requires confirmation? |
+| 122 | Result report formats? | Per-student mark sheet, class-wide rank list, subject-wise performance summary |
+| 123 | Can marks be entered by subject teachers? | PRD mentions this, but permission model may need subject-level granularity — MVP or post-MVP? |
+
+### 13.4 Notice Board
+
+| # | Question | Options / Notes |
+|---|---|---|
+| 124 | Notice attachments — file types? | PDF only, or images, Word docs? |
+| 125 | Notice visibility scope? | All users (any role) or can target specific roles (e.g., teachers only)? |
+| 126 | Scheduled notices — cron or queue? | How is auto-publish triggered? Background job? |
+| 127 | Notice categories/tags? | e.g., "Exam", "Holiday", "Meeting" — for filtering |
+| 128 | Archive vs delete behavior? | Archive = hide from active view but retain. Delete = soft delete. Can archived notices be restored? |
+| 129 | Notice read tracking? | Track who has viewed a notice? (Post-MVP feature for MVP?) |
+
+### 13.5 Notification System
+
+| # | Question | Options / Notes |
+|---|---|---|
+| 130 | SMS provider? | Twilio, Vonage (Nexmo), AWS SNS, local provider? |
+| 131 | Email provider? | SendGrid, SES (AWS), Mailgun, SMTP? |
+| 132 | SMS gateway integration — how? | REST API wrapper, third-party SDK? |
+| 133 | Email sending — queue? | Always async via queue? Sync for password reset only? |
+| 134 | Notification templates — stored where? | Database table (`notification_templates`) or file-based? |
+| 135 | Template variables — full list? | `{student_name}`, `{class}`, `{section}`, `{date}`, `{school_name}`, `{percentage}`, `{subject}`, `{exam_name}`, `{guardian_name}`, `{roll_number}` |
+| 136 | SMS quota — hard or soft limit? | Hard block at 0 or allow overage with warning? |
+| 137 | Low quota warning — threshold? | PRD says < 10%. Configurable? |
+| 138 | Notification logs — retention? | 30 days? 90 days? Forever? |
+| 139 | Custom SMS/Email — who can send? | School Admin only, or Managers with permission? |
+
+### 13.6 Reports
+
+| # | Question | Options / Notes |
+|---|---|---|
+| 140 | PDF generation library? | DomPDF (PHP), jsPDF (frontend), Puppeteer, wkhtmltopdf, ReportLab (Python) |
+| 141 | Excel export library? | PhpSpreadsheet (PHP), xlsx (Node.js), OpenPyXL (Python) |
+| 142 | ID card — layout & dimensions? | Credit card size (85.6 × 54 mm) or A4 sheet with multiple cards? |
+| 143 | ID card — what fields? | Student photo, name, registration number, class, section, roll number, school name, logo, academic year |
+| 144 | Transfer Certificate (TC) — format? | Fixed government-mandated format or school-specific? |
+| 145 | Report generation — sync or async? | Small reports (single student) sync; large reports (bulk) queued? |
+| 146 | School branding — where stored? | Logo image, school name, address in Settings. Applied dynamically to all reports |
+
+### 13.7 Settings
+
+| # | Question | Options / Notes |
+|---|---|---|
+| 147 | Academic Year — date overlap validation? | System prevents overlapping date ranges. What error message? |
+| 148 | Closing an Academic Year — prerequisites? | All attendance finalized? All results published? Checklist before close? |
+| 149 | Re-opening a closed year — allowed? | PRD mentions it. Any restrictions? (e.g., only if no data entered in new year) |
+| 150 | Class → Section → Subject relationship? | Class has many sections. Subjects are assigned to class or section? |
+| 151 | Subject — assigned to class or globally? | Global subject pool, then assigned to specific classes? |
+| 152 | Password policy defaults? | Min length 8? Require uppercase + lowercase + digit? |
+| 153 | Timezone handling? | Store in UTC, display in tenant timezone. Which timezone libraries? |
+| 154 | School logo — storage & constraints? | Cloudinary. Max dimensions? Aspect ratio? File size? |
+
+### 13.8 Dashboard
+
+| # | Question | Options / Notes |
+|---|---|---|
+| 155 | Dashboard metrics — real-time or cached? | PRD says "no caching for MVP" — but frequent DB queries per dashboard load may be slow. Accept for MVP? |
+| 156 | Widget layout — fixed or customizable? | Fixed grid per role, or drag-and-drop reorderable? |
+| 157 | Manager dashboard — empty state? | What does a Manager with no assigned modules see? |
+| 158 | Dashboard refresh interval? | Auto-refresh (every 30s) or manual page reload? |
+| 159 | SMS quota widget — real-time or near-real-time? | Display current remaining quota. Refresh on page load or cached? |
+
+### 13.9 Cross-Cutting: User & Permission Management
+
+| # | Question | Options / Notes |
+|---|---|---|
+| 160 | Permission data model? | Single `permissions` table: (user_id, module, action, is_granted)? Or per-module pivot tables? |
+| 161 | School Admin's own permissions — stored or implied? | If a module is assigned by Platform Admin, School Admin gets all actions. Is this stored as explicit rows or checked by code logic? |
+| 162 | Manager activation/deactivation — session invalidation? | Uses `token_version` column on `users` — increment on deactivation |
+| 163 | Permission cache — strategy? | Cache per user on login, invalidate on permission change. Redis or in-memory? |
+| 164 | UI for permission assignment? | Checkbox grid: rows = modules, columns = actions. Simple toggle per cell |
+
+### 13.10 Cross-Cutting: Module Management
+
+| # | Question | Options / Notes |
+|---|---|---|
+| 165 | Module enable/disable — effect on sidebar? | Disabled module hidden from all users. API endpoints also blocked? |
+| 166 | Platform Admin assigns modules — stored where? | `tenant_modules` table: (tenant_id, module_id, is_enabled) |
+| 167 | Fixed module list or dynamic? | Hardcoded list in code or database-driven (auto-discoverable)? |
+| 168 | Seed modules in database? | Need a seeder that inserts all MVP modules |
+
+### 13.11 Cross-Cutting: Audit Logging
+
+| # | Question | Options / Notes |
+|---|---|---|
+| 169 | Audit log — what events? | All CUD operations on: students, attendance, results, notices, users, permissions, settings |
+| 170 | What data to store per event? | Actor (user_id, role), action (create/update/delete), target (module, record_id), old values, new values, IP, user agent, timestamp |
+| 171 | Audit log UI — who can view? | School Admin only? Platform Admin across all tenants? |
+| 172 | Audit log retention? | 90 days? 1 year? Forever? |
+| 173 | Audit log storage? | Same DB (`audit_logs` table) or separate log storage (ELK, CloudWatch)? |
+| 174 | Is audit logging synchronous or async? | Async via queue for performance, except for critical events (user deactivation)? |
+
+### 13.12 Multi-Tenant & Data Isolation
+
+| # | Question | Options / Notes |
+|---|---|---|
+| 175 | Tenant identification middleware — how implemented? | Middleware that reads subdomain from Host header, queries `tenants` table, sets `tenant_id` on request context |
+| 176 | Tenant context — how passed to queries? | Global scope on all models (e.g., Laravel Global Scope, Prisma middleware) |
+| 177 | Cross-tenant data leak prevention — testing strategy? | Dedicated test suite that attempts cross-tenant access |
+| 178 | `tenants` table structure? | `id`, `name`, `slug` (subdomain), `is_active`, `registration_sequence_start`, `sms_quota`, `sms_used`, `created_at`, `updated_at` |
+| 179 | Tenant creation flow? | Platform Admin form: name, slug, assigned modules, SMS quota, starting registration sequence, School Admin name/email/password |
+
+---
 
 | Category | Must Decide Before Coding | Can Decide During Development |
 |---|---|---|
@@ -306,6 +468,10 @@ src/
 | Deployment | Hosting provider, Docker strategy, SSL | Monitoring dashboard details |
 | Code Conventions | Git workflow, commit convention, linter | Pre-commit hook details |
 | Project Structure | Monorepo vs multi-repo, folder layout | Specific file organization within modules |
+| Module Priority | Build order (Auth → Settings → Student → ...) | Sprint-level task breakdown |
+| Permission Model | Data model (single table vs pivot), caching strategy | UI layout for permission assignment |
+| Admission Flow | Public form + CAPTCHA vs authenticated form | Anti-bot measure details |
+| Report Generation | PDF library choice | Template design specifics |
 
 ---
 
