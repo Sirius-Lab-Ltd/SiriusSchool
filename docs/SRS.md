@@ -1,6 +1,6 @@
 # Sirius-Skool — Software Requirements Specification
 
-> **Version:** 0.1 (Draft)  
+> **Version:** 0.2 (Draft)  
 > **Status:** In Progress  
 > **Date:** July 6, 2026  
 > **Based on:** PRD v1.0 (`docs/PRD.md`)
@@ -41,14 +41,15 @@ This document supplements the Product Requirements Document (`docs/PRD.md`). Whe
 
 ### 1.2 Scope
 
-This SRS covers the MVP modules as defined in the PRD, starting with **Authentication** as the foundational module. Additional modules will be documented in subsequent versions.
+This SRS covers all MVP modules as defined in the PRD. The Authentication module is documented in full detail below. Remaining modules are listed as in-scope and will be detailed in subsequent SRS iterations.
 
 **In-scope for this version:**
 - Authentication module (detailed)
+- Dashboard, Student Management & Admission, Attendance Management, Result Management, Notice Board, Notification System, Reports, Settings modules (outline — to be detailed in next SRS iterations)
+- User & Permission Management, Module Management, Academic Year Management (cross-cutting — to be detailed)
 - Overall system data model conventions
 
 **Out-of-scope for this version:**
-- Dashboard, Student Management, Attendance, Results, Notice Board, Notifications, Reports, Settings modules (future SRS versions)
 - UI/UX wireframes (separate design phase)
 - Deployment architecture
 
@@ -636,6 +637,4 @@ Get current authenticated user profile and permissions.
 | AC-AUTH-15 | User exceeds 5 failed login attempts in 1 minute | 429 with `RATE_LIMIT_EXCEEDED` |
 | AC-AUTH-16 | Platform Admin tries to login via tenant subdomain | 401 (tenant not found for Platform Admin) |
 
----
 
-> **Next Module:** Settings — to be documented in the next SRS iteration.
