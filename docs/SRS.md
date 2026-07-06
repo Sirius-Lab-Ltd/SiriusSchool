@@ -28,6 +28,18 @@
    - 3.7 Error Handling
    - 3.8 Security Considerations
    - 3.9 Acceptance Criteria
+4. [Remaining Modules (Outlines)](#4-remaining-modules-outlines)
+   - 4.1 Dashboard
+   - 4.2 Student Management & Admission
+   - 4.3 Attendance Management
+   - 4.4 Result Management
+   - 4.5 Notice Board
+   - 4.6 Notification System
+   - 4.7 Reports
+   - 4.8 Settings
+   - 4.9 User & Permission Management
+   - 4.10 Module Management
+   - 4.11 Academic Year Management
 
 ---
 
@@ -636,5 +648,172 @@ Get current authenticated user profile and permissions.
 | AC-AUTH-14 | User changes password with incorrect current password | 400 with `INCORRECT_CURRENT_PASSWORD` |
 | AC-AUTH-15 | User exceeds 5 failed login attempts in 1 minute | 429 with `RATE_LIMIT_EXCEEDED` |
 | AC-AUTH-16 | Platform Admin tries to login via tenant subdomain | 401 (tenant not found for Platform Admin) |
+
+---
+
+## 4. Remaining Modules (Outlines)
+
+> **Note:** This section provides an outline and key data tables for each remaining MVP module. Detailed requirements (use cases, functional requirements, API endpoints, acceptance criteria) will be added in subsequent SRS iterations following the same format as the Authentication module (§3).
+
+### 4.1 Dashboard
+
+**PRD Reference:** §6.2  
+**Priority:** P0  
+**Status:** Outline
+
+The Dashboard module provides role-specific at-a-glance overviews of key metrics. School Admin sees total student count, today's attendance percentage, recent notices, upcoming events, manager activity summary, and remaining SMS quota. Manager dashboard shows widgets only for modules they have View permission on.
+
+**Key Data Tables (identified so far):**
+- No dedicated tables — dashboard data is aggregated from other modules in real-time
+
+---
+
+### 4.2 Student Management & Admission
+
+**PRD Reference:** §6.3  
+**Priority:** P0  
+**Status:** Outline
+
+This module covers the complete student life cycle: admission (online form → temp storage → review → accept/reject), student CRUD, promotion, transfer, dropout, graduation, and bulk import/export. Registration number follows `YY + continuous sequence` format. Roll numbers are assigned per class + section + academic year.
+
+**Key Data Tables (identified so far):**
+- `students` — core student profile (personal info, guardian details, address, photo, status)
+- `student_enrollments` — enrollment record linking student to class + section + academic year with roll number
+- `classes` — class definitions per tenant
+- `sections` — section definitions linked to a class
+- `admissions_pending` — temporary admission form storage (auto-expire after 30 days)
+- `tenant_sequences` — per-tenant counters for registration number generation
+
+---
+
+### 4.3 Attendance Management
+
+**PRD Reference:** §6.4  
+**Priority:** P0  
+**Status:** Outline
+
+The Attendance module records daily student attendance. Manager selects class → section → date, sees all enrolled students defaulting to Present, unchecks absentees, and saves. SMS notifications are sent to guardians of absent students. Attendance edit window and month closure are configurable by School Admin.
+
+**Key Data Tables (identified so far):**
+- `attendance_records` — individual attendance mark per student per date (present/absent)
+- `attendance_sessions` — group attendance marking session (class, section, date, taken_by)
+
+---
+
+### 4.4 Result Management
+
+**PRD Reference:** §6.5  
+**Priority:** P1  
+**Status:** Outline
+
+This module handles exam creation, marks entry, result calculation, and publishing. School Admin creates exam types and configures subjects per class. Marks can be entered per student per subject. The system auto-calculates totals, percentages, and ranks. Publishing triggers SMS/Email notifications to parents.
+
+**Key Data Tables (identified so far):**
+- `exam_types` — types of exams (Midterm, Final, Quiz, etc.)
+- `exams` — individual exam instances linked to an exam type and academic year
+- `subjects` — subjects offered per class
+- `exam_marks` — marks entry per student per subject per exam
+- `exam_results` — published exam results summary
+
+---
+
+### 4.5 Notice Board
+
+**PRD Reference:** §6.6  
+**Priority:** P1  
+**Status:** Outline
+
+The Notice Board allows creating, publishing, scheduling, and archiving notices. Notices are tenant-scoped, can include attachments, and scheduled notices auto-publish at the configured date/time. Published notices cannot be edited (must archive and recreate).
+
+**Key Data Tables (identified so far):**
+- `notices` — notice records (title, body, attachments, publish status, scheduled date)
+
+---
+
+### 4.6 Notification System
+
+**PRD Reference:** §6.7  
+**Priority:** P1  
+**Status:** Outline
+
+This module sends SMS and Email notifications through a centralized platform gateway. Tenants have an SMS quota assigned by Platform Admin. Notification templates are customizable per tenant. Triggers include: attendance marking (absentees), result publishing, forgot-password, and ad-hoc messages.
+
+**Key Data Tables (identified so far):**
+- `notification_logs` — sent notification records (recipient, type, status, tenant_id)
+- `notification_templates` — per-tenant customizable message templates
+- `sms_quota` — tenant SMS quota tracking (may be part of `tenants` table)
+
+---
+
+### 4.7 Reports
+
+**PRD Reference:** §6.8  
+**Priority:** P1  
+**Status:** Outline
+
+The Reports module generates ID cards, admission forms, student profiles, Transfer Certificates, character certificates, attendance reports, and result reports. All reports include school branding and are exportable as PDF or Excel. Data is read-only at report generation time.
+
+**Key Data Tables (identified so far):**
+- No dedicated tables — reports are generated from other module data on demand
+
+---
+
+### 4.8 Settings
+
+**PRD Reference:** §6.9  
+**Priority:** P0  
+**Status:** Outline
+
+Tenant-level configuration managed by School Admin. Covers school information (name, logo, address), academic setup (academic years, classes, sections, subjects), notification preferences (template customization, enable/disable types), security (password policy, session timeout), and registration sequence configuration.
+
+**Key Data Tables (identified so far):**
+- `tenant_settings` — key-value or structured settings per tenant
+- `academic_years` — academic year definitions per tenant
+- `classes` — class definitions (shared with Student Management)
+- `sections` — section definitions (shared with Student Management)
+- `subjects` — subject definitions per class (shared with Results)
+
+---
+
+### 4.9 User & Permission Management
+
+**PRD Reference:** §7.1  
+**Priority:** P0 (Cross-Cutting)  
+**Status:** Outline
+
+This cross-cutting module implements the two-tier permission model. Platform Admin assigns modules to School Admin at the module level (all actions granted). School Admin creates Managers and assigns action-level permissions (View/Create/Edit/Delete/Export) per module. Managers can only be assigned modules from the School Admin's available pool.
+
+**Key Data Tables (identified so far):**
+- `users` — user records with role and tenant scope (shared with Auth)
+- `module_permissions` — granted module permissions (user_id, module, action, is_granted)
+- `tenant_modules` — modules assigned by Platform Admin to a tenant
+
+---
+
+### 4.10 Module Management
+
+**PRD Reference:** §7.2  
+**Priority:** P0 (Cross-Cutting)  
+**Status:** Outline
+
+This cross-cutting module allows School Admin to enable or disable modules from the pool assigned by Platform Admin. Disabled modules are hidden from the sidebar and inaccessible to all users in the tenant, but data is preserved.
+
+**Key Data Tables (identified so far):**
+- `modules` — system-defined module registry (seeded data)
+- `tenant_modules` — per-tenant module enable/disable status (shared with Permission Management)
+
+---
+
+### 4.11 Academic Year Management
+
+**PRD Reference:** §7.3  
+**Priority:** P0 (Cross-Cutting)  
+**Status:** Outline
+
+Every transaction in the system is scoped to an academic year. School Admin creates academic years (name, start date, end date), sets one as active, and closes years when finalized. Exactly one academic year can be active per tenant at any time. Closed years become read-only.
+
+**Key Data Tables (identified so far):**
+- `academic_years` — academic year definitions (shared with Settings)
+- All transaction tables include an `academic_year_id` foreign key for scoping
 
 
