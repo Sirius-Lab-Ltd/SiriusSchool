@@ -170,6 +170,7 @@ Tenant (School)
 - School Admin assigns permissions to Managers at the **action level** (e.g., View + Create only, no Delete).
 - School Admin cannot access or assign any module not granted by Platform Admin.
 - School Admin can create any number of Managers and assign them permissions from the available module pool.
+- **Platform Admin credentials are stored in a separate `platform_admins` table** (not the `users` table). Platform Admin logs in via `admin.sirius-skool.com`; school users log in via their tenant subdomain. This separation keeps the platform and tenant authentication systems independent.
 
 ---
 
@@ -191,7 +192,7 @@ Tenant (School)
 
 ### Data Ownership Rules
 
-- Every user record belongs to exactly one tenant.
+- Every school user record (School Admin, Manager) belongs to exactly one tenant. Platform Admin is stored separately in the `platform_admins` table and has no `tenant_id`.
 - Every student record belongs to exactly one tenant.
 - Every attendance, result, notice, and report belongs to exactly one tenant.
 - Cross-tenant data access is prohibited at the application layer.
@@ -219,6 +220,56 @@ Create → Activate → (Active) → Deactivate → (Inactive) → Delete (after
 
 ---
 
+### Core Entity Relationships
+
+The following diagram shows how the core entities relate within a single tenant:
+
+```
+Tenant
+ │
+ ├── Users (School Admin, Managers)
+ │
+ ├── Academic Years
+ │       │
+ │       ├── Classes
+ │       │      │
+ │       │      ├── Sections
+ │       │      │
+ │       │      └── Student Enrollments
+ │       │               │
+ │       │               ├── Attendance Records
+ │       │               └── Marks (via Exam Subjects)
+ │
+ ├── Students
+ │
+  ├── Subjects
+  │       │
+  │       └── Each subject is assigned to a class via `class_id`
+  │
+  ├── Exams
+  │       │
+  │       └── Exam Subjects (links exams to subjects; defines full marks, pass marks, display order)
+ │
+ ├── Grade Scales
+ │
+ ├── Applications (temporary admission table)
+ │
+ ├── Notices
+ │
+ └── Settings
+```
+
+**Key relationships:**
+- A **Tenant** has many **Users**, **Students**, **Academic Years**, **Notices**, **Settings**, **Subjects**, **Exams**, and **Grade Scales**.
+- An **Academic Year** has many **Classes** (which have **Sections**) and **Student Enrollments**.
+- A **Student** has many **Enrollments** across years, but only one active enrollment at a time.
+- An **Enrollment** links a **Student** to a **Class** + **Section** within an **Academic Year**, and holds **Attendance** records.
+- **Result** data follows a separate chain: **Subjects** are assigned to **Classes** via `subjects.class_id`; **Exams** link to **Subjects** via **Exam Subjects** (which define full marks, pass marks, and display order); and **Marks** are recorded per student enrollment for each exam subject.
+- **Grade Scales** define how numeric percentages map to letter grades and GPA points.
+- **Applications** are pre-admission records that either convert into a **Student** (on acceptance) or expire.
+
+---
+
 ## 6. Functional Modules
 
 ### 6.1 Authentication
@@ -236,10 +287,11 @@ Create → Activate → (Active) → Deactivate → (Inactive) → Delete (after
 - Tenant-scoped login — user enters subdomain or tenant is identified at login
 
 **Business Rules:**
-- Platform Admin logs in via a separate URL (e.g., `admin.sirius-skool.com`)
-- School Admin and Managers log in via tenant URL (e.g., `schoolname.sirius-skool.com`)
-- A user cannot be logged into multiple tenants simultaneously
-- Inactive/deactivated users cannot log in
+- Platform Admin logs in via a separate URL (e.g., `admin.sirius-skool.com`) and authenticates against the `platform_admins` table.
+- School Admin and Managers log in via tenant URL (e.g., `schoolname.sirius-skool.com`) and authenticate against the `users` table.
+- Platform Admin credentials are managed independently from school user credentials — password resets, session timeouts, and 2FA (future) are configured separately for each domain.
+- A user cannot be logged into multiple tenants simultaneously.
+- Inactive/deactivated users cannot log in.
 
 ---
 
@@ -284,7 +336,16 @@ Create → Activate → (Active) → Deactivate → (Inactive) → Delete (after
 - View student profile (full history)
 - Delete student (soft delete with restore option)
 - Search by name, roll number, class, registration number
-- Filter by class, section, academic year, status (active/transferred/dropped out)
+- Filter by class, section, academic year, student status, enrollment status
+
+*Student & Enrollment Status:*
+
+| Status Domain | Values | Description |
+|---|---|---|
+| **Student Status** | `ACTIVE` / `GRADUATED` / `TRANSFERRED` / `DROPPED` | Tracks the student's overall standing in the school. Set when the student is admitted (ACTIVE) and updated by end-of-year processing or transfer operations. |
+| **Enrollment Status** | `ACTIVE` / `COMPLETED` / `PROMOTED` / `REPEATED` | Tracks the state of a specific enrollment within an academic year. An ACTIVE enrollment becomes PROMOTED or REPEATED at year-end, or COMPLETED on graduation/transfer/dropout. |
+
+A student can have multiple enrollments across years, each with its own enrollment status, but only one student status.
 
 *Admission:*
 
@@ -295,23 +356,23 @@ Student fills admission form → Temporary DB (30 days) → Manager reviews → 
                                                                     → Reject → Deleted from temp DB
 ```
 
-- **Step 1 — Online Form:** Student or parent fills an admission form with all required fields (personal info, guardian details, address, documents). This is stored in a **temporary admission table**.
+- **Step 1 — Online Form:** Student or parent fills an admission form with all required fields (personal info, guardian details, address, documents). This is stored in a **temporary admission table** and assigned a unique **Application ID** (e.g., `APP-000001`).
 - **Step 2 — Temp Storage:** Records in the temporary table auto-expire after 30 days (cron job or TTL index).
-- **Step 3 — Review Page:** Manager with admission permission sees a paginated list of pending applications. Can search by registration number (assigned on form submission) or filter by date/class.
-- **Step 4 — Accept:** Moves the student record from the temporary table to the main `students` table, assigns a permanent registration number, enrolls in the selected class + section, assigns roll number.
+- **Step 3 — Review Page:** Manager with admission permission sees a paginated list of pending applications. Can search by Application ID or filter by date/class.
+- **Step 4 — Accept:** Moves the student record from the temporary table to the main `students` table, assigns a permanent registration number (`YY + sequence`, e.g., `26000001`), enrolls in the selected class + section, assigns roll number.
 - **Step 5 — Reject:** Deletes the record from the temporary table (no trace retained).
-- A temporary registration number is generated on form submission for tracking (e.g., `TMP-26000001`). The permanent registration number is assigned only on acceptance.
+- The **Application ID** (`APP-000001`) is separate from the **permanent registration number** (`26000001`) — they belong to different domains and share no relationship. The Application ID tracks the application; the registration number is the student's permanent identifier, assigned only on acceptance.
 
-*Promotion:*
-- Promote students to next class at academic year end
-- Bulk promotion with confirmation step
-- Group promotion (by class)
-- Roll numbers are auto-assigned on promotion (can be adjusted by School Admin)
+*End-of-Year Processing:*
+At the end of each academic year, every student must be assigned one of the following outcomes:
 
-*Other Operations:*
-- Transfer student to another school (with TC generation)
-- Mark student as dropped out (with date and reason)
-- Graduate student (completing final year)
+| Outcome | Effect on Enrollment | Student Status |
+|---|---|---|
+| **Promote** | Creates new enrollment in the next class for the new academic year. Roll numbers auto-assigned (adjustable). Bulk/group promotion supported. | ACTIVE |
+| **Repeat** | Creates new enrollment in the **same** class for the new academic year. Keeps the existing registration number. | ACTIVE |
+| **Graduate** | No new enrollment. Student has completed the final year offered by the school. | GRADUATED |
+| **Transfer** | No new enrollment. Generates a Transfer Certificate (TC). Reason and date recorded. | TRANSFERRED |
+| **Dropout** | No new enrollment. Records the dropout reason and date. | DROPPED |
 
 *Bulk Operations:*
 - Import students from Excel (with template download)
@@ -327,9 +388,11 @@ Student fills admission form → Temporary DB (30 days) → Manager reviews → 
 | **Examples** | `26000001`, `26000568`, `27001569`, `341000000` (padded width auto-expands) |
 
 **Generation Mechanism:**
-- A `tenant_sequences` table stores one counter per tenant (`registration_sequence`).
+- A `current_student_sequence` column on the `tenants` table stores the counter per tenant.
 - On admission: read counter → generate `YY + padded(sequence)` → increment counter → commit (all in one atomic transaction).
 - The sequence starts at 1 for new tenants. For schools migrating from legacy data, the starting value is configurable at tenant setup.
+
+> **Registration year vs Academic Year:** The registration number uses the **calendar year** of admission (e.g., a student admitted in January 2027 gets `27xxxxx` in the sequence), while the student's enrollment belongs to an **Academic Year** (e.g., `2026-2027`). These are independent concepts — a single Academic Year can contain students admitted across two different calendar years (e.g., a student admitted in June 2026 and another admitted in January 2027 can both be enrolled in Academic Year `2026-2027`).
 
 **Roll Number:**
 
@@ -408,9 +471,11 @@ student_enrollments (
 
 **Features:**
 - Create exam types (Midterm, Final, Quiz, etc.)
-- Configure subjects per class
+- Configure subjects per class — subjects are managed centrally and assigned to classes, allowing different classes to have different subject combinations
+- Configure full marks, pass marks, and subject weight per exam per class per subject (via exam_subjects)
+- Configure grade scales (letter grade + GPA mapping) for automatic grade calculation
 - Enter marks per student per subject (numeric or grade-based)
-- Auto-calculate total, percentage, rank
+- Auto-calculate total, percentage, rank, letter grade, and GPA
 - Publish/unpublish results
 - View result sheet (tabular — student-wise or class-wise)
 - Generate rank list
@@ -422,6 +487,39 @@ student_enrollments (
 - Once marks are submitted and published, editing requires "unpublish" first
 - Published results are visible in reports and student history
 - Marks entry can be done by multiple managers (e.g., subject-wise) if permissions allow
+- The **Publish** action is exclusive to the School Admin role. Managers can be assigned View, Enter Marks, and Edit Marks, but **not** Publish.
+
+**Data Model (conceptual):**
+
+The Result module follows a hierarchical workflow:
+
+```
+subjects → exam_subjects → marks
+                            │
+                            └── grade_scales (lookup)
+```
+
+```
+subjects (id, name, code, class_id, tenant_id)
+  -- Assigns a subject to a class via class_id; a class can have multiple subjects
+
+exams (id, name, type, academic_year_id, class_id, tenant_id)
+
+exam_subjects (id, exam_id, subject_id, full_marks, pass_marks, display_order, tenant_id)
+  -- Configures full marks, pass marks, and display order for each subject within an exam
+
+marks (id, exam_subject_id, student_enrollment_id, obtained_marks, is_absent, is_published, tenant_id)
+  -- Records the actual score a student received for a specific exam subject
+
+grade_scales (id, tenant_id, name, min_marks, max_marks, grade_letter, grade_point, display_order)
+  -- Defines the mapping from numeric marks to letter grades and GPA
+```
+
+**Key data relationships:**
+- A **Subject** is assigned to a **Class** via `subjects.class_id` (each subject belongs to one class).
+- An **Exam** has multiple **Exam Subjects** (`exam_subjects` references an exam + subject), each with its own full marks, pass marks, and display order — this allows the same exam type (e.g., Midterm) to have different configurations per class.
+- A **Mark** is recorded per `student_enrollment` for each `exam_subject` — this eliminates duplication of full/pass marks across student rows.
+- **Grade Scales** are a tenant-level lookup: the system calculates the percentage from `obtained_marks / full_marks`, looks up the matching grade scale row, and assigns the letter grade and GPA.
 
 ---
 
@@ -641,10 +739,15 @@ Module: User Management
 
 ### 7.2 Module Management
 
-**Purpose:** School Admin can enable or disable modules that Platform Admin has assigned to them.
+**Purpose:** Control which modules are actively used by the school. Module access operates on two tiers:
+
+| Tier | Role | Action | Meaning |
+|---|---|---|---|
+| **Tier 1 — Availability** | Platform Admin | Assigns modules to the tenant | Determines which modules the school **can possibly use**. Modules not assigned are invisible to the tenant. |
+| **Tier 2 — Activation** | School Admin | Enables/disables assigned modules | Determines which **available** modules are currently **active** for daily operations. Disabled modules are hidden from the sidebar and inaccessible to all users. |
 
 **Features:**
-- View all modules assigned by Platform Admin with individual toggle on/off
+- School Admin sees all modules assigned by Platform Admin with an individual toggle on/off
 - When a module is disabled, it is hidden from the sidebar and inaccessible to all users (including School Admin)
 - Disabling a module does not delete associated data
 - Modules not assigned by Platform Admin are not visible in this list
@@ -710,7 +813,7 @@ Module: User Management
 ## 9. Core Business Rules
 
 ### Tenant Rules
-1. Every user, student, and record belongs to exactly one tenant.
+1. Every school user, student, and record belongs to exactly one tenant. Platform Admin is an exception — it belongs to the platform and authenticates via the separate `platform_admins` table.
 2. Cross-tenant data access is prohibited at every layer (API, DB, UI).
 3. Tenant deactivation immediately blocks all user access for that tenant.
 4. Platform Admin cannot directly modify tenant operational data (students, attendance, results) — only support/view.
@@ -737,7 +840,7 @@ Module: User Management
 
 ### Registration Number Rules
 19. Registration number format is `YY + continuous_sequence` (e.g., `26000001`). No class, section, or other changeable attribute is embedded.
-20. The sequence is stored per tenant in a `tenant_sequences` table and increments atomically on each admission.
+20. The sequence is stored per tenant in `tenants.current_student_sequence` and increments atomically on each admission.
 21. Registration number is unique per tenant (`UNIQUE(tenant_id, registration_number)`) and never changes for the student's entire tenure.
 22. Starting sequence value is configurable at tenant creation for legacy migrations.
 
