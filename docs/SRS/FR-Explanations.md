@@ -209,10 +209,41 @@ This follows REST conventions: PATCH for partial modification, PUT for full repl
 
 ## FR-PLT-09
 
-**FR-PLT-09** allows the Platform Admin to adjust a tenant's SMS balance via `PATCH /api/admin/tenants/{id}/sms-balance`. The adjustment can be positive (add credits) or negative (deduct). Negative adjustments are validated to prevent the balance from going below zero.
+**FR-PLT-09** allows the Platform Admin to adjust a tenant's SMS balance via `PATCH /api/admin/tenants/{id}/sms-balance`. The adjustment can be positive (add credits) or negative (deduct). Negative adjustments are validated to prevent the balance from going below zero. [Read more below](#fr-plt-09.1).
+
+<a id="fr-plt-09.1"></a>
+#### FR-PLT-09.1 SMS Balance Adjustment — Detailed Breakdown
+
+**FR-PLT-09** allows the Platform Admin to add or deduct SMS credits for a tenant. This controls how many text message notifications the school can send.
+
+**Request:**
+```json
+{ "adjustment": 200 }
+```
+- **Positive value** → adds credits (e.g., `+200` → balance goes up)
+- **Negative value** → deducts credits (e.g., `-50` → balance goes down)
+
+**What happens:**
+1. Current `sms_balance` is read from the tenant
+2. Adjustment is applied: `new_balance = current_balance + adjustment`
+3. New balance is saved to `tenants.sms_balance`
+4. The adjustment is logged in `audit_logs` (FR-AUD-05) with the old value, new value, and adjustment amount
+
+**Why PATCH?** Same reasoning as FR-PLT-06 — partial update. You're only changing `sms_balance`, not the entire tenant record. The endpoint path `/sms-balance` makes the specific resource being modified explicit.
 
 **Validation:**
 - Adjustment would make balance negative → `400 INSUFFICIENT_BALANCE`
+- Tenant not found → `404`
+
+**Example lifecycle:**
+
+| Event | Adjustment | Balance Before | Balance After |
+|-------|-----------|----------------|---------------|
+| Tenant created | — | — | 500 |
+| SMSes sent over time | — | 500 | 0 |
+| Platform Admin tops up | +200 | 0 | 200 |
+| More SMSes sent | — | 200 | 50 |
+| Platform Admin deducts for overuse | -100 | 50 | ❌ `400 INSUFFICIENT_BALANCE` |
 
 ---
 
