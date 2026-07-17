@@ -10,9 +10,9 @@
 |-------|-------------|
 | **name** | School name (e.g., "Springfield School") |
 | **subdomain** | Unique slug used for the tenant's login URL (`{subdomain}.sirius-skool.com`). Must be globally unique. |
-| **modules** | List of module keys (e.g., `STUDENT_MANAGEMENT`, `ATTENDANCE_MANAGEMENT`) that the Platform Admin pre-authorizes this tenant to use. School Admin can toggle these on/off later via Module Management. |
-| **sms_quota** | How many SMS credits the tenant starts with (deducted per message sent). |
-| **starting_sequence** | The starting value for student registration numbers (e.g., `1` → first student gets `26000001`). |
+| **modules** | Array of module keys that pre-authorizes this tenant to use specific features. School Admin can toggle these on/off later via Module Management, but cannot enable modules outside this list. [Read more below](#fr-plt-01.1). |
+| **sms_quota** | The number of SMS credits pre-allocated to the tenant. This acts as a prepaid wallet for sending text message notifications (e.g., absence alerts, result publication). Each SMS sent deducts 1 credit. When the balance reaches 0, SMS sending is blocked but email continues to work. Platform Admin can top up later via FR-PLT-09. [Read more below](#fr-plt-01.2). |
+| **starting_sequence** | The starting value for student registration numbers (e.g., `1` → first student gets `26000001`). [Read more below](#fr-plt-01.3). |
 | **school_admin** | Initial admin credentials — `full_name`, `email`, `password`. This user is auto-created in the `users` table with role `SCHOOL_ADMIN`. |
 
 **What happens atomically (BR-PLT-01, single transaction):**
@@ -25,9 +25,97 @@
 - Subdomain uniqueness → `409 SUBDOMAIN_TAKEN`
 - Invalid fields → `422 VALIDATION_ERROR`
 
+<a id="fr-plt-01.1"></a>
+#### FR-PLT-01.1 Module Pre-Authorization — Detailed Breakdown
+
+The `modules` field determines **what features the tenant is allowed to use**. It implements a two-tier permission gating:
+
+| Concept | Detail |
+|---------|--------|
+| **Purpose** | Controls feature access per tenant. Platform Admin decides which modules a school is entitled to use. |
+| **Module ENUM** | `STUDENT_MANAGEMENT`, `ATTENDANCE_MANAGEMENT`, `RESULT_MANAGEMENT`, `NOTICE_BOARD`, `REPORTS`, `NOTIFICATIONS` |
+| **Infrastructure modules** | Authentication, Academic Structure, Settings, User & Permission Mgmt, Module Management, Dashboard, Audit — these are always on and not part of the toggle system |
+| **Storage** | Rows written to `tenant_modules` table during tenant creation (FR-PLT-05). Each row has `{tenant_id, module, is_enabled}`. |
+| **Initial state** | All assigned modules created with `is_enabled: true`. |
+| **Toggle authority** | School Admin can disable/re-enable via Module Management (FR-MM-02), but only within the assigned pool (BR-MM-02). |
+| **Disable effect** | Module hidden from sidebar, API endpoints return 403, existing data is preserved (FR-MM-03, BR-MM-04). |
+| **Re-enable** | Restores sidebar visibility and API access to existing data (BR-MM-04). |
+| **Adding modules later** | Not covered by a Platform Admin endpoint in MVP — requires direct DB update or future admin feature. |
+
+**Example flow:**
+1. Platform Admin creates tenant with `modules: ["STUDENT_MANAGEMENT", "ATTENDANCE_MANAGEMENT", "RESULT_MANAGEMENT"]`
+2. `tenant_modules` seeded with 3 rows, all `is_enabled: true`
+3. School Admin can toggle any of these 3 on/off from the Module Management page
+4. School Admin **cannot** enable `NOTICE_BOARD` — it was not in the assigned list
+5. If Platform Admin later adds `NOTICE_BOARD` to `tenant_modules`, it becomes available for toggling
+
+**Separation of concerns:**
+- **Platform Admin** decides *what's available* — licensing/business decision
+- **School Admin** decides *what's active* — operational decision
+
 This is the gate to everything — no module or feature works until a tenant exists.
 
 ---
+
+<a id="fr-plt-01.2"></a>
+#### FR-PLT-01.2 SMS Credit System — Detailed Breakdown
+
+The SMS credit system is a prepaid balance model that controls how many text messages a tenant can send:
+
+| Concept | Detail |
+|---------|--------|
+| **Where stored** | `tenants.sms_balance` column (integer, default = `sms_quota` at creation) |
+| **Initial balance** | Set by `sms_quota` during tenant creation. Stored in `sms_balance`. |
+| **Consumption rate** | 1 credit per SMS sent. Applies to absent alerts (FR-ATT-06), result notifications (FR-NOT-02), and ad-hoc sends (FR-NOT-04). |
+| **When deducted** | Deducted atomically after the SMS provider confirms successful delivery (FR-NOT-05). |
+| **When blocked** | Balance = 0 → `402 SMS_QUOTA_EXCEEDED`. Email is NOT affected. |
+| **Top-up** | Platform Admin adds credits via PATCH `/api/admin/tenants/{id}/sms-balance` (FR-PLT-09). |
+| **Negative protection** | Balance can never go below 0. Deduction attempts that would underflow are rejected. |
+| **Audit trail** | Every adjustment and deduction is logged in `audit_logs` (FR-AUD-05). |
+
+**Example lifecycle:**
+1. Tenant created with `sms_quota: 500` → `sms_balance = 500`
+2. Daily attendance: 5 absent students → 5 SMS sent → `sms_balance = 495`
+3. Results published: 30 SMS sent to guardians → `sms_balance = 465`
+4. Over weeks, balance gradually depletes to `sms_balance = 0`
+5. Next SMS attempt → `402 SMS_QUOTA_EXCEEDED` — admin sees warning on dashboard (FR-DSH-01)
+6. Platform Admin adds 200 credits → `sms_balance = 200` — SMS resumes
+
+<a id="fr-plt-01.3"></a>
+#### FR-PLT-01.3 Registration Number Sequence — Detailed Breakdown
+
+`starting_sequence` is the initial value for the tenant's student registration counter. Each time a student is admitted, the counter is atomically read, used, and incremented by 1.
+
+**Registration number format:** `YY` (2-digit admission year) + `NNNNNN` (6-digit zero-padded sequence)
+
+- Example: `26000001` = admitted in 20**26**, sequence **000001**
+- The `YY` prefix changes with the admission year, but **the sequence counter never resets** — it increments perpetually per tenant
+
+**How the sequence counter works:**
+
+| Concept | Detail |
+|---------|--------|
+| **Stored in** | `tenants.current_student_sequence` column |
+| **Initial value** | Set to `starting_sequence` at tenant creation |
+| **Increment** | +1 after each successful student creation |
+| **Atomicity** | Read + increment uses `SELECT ... FOR UPDATE` to prevent race conditions (BR-STU-02) |
+| **Scope** | Per-tenant, continuous across all academic years |
+| **Permanence** | Registration numbers never change, even if a student leaves or graduates (BR-STU-03) |
+
+**Example lifecycle (starting_sequence = 1):**
+
+| # | Event | Year | Sequence read | Registration No |
+|---|-------|------|---------------|-----------------|
+| 1 | First admission | 2026 | 1 | `26000001` |
+| 2 | Second admission | 2026 | 2 | `26000002` |
+| ... | ... | ... | ... | ... |
+| 150 | 150th admission | 2026 | 150 | `26000150` |
+| 151 | First admission next year | 2027 | 151 | `27000151` |
+| 152 | Another admission | 2027 | 152 | `27000152` |
+
+Notice: the `YY` prefix changed from `26` to `27`, but the sequence counter continued from 151.
+
+**Why make it configurable?** `starting_sequence` allows schools migrating from a legacy system to avoid conflicts with existing student IDs. For example, if a school already has 500 students in their old system and is migrating to Sirius-Skool, they can set `starting_sequence: 501` so new registration numbers start at `26000501` instead of `26000001`.
 
 ## FR-PLT-02
 
