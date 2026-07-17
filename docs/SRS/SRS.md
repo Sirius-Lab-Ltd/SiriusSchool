@@ -706,6 +706,8 @@ Current user profile + permissions.
 | BR-AUTH-10 | IF user calls POST /api/auth/logout THEN the provided refresh token is marked as revoked |
 | BR-AUTH-11 | IF user is authenticated THEN access token must have been issued within the last 15 minutes. IF user calls POST /api/auth/refresh THEN refresh token must have been issued within the last 7 days |
 | BR-AUTH-12 | IF token_version embedded in the JWT does not match users.token_version in the database THEN the request is rejected with 401 FORBIDDEN and the user must re-authenticate |
+| BR-AUTH-13 | IF a created or updated password does not meet policy (min 8 chars, at least one uppercase letter, one lowercase letter, one digit) THEN return 422 VALIDATION_ERROR |
+| BR-AUTH-14 | IF a tenant user exists in Tenant A THEN they cannot authenticate via Tenant B's subdomain — users.tenant_id scopes all authentication |
 
 #### Error Response Format (Standard)
 
@@ -985,7 +987,7 @@ List academic years for the tenant.
 | # | Question |
 |---|----------|
 | Q-SET-01 | Where are notification templates stored? DB Dictionary doesn't define a `notification_templates` table yet |
-| Q-SET-02 | Should password policy settings (min length, complexity) be stored in settings or stay hardcoded? |
+| Q-SET-02 | Should password policy settings (min length, complexity) be stored in settings or stay hardcoded? | Closed: Hardcoded for MVP — min 8 chars, at least one uppercase, one lowercase, one digit (BR-AUTH-13) |
 
 ---
 
@@ -2167,11 +2169,11 @@ View notification logs.
 | Q-PLT-02 | Platform | What is the default module set for new tenants? | Open |
 | Q-AUTH-01 | Auth | Access token expiry configurable? | Closed: Hardcoded 15 min for MVP |
 | Q-AUTH-02 | Auth | Refresh token storage — add `refresh_tokens` model to Prisma, or use signed JWTs without DB lookup? | Open |
-| Q-AUTH-03 | Auth | Single session per user enforced in MVP? | Open |
+| Q-AUTH-03 | Auth | Single session per user enforced in MVP? | Closed: Not enforced in MVP. BR-AUTH-12 (token_version) handles session invalidation on deactivation/reset. |
 | Q-ACA-01 | Academic | Close endpoint or just is_current toggle? | Open |
 | Q-ACA-02 | Academic | Verify no pending data before closing year? | Open |
 | Q-SET-01 | Settings | Where are notification templates stored? | Open |
-| Q-SET-02 | Settings | Password policy configurable or hardcoded? | Open |
+| Q-SET-02 | Settings | Password policy configurable or hardcoded? | Closed: Hardcoded for MVP (BR-AUTH-13) |
 | Q-UP-01 | Permissions | Can School Admin edit Manager email/password? | Open |
 | Q-UP-02 | Permissions | can_print separate from can_export in UI? | Open |
 | Q-STU-01 | Student | Admission form public or authenticated? | Open |

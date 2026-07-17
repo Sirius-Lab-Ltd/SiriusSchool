@@ -537,6 +537,7 @@ This is the recommended pattern from OAuth2 security best practices (RFC 6749 / 
 - Current password incorrect → `400 INCORRECT_CURRENT_PASSWORD`
 - New password same as current → `400 SAME_PASSWORD`
 - Manager attempts → `403 MANAGER_CANNOT_CHANGE_PASSWORD`
+- Password does not meet policy (min 8 chars, one uppercase, one lowercase, one digit) → `422 VALIDATION_ERROR`
 
 ---
 
