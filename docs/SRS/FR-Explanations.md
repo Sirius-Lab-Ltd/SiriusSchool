@@ -146,7 +146,52 @@ Notice: the `YY` prefix changed from `26` to `27`, but the sequence counter cont
 
 ## FR-PLT-06
 
-**FR-PLT-06** allows the Platform Admin to activate or deactivate a tenant via `PATCH /api/admin/tenants/{id}`. The request body includes `{ "is_active": false }` to deactivate. Deactivation immediately blocks all user access (FR-PLT-07). Reactivation restores login capability, but previous sessions are not restored.
+**FR-PLT-06** allows the Platform Admin to activate or deactivate a tenant via `PATCH /api/admin/tenants/{id}`. The request body includes `{ "is_active": false }` to deactivate. Deactivation immediately blocks all user access (FR-PLT-07). Reactivation restores login capability, but previous sessions are not restored. [Read more below](#fr-plt-06.1).
+
+<a id="fr-plt-06.1"></a>
+#### FR-PLT-06.1 Activate/Deactivate — Detailed Breakdown
+
+**FR-PLT-06** allows the Platform Admin to toggle a tenant's active status via `PATCH /api/admin/tenants/{id}`. This is how the Platform Admin controls which schools can access the system.
+
+**Request:**
+```json
+{ "is_active": false }
+```
+
+**What happens on deactivation:**
+1. `tenants.is_active` set to `false`
+2. All subsequent login attempts for that tenant return `403 TENANT_INACTIVE` (FR-PLT-07)
+3. Existing JWT tokens become effectively unusable — the auth middleware checks tenant status on each request
+4. Active sessions are not proactively revoked, but each request validates tenant activity
+
+**What happens on reactivation:**
+1. `tenants.is_active` set to `true`
+2. Users can log in again normally
+3. Previous sessions are not restored — users must re-authenticate
+
+**Why PATCH instead of PUT?**
+
+PATCH is used because the update is **partial** — you're only changing `is_active`, not replacing the entire tenant resource.
+
+| Method | Behavior | Example |
+|--------|----------|---------|
+| **PATCH** | Partial update — only send the fields that change | `PATCH /api/admin/tenants/{id}` with `{ "is_active": false }` |
+| **PUT** | Full replacement — must send every field | Would require `{ "name": "...", "subdomain": "...", "is_active": false, ... }` |
+
+This follows REST conventions: PATCH for partial modification, PUT for full replacement.
+
+**Validation:**
+- Tenant not found → `404`
+- Only Platform Admin can call this endpoint
+
+**Edge cases:**
+
+| Scenario | Behavior |
+|----------|----------|
+| Deactivate active tenant | All users blocked immediately. Middleware checks on each API request detect the inactive status and return 403. |
+| Reactivate deactivated tenant | Login resumes. Users who had valid JWTs when the tenant was deactivated will find them expired by the time of reactivation (15-min access token window). |
+| Deactivate already-deactivated tenant | No-op — `is_active` stays `false`, response returns `{ "is_active": false }`. |
+| Attendance session in progress during deactivation | The session save fails with 403. Data integrity is maintained — no partial writes. |
 
 ---
 
