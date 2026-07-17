@@ -262,18 +262,18 @@ Tenant
 
 #### Functional Requirements
 
-| ID | Description | Priority | Preconditions | Trigger |
-|----|-------------|----------|---------------|---------|
-| FR-PLT-01 | Platform Admin shall create a new tenant with name, subdomain, assigned modules, SMS quota, starting registration sequence, and initial School Admin credentials | P0 | Platform Admin is authenticated | POST /api/admin/tenants |
-| FR-PLT-02 | System shall validate that subdomain is globally unique | P0 | Tenant creation request | Before create |
-| FR-PLT-03 | System shall create School Admin user in `users` table during tenant creation (same transaction) | P0 | Tenant record created | After tenant insert |
-| FR-PLT-04 | System shall create a `tenant_settings` record for the new tenant | P0 | Tenant record created | After tenant insert |
-| FR-PLT-05 | System shall seed `tenant_modules` records for all assigned modules | P0 | Tenant record created | After tenant insert |
-| FR-PLT-06 | Platform Admin shall activate/deactivate a tenant | P0 | Tenant exists | PATCH /api/admin/tenants/{id} |
-| FR-PLT-07 | System shall block all user access for a deactivated tenant | P0 | `tenants.is_active = false` | On any auth request |
-| FR-PLT-08 | Platform Admin shall view a list of all tenants with status | P0 | Platform Admin is authenticated | GET /api/admin/tenants |
-| FR-PLT-09 | Platform Admin shall adjust SMS balance for a tenant | P0 | Tenant exists | PATCH /api/admin/tenants/{id}/sms-balance |
-| FR-PLT-10 | Platform Admin shall view notification logs across all tenants | P1 | Platform Admin is authenticated | GET /api/admin/notifications |
+| ID | Description | Priority | Preconditions | Trigger | More |
+|----|-------------|----------|---------------|---------|------|
+| FR-PLT-01 | Platform Admin shall create a new tenant with name, subdomain, assigned modules, SMS quota, starting registration sequence, and initial School Admin credentials | P0 | Platform Admin is authenticated | POST /api/admin/tenants | [More](./FR-Explanations.md#fr-plt-01) |
+| FR-PLT-02 | System shall validate that subdomain is globally unique | P0 | Tenant creation request | Before create | [More](./FR-Explanations.md#fr-plt-02) |
+| FR-PLT-03 | System shall create School Admin user in `users` table during tenant creation (same transaction) | P0 | Tenant record created | After tenant insert | [More](./FR-Explanations.md#fr-plt-03) |
+| FR-PLT-04 | System shall create a `tenant_settings` record for the new tenant | P0 | Tenant record created | After tenant insert | [More](./FR-Explanations.md#fr-plt-04) |
+| FR-PLT-05 | System shall seed `tenant_modules` records for all assigned modules | P0 | Tenant record created | After tenant insert | [More](./FR-Explanations.md#fr-plt-05) |
+| FR-PLT-06 | Platform Admin shall activate/deactivate a tenant | P0 | Tenant exists | PATCH /api/admin/tenants/{id} | [More](./FR-Explanations.md#fr-plt-06) |
+| FR-PLT-07 | System shall block all user access for a deactivated tenant | P0 | `tenants.is_active = false` | On any auth request | [More](./FR-Explanations.md#fr-plt-07) |
+| FR-PLT-08 | Platform Admin shall view a list of all tenants with status | P0 | Platform Admin is authenticated | GET /api/admin/tenants | [More](./FR-Explanations.md#fr-plt-08) |
+| FR-PLT-09 | Platform Admin shall adjust SMS balance for a tenant | P0 | Tenant exists | PATCH /api/admin/tenants/{id}/sms-balance | [More](./FR-Explanations.md#fr-plt-09) |
+| FR-PLT-10 | Platform Admin shall view notification logs across all tenants | P1 | Platform Admin is authenticated | GET /api/admin/notifications | [More](./FR-Explanations.md#fr-plt-10) |
 
 #### API Endpoints
 
@@ -435,22 +435,22 @@ Adjust SMS balance.
 
 #### Functional Requirements
 
-| ID | Description | Priority | Preconditions | Trigger |
-|----|-------------|----------|---------------|---------|
-| FR-AUTH-01 | System shall authenticate Platform Admin using email + password against `platform_admins` table | P0 | Admin page (`admin.sirius-skool.com`) | POST /api/admin/auth/login |
-| FR-AUTH-02 | System shall authenticate School Admin/Manager using email + password against `users` table, scoped by tenant subdomain | P0 | Tenant is active, user is active | POST /api/auth/login |
-| FR-AUTH-03 | System shall extract tenant from subdomain in Host header (with X-Tenant-Slug fallback for dev) | P0 | Login page loaded | Before authentication |
-| FR-AUTH-04 | System shall issue JWT access token (15 min) + refresh token (UUID, 7 days) on successful login | P0 | Credentials valid | After authentication |
-| FR-AUTH-05 | System shall redirect to role-specific dashboard after login | P0 | Login succeeds | After token issuance |
-| FR-AUTH-06 | System shall revoke refresh token on logout | P0 | User is authenticated | POST /api/auth/logout |
-| FR-AUTH-07 | System shall issue new access token using valid refresh token (rotation + reuse detection) | P0 | Refresh token is valid | POST /api/auth/refresh |
-| FR-AUTH-08 | System shall send password reset email with time-limited token (1 hour) | P0 | Email belongs to active account | POST /api/auth/forgot-password |
-| FR-AUTH-09 | System shall reset password using valid, non-expired, non-used reset token | P0 | Token valid | POST /api/auth/reset-password |
-| FR-AUTH-10 | System shall allow authenticated users to change password (requires current password) | P0 | User is authenticated | POST /api/auth/change-password |
-| FR-AUTH-11 | System shall return current user profile + permissions | P0 | Valid access token | GET /api/auth/me |
-| FR-AUTH-12 | System shall block login for inactive users | P0 | `users.is_active = false` | Login attempt |
-| FR-AUTH-13 | System shall block login for inactive tenants | P0 | `tenants.is_active = false` | Login attempt |
-| FR-AUTH-14 | System shall rate-limit login attempts (5 failed per minute per IP) | P1 | Rate exceeded | Login attempt |
+| ID | Description | Priority | Preconditions | Trigger | More |
+|----|-------------|----------|---------------|---------|------|
+| FR-AUTH-01 | System shall authenticate Platform Admin using email + password against `platform_admins` table | P0 | Admin page (`admin.sirius-skool.com`) | POST /api/admin/auth/login | [More](./FR-Explanations.md#fr-auth-01) |
+| FR-AUTH-02 | System shall authenticate School Admin/Manager using email + password against `users` table, scoped by tenant subdomain | P0 | Tenant is active, user is active | POST /api/auth/login | [More](./FR-Explanations.md#fr-auth-02) |
+| FR-AUTH-03 | System shall extract tenant from subdomain in Host header (with X-Tenant-Slug fallback for dev) | P0 | Login page loaded | Before authentication | [More](./FR-Explanations.md#fr-auth-03) |
+| FR-AUTH-04 | System shall issue JWT access token (15 min) + refresh token (UUID, 7 days) on successful login | P0 | Credentials valid | After authentication | [More](./FR-Explanations.md#fr-auth-04) |
+| FR-AUTH-05 | System shall redirect to role-specific dashboard after login | P0 | Login succeeds | After token issuance | [More](./FR-Explanations.md#fr-auth-05) |
+| FR-AUTH-06 | System shall revoke refresh token on logout | P0 | User is authenticated | POST /api/auth/logout | [More](./FR-Explanations.md#fr-auth-06) |
+| FR-AUTH-07 | System shall issue new access token using valid refresh token (rotation + reuse detection) | P0 | Refresh token is valid | POST /api/auth/refresh | [More](./FR-Explanations.md#fr-auth-07) |
+| FR-AUTH-08 | System shall send password reset email with time-limited token (1 hour) | P0 | Email belongs to active account | POST /api/auth/forgot-password | [More](./FR-Explanations.md#fr-auth-08) |
+| FR-AUTH-09 | System shall reset password using valid, non-expired, non-used reset token | P0 | Token valid | POST /api/auth/reset-password | [More](./FR-Explanations.md#fr-auth-09) |
+| FR-AUTH-10 | System shall allow authenticated users to change password (requires current password) | P0 | User is authenticated | POST /api/auth/change-password | [More](./FR-Explanations.md#fr-auth-10) |
+| FR-AUTH-11 | System shall return current user profile + permissions | P0 | Valid access token | GET /api/auth/me | [More](./FR-Explanations.md#fr-auth-11) |
+| FR-AUTH-12 | System shall block login for inactive users | P0 | `users.is_active = false` | Login attempt | [More](./FR-Explanations.md#fr-auth-12) |
+| FR-AUTH-13 | System shall block login for inactive tenants | P0 | `tenants.is_active = false` | Login attempt | [More](./FR-Explanations.md#fr-auth-13) |
+| FR-AUTH-14 | System shall rate-limit login attempts (5 failed per minute per IP) | P1 | Rate exceeded | Login attempt | [More](./FR-Explanations.md#fr-auth-14) |
 
 #### API Endpoints
 
@@ -739,16 +739,16 @@ Current user profile + permissions.
 
 #### Functional Requirements
 
-| ID | Description | Priority | Preconditions | Trigger |
-|----|-------------|----------|---------------|---------|
-| FR-ACA-01 | School Admin shall create academic years with name, start date, end date | P0 | Authenticated as School Admin | POST /api/academic-years |
-| FR-ACA-02 | System shall enforce exactly one active academic year per tenant | P0 | Academic years exist | Setting `is_current = true` |
-| FR-ACA-03 | System shall prevent overlapping academic year date ranges | P0 | Creating or updating | Validation |
-| FR-ACA-04 | School Admin shall create classes with code, name, display_order | P0 | Authenticated | POST /api/classes |
-| FR-ACA-05 | School Admin shall create sections within a class | P0 | Class exists | POST /api/classes/{id}/sections |
-| FR-ACA-06 | School Admin shall create subjects per class | P0 | Class exists | POST /api/classes/{id}/subjects |
-| FR-ACA-07 | School Admin shall set one academic year as current | P0 | Academic year exists | PATCH /api/academic-years/{id} |
-| FR-ACA-08 | System shall provide list endpoints for all academic entities (dropdowns) | P0 | Entity exists | GET endpoints |
+| ID | Description | Priority | Preconditions | Trigger | More |
+|----|-------------|----------|---------------|---------|------|
+| FR-ACA-01 | School Admin shall create academic years with name, start date, end date | P0 | Authenticated as School Admin | POST /api/academic-years | [More](./FR-Explanations.md#fr-aca-01) |
+| FR-ACA-02 | System shall enforce exactly one active academic year per tenant | P0 | Academic years exist | Setting `is_current = true` | [More](./FR-Explanations.md#fr-aca-02) |
+| FR-ACA-03 | System shall prevent overlapping academic year date ranges | P0 | Creating or updating | Validation | [More](./FR-Explanations.md#fr-aca-03) |
+| FR-ACA-04 | School Admin shall create classes with code, name, display_order | P0 | Authenticated | POST /api/classes | [More](./FR-Explanations.md#fr-aca-04) |
+| FR-ACA-05 | School Admin shall create sections within a class | P0 | Class exists | POST /api/classes/{id}/sections | [More](./FR-Explanations.md#fr-aca-05) |
+| FR-ACA-06 | School Admin shall create subjects per class | P0 | Class exists | POST /api/classes/{id}/subjects | [More](./FR-Explanations.md#fr-aca-06) |
+| FR-ACA-07 | School Admin shall set one academic year as current | P0 | Academic year exists | PATCH /api/academic-years/{id} | [More](./FR-Explanations.md#fr-aca-07) |
+| FR-ACA-08 | System shall provide list endpoints for all academic entities (dropdowns) | P0 | Entity exists | GET endpoints | [More](./FR-Explanations.md#fr-aca-08) |
 
 #### API Endpoints
 
@@ -934,11 +934,11 @@ List academic years for the tenant.
 
 #### Functional Requirements
 
-| ID | Description | Priority | Preconditions | Trigger |
-|----|-------------|----------|---------------|---------|
-| FR-SET-01 | School Admin shall view their tenant settings | P0 | Authenticated as School Admin | GET /api/settings |
-| FR-SET-02 | School Admin shall update school branding (logo, address, phone, email) | P0 | Authenticated | PATCH /api/settings |
-| FR-SET-03 | System shall upload logo to Cloudinary and store URL | P0 | File uploaded | During settings update |
+| ID | Description | Priority | Preconditions | Trigger | More |
+|----|-------------|----------|---------------|---------|------|
+| FR-SET-01 | School Admin shall view their tenant settings | P0 | Authenticated as School Admin | GET /api/settings | [More](./FR-Explanations.md#fr-set-01) |
+| FR-SET-02 | School Admin shall update school branding (logo, address, phone, email) | P0 | Authenticated | PATCH /api/settings | [More](./FR-Explanations.md#fr-set-02) |
+| FR-SET-03 | System shall upload logo to Cloudinary and store URL | P0 | File uploaded | During settings update | [More](./FR-Explanations.md#fr-set-03) |
 
 #### API Endpoints
 
@@ -999,14 +999,14 @@ List academic years for the tenant.
 
 #### Functional Requirements
 
-| ID | Description | Priority | Preconditions | Trigger |
-|----|-------------|----------|---------------|---------|
-| FR-UP-01 | School Admin shall create a Manager with name, email, password | P0 | Authenticated as School Admin | POST /api/managers |
-| FR-UP-02 | School Admin shall activate/deactivate a Manager | P0 | Manager exists | PATCH /api/managers/{id} |
-| FR-UP-03 | School Admin shall view list of all Managers with permission summary | P0 | Authenticated | GET /api/managers |
-| FR-UP-04 | School Admin shall assign action-level permissions to a Manager per module | P0 | Manager exists, module is enabled | PUT /api/managers/{id}/permissions |
-| FR-UP-05 | School Admin shall only see modules assigned by Platform Admin in the permission UI | P0 | Authenticated | GET /api/permissions/available-modules |
-| FR-UP-06 | System shall deactivate a Manager immediately — all sessions invalidated | P0 | Manager deactivated | Token version incremented |
+| ID | Description | Priority | Preconditions | Trigger | More |
+|----|-------------|----------|---------------|---------|------|
+| FR-UP-01 | School Admin shall create a Manager with name, email, password | P0 | Authenticated as School Admin | POST /api/managers | [More](./FR-Explanations.md#fr-up-01) |
+| FR-UP-02 | School Admin shall activate/deactivate a Manager | P0 | Manager exists | PATCH /api/managers/{id} | [More](./FR-Explanations.md#fr-up-02) |
+| FR-UP-03 | School Admin shall view list of all Managers with permission summary | P0 | Authenticated | GET /api/managers | [More](./FR-Explanations.md#fr-up-03) |
+| FR-UP-04 | School Admin shall assign action-level permissions to a Manager per module | P0 | Manager exists, module is enabled | PUT /api/managers/{id}/permissions | [More](./FR-Explanations.md#fr-up-04) |
+| FR-UP-05 | School Admin shall only see modules assigned by Platform Admin in the permission UI | P0 | Authenticated | GET /api/permissions/available-modules | [More](./FR-Explanations.md#fr-up-05) |
+| FR-UP-06 | System shall deactivate a Manager immediately — all sessions invalidated | P0 | Manager deactivated | Token version incremented | [More](./FR-Explanations.md#fr-up-06) |
 
 #### API Endpoints
 
@@ -1147,11 +1147,11 @@ List academic years for the tenant.
 
 #### Functional Requirements
 
-| ID | Description | Priority | Preconditions | Trigger |
-|----|-------------|----------|---------------|---------|
-| FR-MM-01 | School Admin shall view all assigned modules with enable/disable status | P0 | Authenticated | GET /api/tenant-modules |
-| FR-MM-02 | School Admin shall toggle a module on/off | P0 | Module is assigned by Platform Admin | PATCH /api/tenant-modules/{module} |
-| FR-MM-03 | System shall hide disabled modules from sidebar and block API access | P0 | Module toggled off | On any request to that module |
+| ID | Description | Priority | Preconditions | Trigger | More |
+|----|-------------|----------|---------------|---------|------|
+| FR-MM-01 | School Admin shall view all assigned modules with enable/disable status | P0 | Authenticated | GET /api/tenant-modules | [More](./FR-Explanations.md#fr-mm-01) |
+| FR-MM-02 | School Admin shall toggle a module on/off | P0 | Module is assigned by Platform Admin | PATCH /api/tenant-modules/{module} | [More](./FR-Explanations.md#fr-mm-02) |
+| FR-MM-03 | System shall hide disabled modules from sidebar and block API access | P0 | Module toggled off | On any request to that module | [More](./FR-Explanations.md#fr-mm-03) |
 
 #### API Endpoints
 
@@ -1206,21 +1206,21 @@ List academic years for the tenant.
 
 #### Functional Requirements
 
-| ID | Description | Priority | Preconditions | Trigger |
-|----|-------------|----------|---------------|---------|
-| FR-STU-01 | System shall accept admission applications with applicant details | P0 | Tenant is active | POST /api/applications |
-| FR-STU-02 | System shall generate a unique application number (`APP-{year}-{seq}`) | P0 | Application submitted | After create |
-| FR-STU-03 | Manager with admission permission shall view pending applications | P0 | Authenticated | GET /api/applications?status=PENDING |
-| FR-STU-04 | Manager shall approve an application → creates student + enrollment | P0 | Application is PENDING | POST /api/applications/{id}/approve |
-| FR-STU-05 | Manager shall reject an application with reason | P0 | Application is PENDING | POST /api/applications/{id}/reject |
-| FR-STU-06 | System shall auto-generate registration number (`YY + sequence`) on approval in an atomic transaction | P0 | Application approved | During approval |
-| FR-STU-07 | System shall auto-assign roll number within section (sequential) | P0 | Enrollment created | During approval |
-| FR-STU-08 | School Admin/Manager shall CRUD student personal info | P0 | Student exists | /api/students endpoints |
-| FR-STU-09 | System shall search students by name, roll number, registration number, class | P0 | Students exist | GET /api/students?search=... |
-| FR-STU-10 | School Admin shall promote students to next class (bulk or individual) | P0 | Academic year exists, previous enrollment exists | POST /api/students/promote |
-| FR-STU-11 | System shall handle end-of-year outcomes: Promote, Repeat, Graduate, Transfer, Dropout | P0 | Academic year ending | POST /api/students/{id}/outcome |
-| FR-STU-12 | School Admin shall import students from Excel | P1 | Authenticated | POST /api/students/import |
-| FR-STU-13 | School Admin shall export student list to Excel/PDF | P1 | Authenticated | GET /api/students/export |
+| ID | Description | Priority | Preconditions | Trigger | More |
+|----|-------------|----------|---------------|---------|------|
+| FR-STU-01 | System shall accept admission applications with applicant details | P0 | Tenant is active | POST /api/applications | [More](./FR-Explanations.md#fr-stu-01) |
+| FR-STU-02 | System shall generate a unique application number (`APP-{year}-{seq}`) | P0 | Application submitted | After create | [More](./FR-Explanations.md#fr-stu-02) |
+| FR-STU-03 | Manager with admission permission shall view pending applications | P0 | Authenticated | GET /api/applications?status=PENDING | [More](./FR-Explanations.md#fr-stu-03) |
+| FR-STU-04 | Manager shall approve an application → creates student + enrollment | P0 | Application is PENDING | POST /api/applications/{id}/approve | [More](./FR-Explanations.md#fr-stu-04) |
+| FR-STU-05 | Manager shall reject an application with reason | P0 | Application is PENDING | POST /api/applications/{id}/reject | [More](./FR-Explanations.md#fr-stu-05) |
+| FR-STU-06 | System shall auto-generate registration number (`YY + sequence`) on approval in an atomic transaction | P0 | Application approved | During approval | [More](./FR-Explanations.md#fr-stu-06) |
+| FR-STU-07 | System shall auto-assign roll number within section (sequential) | P0 | Enrollment created | During approval | [More](./FR-Explanations.md#fr-stu-07) |
+| FR-STU-08 | School Admin/Manager shall CRUD student personal info | P0 | Student exists | /api/students endpoints | [More](./FR-Explanations.md#fr-stu-08) |
+| FR-STU-09 | System shall search students by name, roll number, registration number, class | P0 | Students exist | GET /api/students?search=... | [More](./FR-Explanations.md#fr-stu-09) |
+| FR-STU-10 | School Admin shall promote students to next class (bulk or individual) | P0 | Academic year exists, previous enrollment exists | POST /api/students/promote | [More](./FR-Explanations.md#fr-stu-10) |
+| FR-STU-11 | System shall handle end-of-year outcomes: Promote, Repeat, Graduate, Transfer, Dropout | P0 | Academic year ending | POST /api/students/{id}/outcome | [More](./FR-Explanations.md#fr-stu-11) |
+| FR-STU-12 | School Admin shall import students from Excel | P1 | Authenticated | POST /api/students/import | [More](./FR-Explanations.md#fr-stu-12) |
+| FR-STU-13 | School Admin shall export student list to Excel/PDF | P1 | Authenticated | GET /api/students/export | [More](./FR-Explanations.md#fr-stu-13) |
 
 #### API Endpoints
 
@@ -1448,15 +1448,15 @@ Bulk promote students to next class.
 
 #### Functional Requirements
 
-| ID | Description | Priority | Preconditions | Trigger |
-|----|-------------|----------|---------------|---------|
-| FR-ATT-01 | Manager shall select class → section → date and load enrolled students | P0 | Academic year active, enrollment exists | GET /api/attendance/sessions/init?class_id=...&section_id=...&date=... |
-| FR-ATT-02 | System shall default all students to Present | P0 | Session initialized | Before save |
-| FR-ATT-03 | Manager shall save attendance (all students marked) | P0 | Session in DRAFT | POST /api/attendance/sessions |
-| FR-ATT-04 | Manager shall submit attendance (DRAFT → SUBMITTED) | P0 | Session saved | POST /api/attendance/sessions/{id}/submit |
-| FR-ATT-05 | Manager shall edit attendance after submission (audit logged) | P1 | Session exists | PATCH /api/attendance/sessions/{id}/records |
-| FR-ATT-06 | Manager shall send SMS to guardians of absent students | P1 | Session SUBMITTED, students absent | POST /api/attendance/sessions/{id}/send-sms |
-| FR-ATT-07 | School Admin shall view attendance reports (per class, per student, date range) | P0 | Attendance exists | GET /api/attendance/reports |
+| ID | Description | Priority | Preconditions | Trigger | More |
+|----|-------------|----------|---------------|---------|------|
+| FR-ATT-01 | Manager shall select class → section → date and load enrolled students | P0 | Academic year active, enrollment exists | GET /api/attendance/sessions/init?class_id=...&section_id=...&date=... | [More](./FR-Explanations.md#fr-att-01) |
+| FR-ATT-02 | System shall default all students to Present | P0 | Session initialized | Before save | [More](./FR-Explanations.md#fr-att-02) |
+| FR-ATT-03 | Manager shall save attendance (all students marked) | P0 | Session in DRAFT | POST /api/attendance/sessions | [More](./FR-Explanations.md#fr-att-03) |
+| FR-ATT-04 | Manager shall submit attendance (DRAFT → SUBMITTED) | P0 | Session saved | POST /api/attendance/sessions/{id}/submit | [More](./FR-Explanations.md#fr-att-04) |
+| FR-ATT-05 | Manager shall edit attendance after submission (audit logged) | P1 | Session exists | PATCH /api/attendance/sessions/{id}/records | [More](./FR-Explanations.md#fr-att-05) |
+| FR-ATT-06 | Manager shall send SMS to guardians of absent students | P1 | Session SUBMITTED, students absent | POST /api/attendance/sessions/{id}/send-sms | [More](./FR-Explanations.md#fr-att-06) |
+| FR-ATT-07 | School Admin shall view attendance reports (per class, per student, date range) | P0 | Attendance exists | GET /api/attendance/reports | [More](./FR-Explanations.md#fr-att-07) |
 
 #### API Endpoints
 
@@ -1563,16 +1563,16 @@ Create (or update) an attendance session.
 
 #### Functional Requirements
 
-| ID | Description | Priority | Preconditions | Trigger |
-|----|-------------|----------|---------------|---------|
-| FR-RES-01 | School Admin shall create exams with name, start/end date, class | P1 | Academic year exists, class exists | POST /api/exams |
-| FR-RES-02 | School Admin shall configure subjects for an exam (full marks, pass marks, display order) | P1 | Exam in DRAFT | POST /api/exams/{id}/subjects |
-| FR-RES-03 | School Admin shall create grade scales for the tenant | P1 | Authenticated | POST /api/grade-scales |
-| FR-RES-04 | Manager shall enter marks per student per subject | P1 | Exam is PUBLISHED | PUT /api/exams/{id}/marks |
-| FR-RES-05 | System shall auto-calculate total, percentage, grade, GPA | P1 | Marks entered | During calculation/display |
-| FR-RES-06 | School Admin shall publish exam results | P1 | All marks entered | POST /api/exams/{id}/publish |
-| FR-RES-07 | School Admin shall unpublish results for editing | P1 | Results are published | POST /api/exams/{id}/unpublish |
-| FR-RES-08 | School Admin shall generate rank list | P1 | Results published | GET /api/exams/{id}/rank-list |
+| ID | Description | Priority | Preconditions | Trigger | More |
+|----|-------------|----------|---------------|---------|------|
+| FR-RES-01 | School Admin shall create exams with name, start/end date, class | P1 | Academic year exists, class exists | POST /api/exams | [More](./FR-Explanations.md#fr-res-01) |
+| FR-RES-02 | School Admin shall configure subjects for an exam (full marks, pass marks, display order) | P1 | Exam in DRAFT | POST /api/exams/{id}/subjects | [More](./FR-Explanations.md#fr-res-02) |
+| FR-RES-03 | School Admin shall create grade scales for the tenant | P1 | Authenticated | POST /api/grade-scales | [More](./FR-Explanations.md#fr-res-03) |
+| FR-RES-04 | Manager shall enter marks per student per subject | P1 | Exam is PUBLISHED | PUT /api/exams/{id}/marks | [More](./FR-Explanations.md#fr-res-04) |
+| FR-RES-05 | System shall auto-calculate total, percentage, grade, GPA | P1 | Marks entered | During calculation/display | [More](./FR-Explanations.md#fr-res-05) |
+| FR-RES-06 | School Admin shall publish exam results | P1 | All marks entered | POST /api/exams/{id}/publish | [More](./FR-Explanations.md#fr-res-06) |
+| FR-RES-07 | School Admin shall unpublish results for editing | P1 | Results are published | POST /api/exams/{id}/unpublish | [More](./FR-Explanations.md#fr-res-07) |
+| FR-RES-08 | School Admin shall generate rank list | P1 | Results published | GET /api/exams/{id}/rank-list | [More](./FR-Explanations.md#fr-res-08) |
 
 #### API Endpoints
 
@@ -1712,14 +1712,14 @@ Sets `exams.result_published_at` and triggers SMS/Email notifications.
 
 #### Functional Requirements
 
-| ID | Description | Priority | Preconditions | Trigger |
-|----|-------------|----------|---------------|---------|
-| FR-NTC-01 | Authorized user shall upload a notice (PDF or Image) with title | P1 | Authenticated | POST /api/notices |
-| FR-NTC-02 | System shall schedule notice for future publication | P1 | Notice created with future `publish_at` | During create |
-| FR-NTC-03 | System shall auto-publish scheduled notices when `publish_at` is reached | P1 | Scheduled notice exists | Cron/queue job |
-| FR-NTC-04 | Authorized user shall archive a published notice | P1 | Notice is published | POST /api/notices/{id}/archive |
-| FR-NTC-05 | All authenticated users shall view published notices | P1 | Notice is published (`is_published = true`, `publish_at` <= now) | GET /api/notices |
-| FR-NTC-06 | System shall auto-hide expired notices based on `expires_at` | P1 | `expires_at` is reached | Cron/queue job |
+| ID | Description | Priority | Preconditions | Trigger | More |
+|----|-------------|----------|---------------|---------|------|
+| FR-NTC-01 | Authorized user shall upload a notice (PDF or Image) with title | P1 | Authenticated | POST /api/notices | [More](./FR-Explanations.md#fr-ntc-01) |
+| FR-NTC-02 | System shall schedule notice for future publication | P1 | Notice created with future `publish_at` | During create | [More](./FR-Explanations.md#fr-ntc-02) |
+| FR-NTC-03 | System shall auto-publish scheduled notices when `publish_at` is reached | P1 | Scheduled notice exists | Cron/queue job | [More](./FR-Explanations.md#fr-ntc-03) |
+| FR-NTC-04 | Authorized user shall archive a published notice | P1 | Notice is published | POST /api/notices/{id}/archive | [More](./FR-Explanations.md#fr-ntc-04) |
+| FR-NTC-05 | All authenticated users shall view published notices | P1 | Notice is published (`is_published = true`, `publish_at` <= now) | GET /api/notices | [More](./FR-Explanations.md#fr-ntc-05) |
+| FR-NTC-06 | System shall auto-hide expired notices based on `expires_at` | P1 | `expires_at` is reached | Cron/queue job | [More](./FR-Explanations.md#fr-ntc-06) |
 
 #### API Endpoints
 
@@ -1792,16 +1792,16 @@ expires_at: "2026-12-20T00:00:00Z" (optional)
 
 #### Functional Requirements
 
-| ID | Description | Priority | Preconditions | Trigger |
-|----|-------------|----------|---------------|---------|
-| FR-NOT-01 | System shall send SMS to guardians of absent students when triggered | P1 | Attendance session submitted, absent students exist | POST /api/attendance/sessions/{id}/send-sms |
-| FR-NOT-02 | System shall send SMS/Email to guardians when results are published | P1 | Exam results published | Auto-triggered on publish |
-| FR-NOT-03 | System shall send password reset email | P0 | Forgot-password requested | POST /api/auth/forgot-password |
-| FR-NOT-04 | Authorized user shall send ad-hoc SMS/Email | P1 | Authenticated | POST /api/notifications/send |
-| FR-NOT-05 | System shall deduct SMS balance per SMS sent | P1 | SMS sent successfully | After send |
-| FR-NOT-06 | System shall block SMS sending when balance is 0 | P1 | `sms_balance` = 0 | Before send |
-| FR-NOT-07 | System shall log every notification with status, recipient, message | P0 | Notification sent or failed | After attempt |
-| FR-NOT-08 | System shall retry failed notifications (configurable) | P1 | Status = FAILED | Cron/queue job |
+| ID | Description | Priority | Preconditions | Trigger | More |
+|----|-------------|----------|---------------|---------|------|
+| FR-NOT-01 | System shall send SMS to guardians of absent students when triggered | P1 | Attendance session submitted, absent students exist | POST /api/attendance/sessions/{id}/send-sms | [More](./FR-Explanations.md#fr-not-01) |
+| FR-NOT-02 | System shall send SMS/Email to guardians when results are published | P1 | Exam results published | Auto-triggered on publish | [More](./FR-Explanations.md#fr-not-02) |
+| FR-NOT-03 | System shall send password reset email | P0 | Forgot-password requested | POST /api/auth/forgot-password | [More](./FR-Explanations.md#fr-not-03) |
+| FR-NOT-04 | Authorized user shall send ad-hoc SMS/Email | P1 | Authenticated | POST /api/notifications/send | [More](./FR-Explanations.md#fr-not-04) |
+| FR-NOT-05 | System shall deduct SMS balance per SMS sent | P1 | SMS sent successfully | After send | [More](./FR-Explanations.md#fr-not-05) |
+| FR-NOT-06 | System shall block SMS sending when balance is 0 | P1 | `sms_balance` = 0 | Before send | [More](./FR-Explanations.md#fr-not-06) |
+| FR-NOT-07 | System shall log every notification with status, recipient, message | P0 | Notification sent or failed | After attempt | [More](./FR-Explanations.md#fr-not-07) |
+| FR-NOT-08 | System shall retry failed notifications (configurable) | P1 | Status = FAILED | Cron/queue job | [More](./FR-Explanations.md#fr-not-08) |
 
 #### API Endpoints
 
@@ -1893,13 +1893,13 @@ View notification logs.
 
 #### Functional Requirements
 
-| ID | Description | Priority | Preconditions | Trigger |
-|----|-------------|----------|---------------|---------|
-| FR-RPT-01 | System shall generate student ID card PDF with photo, name, registration no, class, section, roll, school details | P1 | Student exists, school branding configured | GET /api/reports/students/{id}/id-card |
-| FR-RPT-02 | System shall generate Transfer Certificate PDF | P1 | Student status = TRANSFERRED | GET /api/reports/students/{id}/tc |
-| FR-RPT-03 | System shall generate attendance report PDF/Excel | P1 | Attendance records exist | GET /api/reports/attendance |
-| FR-RPT-04 | System shall generate result report PDF (per student or per exam) | P1 | Results published | GET /api/reports/results |
-| FR-RPT-05 | System shall embed school logo and name from Settings in all reports | P1 | Settings configured | During generation |
+| ID | Description | Priority | Preconditions | Trigger | More |
+|----|-------------|----------|---------------|---------|------|
+| FR-RPT-01 | System shall generate student ID card PDF with photo, name, registration no, class, section, roll, school details | P1 | Student exists, school branding configured | GET /api/reports/students/{id}/id-card | [More](./FR-Explanations.md#fr-rpt-01) |
+| FR-RPT-02 | System shall generate Transfer Certificate PDF | P1 | Student status = TRANSFERRED | GET /api/reports/students/{id}/tc | [More](./FR-Explanations.md#fr-rpt-02) |
+| FR-RPT-03 | System shall generate attendance report PDF/Excel | P1 | Attendance records exist | GET /api/reports/attendance | [More](./FR-Explanations.md#fr-rpt-03) |
+| FR-RPT-04 | System shall generate result report PDF (per student or per exam) | P1 | Results published | GET /api/reports/results | [More](./FR-Explanations.md#fr-rpt-04) |
+| FR-RPT-05 | System shall embed school logo and name from Settings in all reports | P1 | Settings configured | During generation | [More](./FR-Explanations.md#fr-rpt-05) |
 
 #### API Endpoints
 
@@ -1936,11 +1936,11 @@ View notification logs.
 
 #### Functional Requirements
 
-| ID | Description | Priority | Preconditions | Trigger |
-|----|-------------|----------|---------------|---------|
-| FR-DSH-01 | System shall display School Admin dashboard with all metrics | P0 | Authenticated as School Admin | GET /api/dashboard/school-admin |
-| FR-DSH-02 | System shall display Manager dashboard (permissions-dependent) | P0 | Authenticated as Manager | GET /api/dashboard/manager |
-| FR-DSH-03 | Dashboard metrics shall be scoped to current academic year | P0 | Current academic year exists | During load |
+| ID | Description | Priority | Preconditions | Trigger | More |
+|----|-------------|----------|---------------|---------|------|
+| FR-DSH-01 | System shall display School Admin dashboard with all metrics | P0 | Authenticated as School Admin | GET /api/dashboard/school-admin | [More](./FR-Explanations.md#fr-dsh-01) |
+| FR-DSH-02 | System shall display Manager dashboard (permissions-dependent) | P0 | Authenticated as Manager | GET /api/dashboard/manager | [More](./FR-Explanations.md#fr-dsh-02) |
+| FR-DSH-03 | Dashboard metrics shall be scoped to current academic year | P0 | Current academic year exists | During load | [More](./FR-Explanations.md#fr-dsh-03) |
 
 #### API Endpoints
 
@@ -1984,16 +1984,16 @@ View notification logs.
 
 #### Functional Requirements
 
-| ID | Description | Priority | Preconditions | Trigger |
-|----|-------------|----------|---------------|---------|
-| FR-AUD-01 | System shall log all CUD operations on student data | P0 | Action performed | After successful action |
-| FR-AUD-02 | System shall log attendance corrections after submission | P0 | Attendance session modified | After update |
-| FR-AUD-03 | System shall log result publish/unpublish | P0 | Result published/unpublished | After action |
-| FR-AUD-04 | System shall log permission changes | P0 | Manager permissions updated | After update |
-| FR-AUD-05 | System shall log SMS balance changes | P0 | Balance adjusted | After adjustment |
-| FR-AUD-06 | System shall log tenant activation/deactivation | P0 | Tenant status changed | After change |
-| FR-AUD-07 | School Admin shall view audit logs for their tenant | P0 | Authenticated | GET /api/audit-logs |
-| FR-AUD-08 | Platform Admin shall view audit logs across all tenants | P1 | Authenticated as Platform Admin | GET /api/admin/audit-logs |
+| ID | Description | Priority | Preconditions | Trigger | More |
+|----|-------------|----------|---------------|---------|------|
+| FR-AUD-01 | System shall log all CUD operations on student data | P0 | Action performed | After successful action | [More](./FR-Explanations.md#fr-aud-01) |
+| FR-AUD-02 | System shall log attendance corrections after submission | P0 | Attendance session modified | After update | [More](./FR-Explanations.md#fr-aud-02) |
+| FR-AUD-03 | System shall log result publish/unpublish | P0 | Result published/unpublished | After action | [More](./FR-Explanations.md#fr-aud-03) |
+| FR-AUD-04 | System shall log permission changes | P0 | Manager permissions updated | After update | [More](./FR-Explanations.md#fr-aud-04) |
+| FR-AUD-05 | System shall log SMS balance changes | P0 | Balance adjusted | After adjustment | [More](./FR-Explanations.md#fr-aud-05) |
+| FR-AUD-06 | System shall log tenant activation/deactivation | P0 | Tenant status changed | After change | [More](./FR-Explanations.md#fr-aud-06) |
+| FR-AUD-07 | School Admin shall view audit logs for their tenant | P0 | Authenticated | GET /api/audit-logs | [More](./FR-Explanations.md#fr-aud-07) |
+| FR-AUD-08 | Platform Admin shall view audit logs across all tenants | P1 | Authenticated as Platform Admin | GET /api/admin/audit-logs | [More](./FR-Explanations.md#fr-aud-08) |
 
 #### API Endpoints
 
