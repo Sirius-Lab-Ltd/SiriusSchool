@@ -160,14 +160,15 @@ Notice: the `YY` prefix changed from `26` to `27`, but the sequence counter cont
 
 **What happens on deactivation:**
 1. `tenants.is_active` set to `false`
-2. All subsequent login attempts for that tenant return `403 TENANT_INACTIVE` (FR-PLT-07)
-3. Existing JWT tokens become effectively unusable — the auth middleware checks tenant status on each request
-4. Active sessions are not proactively revoked, but each request validates tenant activity
+2. Login still succeeds — the login response includes `tenant.is_active = false` (FR-PLT-07)
+3. The frontend renders a deactivation info page with message: *"Your school has been deactivated. Contact admin@support.com for reactivation."*
+4. All API operations are blocked by middleware with `403 TENANT_INACTIVE`
+5. Active sessions are not proactively revoked, but each API request validates tenant activity
 
 **What happens on reactivation:**
 1. `tenants.is_active` set to `true`
-2. Users can log in again normally
-3. Previous sessions are not restored — users must re-authenticate
+2. Existing users who were logged in see the deactivation page next time they make an API request — after reactivation, subsequent requests succeed
+3. Users who need to re-authenticate can log in normally; the login response now returns `tenant.is_active = true`
 
 **Why PATCH instead of PUT?**
 
@@ -188,8 +189,8 @@ This follows REST conventions: PATCH for partial modification, PUT for full repl
 
 | Scenario | Behavior |
 |----------|----------|
-| Deactivate active tenant | All users blocked immediately. Middleware checks on each API request detect the inactive status and return 403. |
-| Reactivate deactivated tenant | Login resumes. Users who had valid JWTs when the tenant was deactivated will find them expired by the time of reactivation (15-min access token window). |
+| Deactivate active tenant | Login still works but returns `tenant.is_active = false`. Frontend shows deactivation page. Middleware blocks all API operations with 403. |
+| Reactivate deactivated tenant | Login now returns `tenant.is_active = true`. Users who kept their session can make API requests again (tokens still valid). Users on the deactivation page refresh and see the dashboard. |
 | Deactivate already-deactivated tenant | No-op — `is_active` stays `false`, response returns `{ "is_active": false }`. |
 | Attendance session in progress during deactivation | The session save fails with 403. Data integrity is maintained — no partial writes. |
 
@@ -197,7 +198,7 @@ This follows REST conventions: PATCH for partial modification, PUT for full repl
 
 ## FR-PLT-07
 
-**FR-PLT-07** enforces tenant deactivation at the authentication layer. When `tenants.is_active = false`, all login attempts return `403 TENANT_INACTIVE`. Existing JWT tokens are checked against tenant status on each request via middleware, making deactivation effectively immediate.
+**FR-PLT-07** allows login for deactivated tenants but blocks all API operations. When `tenants.is_active = false`, the login response includes `tenant.is_active = false`. The frontend renders a deactivation info page instead of the dashboard. All subsequent API requests are blocked by middleware with `403 TENANT_INACTIVE`, making deactivation effectively immediate for all operations.
 
 ---
 
@@ -628,38 +629,67 @@ This distinction is intentional — it provides a better UX for deactivated user
 
 ## FR-AUTH-11
 
-**FR-AUTH-11** blocks login for deactivated tenants. When `tenants.is_active = false`, all login attempts for that tenant return `403 TENANT_INACTIVE`. This prevents access to all users (School Admin + Managers) in the deactivated tenant. [Read more below](#fr-auth-11.1).
+**FR-AUTH-11** allows login for deactivated tenants but returns `403 FORBIDDEN` on all subsequent API requests. The login response includes `tenant.is_active = false` so the frontend can render a deactivation info page. [Read more below](#fr-auth-11.1).
 
 <a id="fr-auth-11.1"></a>
-#### FR-AUTH-11.1 Inactive Tenant Login Block — Detailed Breakdown
+#### FR-AUTH-11.1 Inactive Tenant — Login & Deactivation Page — Detailed Breakdown
 
-**FR-AUTH-11** prevents all users in a deactivated school from logging in. When a Platform Admin deactivates a tenant (FR-PLT-04), the `tenants.is_active` field is set to `false`, and every login attempt for that tenant is blocked — regardless of individual user active status.
+**FR-AUTH-11** handles the deactivated tenant experience at the authentication layer. Unlike the previous design (block login entirely), the system now **allows login** but immediately informs the frontend that the tenant is deactivated. The frontend renders a deactivation info page instead of the dashboard.
+
+**Why allow login instead of blocking it?**
+
+| Reason | Explanation |
+|--------|-------------|
+| **User clarity** | Users can confirm their credentials work. They see a clear message rather than being silently locked out with a generic error. |
+| **Contact info** | The deactivation page provides the reactivation contact email (`admin@support.com`), giving users a path to resolution. |
+| **Security preserved** | Although login succeeds, all API operations are blocked by middleware. No data can be accessed or modified. |
+| **Seamless reactivation** | When the Platform Admin reactivates the tenant, the user's session is already valid — no re-login needed. |
 
 **How it works (check order matters):**
 
 ```
 Login request → Resolve tenant from subdomain (FR-AUTH-03)
              → Is tenant active?
-                  ├── NO  → 403 TENANT_INACTIVE (stop)
+                  ├── NO  → Proceed with authentication
+                  │          → Is user active? (FR-AUTH-10)
+                  │               ├── NO  → 403 ACCOUNT_INACTIVE (stop)
+                  │               └── YES → Authenticate → Issue tokens
+                  │                        → Response includes tenant.is_active = false
+                  │                        → Frontend shows deactivation page
                   └── YES → Is user active? (FR-AUTH-10)
                               ├── NO  → 403 ACCOUNT_INACTIVE (stop)
-                              └── YES → Authenticate credentials
+                              └── YES → Authenticate → Issue tokens
+                                       → Normal dashboard
 ```
 
-The tenant check always comes **first**. This means:
-- Even if a user is active, they can't log in to a deactivated tenant
-- Even if credentials are valid, the check happens before password verification
-- The deactivated tenant's login page effectively becomes unusable for all users
+The tenant check still comes **first**, but instead of blocking login, it branches into the deactivation flow. This means:
 
-**Why not `404` instead?**
+- Even if the tenant is deactivated, authentication still proceeds
+- All validations (user active, credentials) are still enforced
+- The login response includes `tenant.is_active = false` for the frontend
+- The frontend redirects to the deactivation page showing: *"Your school has been deactivated. Contact admin@support.com for reactivation."*
+- All subsequent API requests from that session return `403 TENANT_INACTIVE`
+- The middleware check on every request ensures no data access is possible
 
-A `404` would hide the tenant's existence but make debugging difficult for Platform Admin. Since tenant deactivation is an administrative action (not a security concern like hiding user emails), returning `403 TENANT_INACTIVE` provides clear feedback.
+**Frontend behavior:**
+
+| Step | Action |
+|------|--------|
+| 1 | Submit login form → wait for response |
+| 2 | Response contains `tenant.is_active = false` |
+| 3 | Store tokens (needed for potential reactivation) |
+| 4 | Redirect to `/deactivated` page instead of dashboard |
+| 5 | Deactivation page shows the message and a "Try Again" button (which re-fetches `/api/auth/me` to check if tenant has been reactivated) |
 
 **Edge cases:**
 
-- Tenant is deactivated with active user sessions → existing JWT tokens eventually expire (15 min). Refresh tokens are revoked on next refresh attempt.
-- Reactivated tenant → all users can log in again normally. No individual reactivation needed.
-- Platform Admin login (`admin.sirius-skool.com`) → not affected by tenant deactivation because Platform Admin authenticates against the `platform_admins` table, not the `users` table.
+| Scenario | Behavior |
+|----------|----------|
+| Tenant deactivated mid-session | Next API request middleware check detects `tenants.is_active = false` and returns `403 TENANT_INACTIVE`. Frontend redirects to deactivation page. |
+| Reactivated tenant | User on the deactivation page clicks "Try Again" → `/api/auth/me` returns `tenant.is_active = true` → frontend redirects to dashboard. |
+| Reactivated tenant (new login) | Login proceeds normally — `tenant.is_active = true` in response — normal dashboard. |
+| User deactivated within deactivated tenant | Authentication fails with `403 ACCOUNT_INACTIVE` (user-level check still runs before issuing tokens). |
+| Platform Admin login | Not affected — Platform Admin authenticates against `platform_admins`, not the `users` table. |
 
 ---
 

@@ -270,7 +270,7 @@ Tenant
 | FR-PLT-04 | System shall create a `tenant_settings` record for the new tenant | P0 | Tenant record created | After tenant insert | [More](./FR-Explanations.md#fr-plt-04) |
 | FR-PLT-05 | System shall seed `tenant_modules` records for all assigned modules | P0 | Tenant record created | After tenant insert | [More](./FR-Explanations.md#fr-plt-05) |
 | FR-PLT-06 | Platform Admin shall activate/deactivate a tenant | P0 | Tenant exists | PATCH /api/admin/tenants/{id} | [More](./FR-Explanations.md#fr-plt-06) |
-| FR-PLT-07 | System shall block all user access for a deactivated tenant | P0 | `tenants.is_active = false` | On any auth request | [More](./FR-Explanations.md#fr-plt-07) |
+| FR-PLT-07 | System shall allow login for deactivated tenants but block all API operations with 403. Login response includes `tenant.is_active = false` for frontend to render deactivation page. | P0 | `tenants.is_active = false` | On any API request after login | [More](./FR-Explanations.md#fr-plt-07) |
 | FR-PLT-08 | Platform Admin shall view a list of all tenants with status | P0 | Platform Admin is authenticated | GET /api/admin/tenants | [More](./FR-Explanations.md#fr-plt-08) |
 | FR-PLT-09 | Platform Admin shall adjust SMS balance for a tenant | P0 | Tenant exists | PATCH /api/admin/tenants/{id}/sms-balance | [More](./FR-Explanations.md#fr-plt-09) |
 | FR-PLT-10 | Platform Admin shall view notification logs across all tenants | P1 | Platform Admin is authenticated | GET /api/admin/notifications | [More](./FR-Explanations.md#fr-plt-10) |
@@ -343,7 +343,7 @@ List all tenants.
 
 ##### PATCH /api/admin/tenants/{id}
 
-Update tenant (activate/deactivate, change name, etc.).
+Update tenant (activate/deactivate, change name, etc.). Deactivated tenants can still log in but are shown a deactivation info page. All API operations are blocked with 403 TENANT_INACTIVE.
 
 **Request (partial):**
 ```json
@@ -433,7 +433,7 @@ Reset any tenant user's password (Platform Admin only).
 | ID | Rule |
 |----|------|
 | BR-PLT-01 | IF tenant is created THEN School Admin user, settings record, and module assignments are created in the same transaction |
-| BR-PLT-02 | IF tenant.is_active = false THEN all login attempts return 403 TENANT_INACTIVE |
+| BR-PLT-02 | IF tenant.is_active = false THEN login proceeds but tenant.is_active=false is returned in the login response. All API operations return 403 TENANT_INACTIVE. |
 | BR-PLT-03 | IF subdomain already exists THEN return 409 SUBDOMAIN_TAKEN |
 | BR-PLT-04 | IF SMS balance adjustment would go below 0 THEN return 400 |
 | BR-PLT-05 | Platform Admin cannot directly modify tenant operational data (students, attendance, results) |
@@ -446,13 +446,13 @@ Reset any tenant user's password (Platform Admin only).
 | Deactivate active tenant | All active sessions invalidated immediately |
 | Reactivate tenant | All users can log in again (sessions not restored) |
 | Set SMS balance to 0 | SMS sending blocked, email still works |
-| Delete tenant | Not implemented in MVP (soft-deactivate only) |
+| Hard-delete tenant | Not supported — only soft-deactivation (is_active = false). Data is preserved; record is never hard-deleted. |
 
 #### Open Questions
 
 | # | Question |
 |---|----------|
-| Q-PLT-01 | Should tenant deletion be implemented in MVP, or just deactivation? |
+| Q-PLT-01 | Should tenant deletion be implemented in MVP? | Closed: Only soft-deactivation (is_active = false). Records are never hard-deleted. |
 | Q-PLT-02 | What is the default module set for a new tenant? |
 
 ---
@@ -475,7 +475,7 @@ Reset any tenant user's password (Platform Admin only).
 | FR-AUTH-08 | System shall allow School Admin and Platform Admin to change their own password (requires current password). Manager cannot change password. | P0 | User is authenticated | POST /api/auth/change-password | [More](./FR-Explanations.md#fr-auth-08) |
 | FR-AUTH-09 | System shall return current user profile + permissions | P0 | Valid access token | GET /api/auth/me | [More](./FR-Explanations.md#fr-auth-09) |
 | FR-AUTH-10 | System shall block login for inactive users | P0 | `users.is_active = false` | Login attempt | [More](./FR-Explanations.md#fr-auth-10) |
-| FR-AUTH-11 | System shall block login for inactive tenants | P0 | `tenants.is_active = false` | Login attempt | [More](./FR-Explanations.md#fr-auth-11) |
+| FR-AUTH-11 | System shall allow login for inactive tenants but return 403 FORBIDDEN on all subsequent API requests. Frontend displays deactivation info page. | P0 | `tenants.is_active = false` | Login response | [More](./FR-Explanations.md#fr-auth-11) |
 | FR-AUTH-12 | System shall rate-limit login attempts (5 failed per minute per IP) | P1 | Rate exceeded | Login attempt | [More](./FR-Explanations.md#fr-auth-12) |
 
 #### API Endpoints
@@ -539,6 +539,9 @@ School Admin / Manager login (tenant-scoped via subdomain).
     "full_name": "John Doe",
     "role": "SCHOOL_ADMIN",
     "tenant_id": "uuid"
+  },
+  "tenant": {
+    "is_active": true
   }
 }
 ```
@@ -549,7 +552,6 @@ School Admin / Manager login (tenant-scoped via subdomain).
 |--------|------|-----------|
 | 401 | `INVALID_CREDENTIALS` | Wrong email or password |
 | 403 | `ACCOUNT_INACTIVE` | User is deactivated |
-| 403 | `TENANT_INACTIVE` | Tenant is deactivated |
 | 429 | `RATE_LIMIT_EXCEEDED` | Too many attempts |
 
 ##### POST /api/auth/logout
@@ -695,7 +697,7 @@ Current user profile + permissions.
 | BR-AUTH-01 | IF user logs in via `admin.sirius-skool.com` THEN authenticate against `platform_admins` |
 | BR-AUTH-02 | IF user logs in via `{tenant}.sirius-skool.com` THEN authenticate against `users` scoped to that tenant |
 | BR-AUTH-03 | IF user.is_active = false THEN return 403 ACCOUNT_INACTIVE |
-| BR-AUTH-04 | IF tenant.is_active = false THEN return 403 TENANT_INACTIVE |
+| BR-AUTH-04 | IF tenant.is_active = false THEN login proceeds but returns tenant.is_active=false in the response. All subsequent API requests return 403 TENANT_INACTIVE. |
 | BR-AUTH-05 | IF user role is MANAGER THEN POST /api/auth/change-password returns 403 MANAGER_CANNOT_CHANGE_PASSWORD. IF user role is SCHOOL_ADMIN or PLATFORM_ADMIN THEN current_password must match the stored password_hash |
 | BR-AUTH-06 | IF revoked refresh token is presented THEN revoke ALL refresh tokens for that user (reuse detection) |
 | BR-AUTH-07 | IF login fails >5 times in 1 minute from same IP THEN rate-limit (429) |
@@ -2135,7 +2137,7 @@ View notification logs.
 |------|-------------|-------------|---------|
 | `INVALID_CREDENTIALS` | 401 | Wrong email or password | Auth |
 | `ACCOUNT_INACTIVE` | 403 | User deactivated | Auth |
-| `TENANT_INACTIVE` | 403 | Tenant deactivated | Auth |
+| `TENANT_INACTIVE` | 403 | Tenant deactivated — all API operations blocked | Platform |
 | `INVALID_REFRESH_TOKEN` | 401 | Refresh token not found or revoked | Auth |
 | `TOKEN_EXPIRED` | 401 | Token has expired | Auth |
 | `TOKEN_REUSE_DETECTED` | 401 | Revoked token reused — all tokens revoked | Auth |
