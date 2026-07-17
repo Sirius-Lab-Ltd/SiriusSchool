@@ -696,11 +696,14 @@ Current user profile + permissions.
 | BR-AUTH-02 | IF user logs in via `{tenant}.sirius-skool.com` THEN authenticate against `users` scoped to that tenant |
 | BR-AUTH-03 | IF user.is_active = false THEN return 403 ACCOUNT_INACTIVE |
 | BR-AUTH-04 | IF tenant.is_active = false THEN return 403 TENANT_INACTIVE |
-| BR-AUTH-05 | IF user role is MANAGER THEN POST /api/auth/change-password returns 403 MANAGER_CANNOT_CHANGE_PASSWORD |
+| BR-AUTH-05 | IF user role is MANAGER THEN POST /api/auth/change-password returns 403 MANAGER_CANNOT_CHANGE_PASSWORD. IF user role is SCHOOL_ADMIN or PLATFORM_ADMIN THEN current_password must match the stored password_hash |
 | BR-AUTH-06 | IF revoked refresh token is presented THEN revoke ALL refresh tokens for that user (reuse detection) |
 | BR-AUTH-07 | IF login fails >5 times in 1 minute from same IP THEN rate-limit (429) |
-| BR-AUTH-08 | IF Platform Admin calls PATCH /api/admin/users/{id}/reset-password THEN the user's password_hash is updated and token_version is incremented |
-| BR-AUTH-09 | IF School Admin calls PATCH /api/managers/{id}/reset-password THEN the Manager's password_hash is updated and token_version is incremented |
+| BR-AUTH-08 | IF Platform Admin calls PATCH /api/admin/users/{id}/reset-password THEN password_hash is updated and token_version is incremented. IF caller is not Platform Admin THEN return 403 FORBIDDEN |
+| BR-AUTH-09 | IF School Admin calls PATCH /api/managers/{id}/reset-password THEN the Manager's password_hash is updated and token_version is incremented. IF caller is not School Admin of the same tenant THEN return 403 FORBIDDEN |
+| BR-AUTH-10 | IF user calls POST /api/auth/logout THEN the provided refresh token is marked as revoked |
+| BR-AUTH-11 | IF user is authenticated THEN access token must have been issued within the last 15 minutes. IF user calls POST /api/auth/refresh THEN refresh token must have been issued within the last 7 days |
+| BR-AUTH-12 | IF token_version embedded in the JWT does not match users.token_version in the database THEN the request is rejected with 401 FORBIDDEN and the user must re-authenticate |
 
 #### Error Response Format (Standard)
 
