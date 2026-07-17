@@ -99,6 +99,27 @@ Each requirement is uniquely ID'd, testable, and traced to a source (PRD § or D
 | **PRD** | Product Requirements Document |
 | **SRS** | Software Requirements Specification |
 
+#### Requirement ID Prefixes
+
+Each functional requirement (FR), business rule (BR), and open question (Q) carries a module prefix. The prefixes and their meanings are:
+
+| Prefix | Module |
+|--------|--------|
+| `PLT` | Platform & Multi-Tenant Foundation |
+| `AUTH` | Authentication |
+| `ACA` | Academic Structure |
+| `SET` | Settings |
+| `UP` | User & Permission Management |
+| `MM` | Module Management |
+| `STU` | Student Management & Admission |
+| `ATT` | Attendance Management |
+| `RES` | Result Management |
+| `NTC` | Notice Board |
+| `NOT` | Notification System |
+| `RPT` | Reports |
+| `DSH` | Dashboard |
+| `AUD` | Audit Logging |
+
 ### 1.4 References
 
 | Document | Location |
