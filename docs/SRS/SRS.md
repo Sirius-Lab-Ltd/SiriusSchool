@@ -472,11 +472,11 @@ Reset any tenant user's password (Platform Admin only).
 | FR-AUTH-05 | System shall redirect to role-specific dashboard after login | P0 | Login succeeds | After token issuance | [More](./FR-Explanations.md#fr-auth-05) |
 | FR-AUTH-06 | System shall revoke refresh token on logout | P0 | User is authenticated | POST /api/auth/logout | [More](./FR-Explanations.md#fr-auth-06) |
 | FR-AUTH-07 | System shall issue new access token using valid refresh token (rotation + reuse detection) | P0 | Refresh token is valid | POST /api/auth/refresh | [More](./FR-Explanations.md#fr-auth-07) |
-| FR-AUTH-10 | System shall allow School Admin and Platform Admin to change their own password (requires current password). Manager cannot change password. | P0 | User is authenticated | POST /api/auth/change-password | [More](./FR-Explanations.md#fr-auth-10) |
-| FR-AUTH-11 | System shall return current user profile + permissions | P0 | Valid access token | GET /api/auth/me | [More](./FR-Explanations.md#fr-auth-11) |
-| FR-AUTH-12 | System shall block login for inactive users | P0 | `users.is_active = false` | Login attempt | [More](./FR-Explanations.md#fr-auth-12) |
-| FR-AUTH-13 | System shall block login for inactive tenants | P0 | `tenants.is_active = false` | Login attempt | [More](./FR-Explanations.md#fr-auth-13) |
-| FR-AUTH-14 | System shall rate-limit login attempts (5 failed per minute per IP) | P1 | Rate exceeded | Login attempt | [More](./FR-Explanations.md#fr-auth-14) |
+| FR-AUTH-08 | System shall allow School Admin and Platform Admin to change their own password (requires current password). Manager cannot change password. | P0 | User is authenticated | POST /api/auth/change-password | [More](./FR-Explanations.md#fr-auth-08) |
+| FR-AUTH-09 | System shall return current user profile + permissions | P0 | Valid access token | GET /api/auth/me | [More](./FR-Explanations.md#fr-auth-09) |
+| FR-AUTH-10 | System shall block login for inactive users | P0 | `users.is_active = false` | Login attempt | [More](./FR-Explanations.md#fr-auth-10) |
+| FR-AUTH-11 | System shall block login for inactive tenants | P0 | `tenants.is_active = false` | Login attempt | [More](./FR-Explanations.md#fr-auth-11) |
+| FR-AUTH-12 | System shall rate-limit login attempts (5 failed per minute per IP) | P1 | Rate exceeded | Login attempt | [More](./FR-Explanations.md#fr-auth-12) |
 
 #### API Endpoints
 
@@ -2105,7 +2105,7 @@ View notification logs.
 | Module | FR IDs | PRD § | DB Tables |
 |--------|--------|-------|-----------|
 | Platform & Multi-Tenant | FR-PLT-01 → FR-PLT-11 | §4, §5, §9 | tenants, tenant_settings, tenant_modules |
-| Authentication | FR-AUTH-01 → FR-AUTH-07, FR-AUTH-10 → FR-AUTH-14 | §6.1, §10 | platform_admins, users |
+| Authentication | FR-AUTH-01 → FR-AUTH-12 | §6.1, §10 | platform_admins, users |
 | Academic Structure | FR-ACA-01 → FR-ACA-08 | §6.9, §7.3 | academic_years, classes, sections, subjects |
 | Settings | FR-SET-01 → FR-SET-03 | §6.9 | tenant_settings |
 | User & Permission Mgmt | FR-UP-01 → FR-UP-07 | §7.1, §8 | users, manager_permissions |

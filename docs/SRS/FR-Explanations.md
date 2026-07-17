@@ -539,27 +539,27 @@ This is the recommended pattern from OAuth2 security best practices (RFC 6749 / 
 
 ---
 
+## FR-AUTH-09
+
+**FR-AUTH-09** returns the current authenticated user's profile, tenant information, and effective permissions via `GET /api/auth/me`. Platform Admin sees platform-level data. School Admin sees their tenant info plus all enabled module permissions. Manager sees their tenant info plus their assigned action-level permissions.
+
+---
+
+## FR-AUTH-10
+
+**FR-AUTH-10** blocks login for deactivated users. When `users.is_active = false`, the login endpoint returns `403 ACCOUNT_INACTIVE` regardless of whether the password is correct. This applies to both School Admin and Manager accounts.
+
+---
+
 ## FR-AUTH-11
 
-**FR-AUTH-11** returns the current authenticated user's profile, tenant information, and effective permissions via `GET /api/auth/me`. Platform Admin sees platform-level data. School Admin sees their tenant info plus all enabled module permissions. Manager sees their tenant info plus their assigned action-level permissions.
+**FR-AUTH-11** blocks login for deactivated tenants. When `tenants.is_active = false`, all login attempts for that tenant return `403 TENANT_INACTIVE`. This prevents access to all users (School Admin + Managers) in the deactivated tenant.
 
 ---
 
 ## FR-AUTH-12
 
-**FR-AUTH-12** blocks login for deactivated users. When `users.is_active = false`, the login endpoint returns `403 ACCOUNT_INACTIVE` regardless of whether the password is correct. This applies to both School Admin and Manager accounts.
-
----
-
-## FR-AUTH-13
-
-**FR-AUTH-13** blocks login for deactivated tenants. When `tenants.is_active = false`, all login attempts for that tenant return `403 TENANT_INACTIVE`. This prevents access to all users (School Admin + Managers) in the deactivated tenant.
-
----
-
-## FR-AUTH-14
-
-**FR-AUTH-14** implements rate limiting on the login endpoint — 5 failed attempts per minute per IP address. When exceeded, the endpoint returns `429 RATE_LIMIT_EXCEEDED` and additional attempts are blocked until the window resets. This mitigates brute-force attacks.
+**FR-AUTH-12** implements rate limiting on the login endpoint — 5 failed attempts per minute per IP address. When exceeded, the endpoint returns `429 RATE_LIMIT_EXCEEDED` and additional attempts are blocked until the window resets. This mitigates brute-force attacks.
 
 ---
 
