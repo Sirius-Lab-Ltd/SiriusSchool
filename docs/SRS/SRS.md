@@ -656,6 +656,13 @@ Current user profile + permissions.
 }
 ```
 
+**Errors:**
+
+| Status | Code | Condition |
+|--------|------|-----------|
+| 401 | `UNAUTHORIZED` | No valid access token provided |
+| 401 | `TOKEN_EXPIRED` | Access token has expired |
+
 #### Data Model
 
 **Table: `platform_admins`** — DB Dictionary §Table 1.
