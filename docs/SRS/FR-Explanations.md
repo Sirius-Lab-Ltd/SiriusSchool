@@ -541,25 +541,174 @@ This is the recommended pattern from OAuth2 security best practices (RFC 6749 / 
 
 ## FR-AUTH-09
 
-**FR-AUTH-09** returns the current authenticated user's profile, tenant information, and effective permissions via `GET /api/auth/me`. Platform Admin sees platform-level data. School Admin sees their tenant info plus all enabled module permissions. Manager sees their tenant info plus their assigned action-level permissions.
+**FR-AUTH-09** returns the current authenticated user's profile, tenant information, and effective permissions via `GET /api/auth/me`. Platform Admin sees platform-level data. School Admin sees their tenant info plus all enabled module permissions. Manager sees their tenant info plus their assigned action-level permissions. [Read more below](#fr-auth-09.1).
+
+<a id="fr-auth-09.1"></a>
+#### FR-AUTH-09.1 User Profile & Permissions — Detailed Breakdown
+
+**FR-AUTH-09** provides the authenticated user's identity, tenant context, and granular permissions after login. The frontend calls this endpoint on page load to render the correct UI — which sidebar items to show, which buttons to display, etc.
+
+**Why a dedicated endpoint?**
+
+Instead of embedding all user/tenant/permission data in the login response (which would make login responses bulky), the login endpoint returns minimal user info plus tokens. The frontend then calls `GET /api/auth/me` to get the full profile. This keeps the login response lightweight and allows the profile to be refreshed without re-authentication.
+
+**Per-role response structure:**
+
+| Role | Permission Data |
+|------|-----------------|
+| **Platform Admin** | No module permissions — platform-level access is implicit. Response includes admin profile fields. |
+| **School Admin** | All modules assigned by Platform Admin (from `tenant_modules`) with implicit full action permissions (View/Create/Edit/Delete) across all modules. |
+| **Manager** | Only explicitly assigned action-level permissions (from `manager_permissions`). Modules/permissions not assigned are excluded. |
+
+**Response shape:**
+```json
+{
+  "user": {
+    "id": "uuid",
+    "name": "string",
+    "email": "string",
+    "role": "SCHOOL_ADMIN | MANAGER",
+    "is_active": true
+  },
+  "tenant": {
+    "id": "uuid",
+    "name": "string",
+    "subdomain": "string",
+    "is_active": true,
+    "settings": { ... }
+  },
+  "permissions": {
+    "STUDENT": { "view": true, "create": true, "edit": true, "delete": false },
+    "ATTENDANCE": { "view": true, "create": false, "edit": false, "delete": false }
+  }
+}
+```
+
+**Validation & errors:**
+
+| Status | Code | Condition |
+|--------|------|-----------|
+| 401 | `UNAUTHORIZED` | No valid access token provided |
+| 401 | `TOKEN_EXPIRED` | Access token has expired |
 
 ---
 
 ## FR-AUTH-10
 
-**FR-AUTH-10** blocks login for deactivated users. When `users.is_active = false`, the login endpoint returns `403 ACCOUNT_INACTIVE` regardless of whether the password is correct. This applies to both School Admin and Manager accounts.
+**FR-AUTH-10** blocks login for deactivated users. When `users.is_active = false`, the login endpoint returns `403 ACCOUNT_INACTIVE` regardless of whether the password is correct. This applies to both School Admin and Manager accounts. [Read more below](#fr-auth-10.1).
+
+<a id="fr-auth-10.1"></a>
+#### FR-AUTH-10.1 Inactive User Login Block — Detailed Breakdown
+
+**FR-AUTH-10** prevents deactivated users from authenticating. When a School Admin (via FR-UP-02) or Platform Admin (via FR-PLT-11) deactivates a user, the `users.is_active` field is set to `false`, and all subsequent login attempts are blocked.
+
+**How it works:**
+
+1. User submits credentials to `POST /api/auth/login`
+2. System looks up the user by email in the `users` table (scoped by tenant)
+3. User is found → system checks `users.is_active`
+4. If `false` → return `403 ACCOUNT_INACTIVE` **before** password verification
+5. If `true` → proceed with password verification
+
+**Why `403` instead of `401`?**
+
+| Status | Meaning | Use Case |
+|--------|---------|----------|
+| `401 INVALID_CREDENTIALS` | Wrong email or password | Ambiguous — doesn't reveal whether the email exists or the password was wrong |
+| `403 ACCOUNT_INACTIVE` | Credentials correct but account disabled | Tells the user their account has been deactivated so they can contact their School Admin |
+
+This distinction is intentional — it provides a better UX for deactivated users while still hiding whether a particular email exists on the platform.
+
+**Edge cases:**
+
+- User is deactivated mid-session → existing JWT access tokens remain valid until expiry (15 min max). Refresh tokens are revoked on the next refresh attempt (FR-AUTH-07).
+- Reactivated user → can log in again immediately. No password reset required unless explicitly changed.
 
 ---
 
 ## FR-AUTH-11
 
-**FR-AUTH-11** blocks login for deactivated tenants. When `tenants.is_active = false`, all login attempts for that tenant return `403 TENANT_INACTIVE`. This prevents access to all users (School Admin + Managers) in the deactivated tenant.
+**FR-AUTH-11** blocks login for deactivated tenants. When `tenants.is_active = false`, all login attempts for that tenant return `403 TENANT_INACTIVE`. This prevents access to all users (School Admin + Managers) in the deactivated tenant. [Read more below](#fr-auth-11.1).
+
+<a id="fr-auth-11.1"></a>
+#### FR-AUTH-11.1 Inactive Tenant Login Block — Detailed Breakdown
+
+**FR-AUTH-11** prevents all users in a deactivated school from logging in. When a Platform Admin deactivates a tenant (FR-PLT-04), the `tenants.is_active` field is set to `false`, and every login attempt for that tenant is blocked — regardless of individual user active status.
+
+**How it works (check order matters):**
+
+```
+Login request → Resolve tenant from subdomain (FR-AUTH-03)
+             → Is tenant active?
+                  ├── NO  → 403 TENANT_INACTIVE (stop)
+                  └── YES → Is user active? (FR-AUTH-10)
+                              ├── NO  → 403 ACCOUNT_INACTIVE (stop)
+                              └── YES → Authenticate credentials
+```
+
+The tenant check always comes **first**. This means:
+- Even if a user is active, they can't log in to a deactivated tenant
+- Even if credentials are valid, the check happens before password verification
+- The deactivated tenant's login page effectively becomes unusable for all users
+
+**Why not `404` instead?**
+
+A `404` would hide the tenant's existence but make debugging difficult for Platform Admin. Since tenant deactivation is an administrative action (not a security concern like hiding user emails), returning `403 TENANT_INACTIVE` provides clear feedback.
+
+**Edge cases:**
+
+- Tenant is deactivated with active user sessions → existing JWT tokens eventually expire (15 min). Refresh tokens are revoked on next refresh attempt.
+- Reactivated tenant → all users can log in again normally. No individual reactivation needed.
+- Platform Admin login (`admin.sirius-skool.com`) → not affected by tenant deactivation because Platform Admin authenticates against the `platform_admins` table, not the `users` table.
 
 ---
 
 ## FR-AUTH-12
 
-**FR-AUTH-12** implements rate limiting on the login endpoint — 5 failed attempts per minute per IP address. When exceeded, the endpoint returns `429 RATE_LIMIT_EXCEEDED` and additional attempts are blocked until the window resets. This mitigates brute-force attacks.
+**FR-AUTH-12** implements rate limiting on the login endpoint — 5 failed attempts per minute per IP address. When exceeded, the endpoint returns `429 RATE_LIMIT_EXCEEDED` and additional attempts are blocked until the window resets. This mitigates brute-force attacks. [Read more below](#fr-auth-12.1).
+
+<a id="fr-auth-12.1"></a>
+#### FR-AUTH-12.1 Rate Limiting — Detailed Breakdown
+
+**FR-AUTH-12** protects the login endpoint from brute-force and password-spraying attacks by limiting failed attempts per IP address.
+
+**Limit window:**
+
+| Parameter | Value |
+|-----------|-------|
+| Max failed attempts | 5 |
+| Window duration | 60 seconds (rolling) |
+| Scope | Per IP address |
+| Reset | Successful login or window expiry |
+
+**How it works:**
+
+1. On each failed login attempt, the system increments a counter keyed by `ip_address`
+2. If the counter exceeds 5 within the rolling 60-second window, all subsequent requests from that IP return `429 RATE_LIMIT_EXCEEDED` without checking credentials
+3. After 60 seconds with no failed attempts, the counter resets to 0
+4. A successful login from that IP resets the counter immediately
+
+**What it protects against:**
+
+| Attack | Description | How rate limiting helps |
+|--------|-------------|------------------------|
+| **Brute force** | Many passwords for one email | Each IP can only try 5 passwords/min per email; slows to 300 attempts/hour per IP |
+| **Password spraying** | One common password across many emails | Same limit applies — can't spray efficiently from a single IP |
+| **Distributed attack** | Many IPs, few attempts each | Not fully mitigated by IP-based limiting alone. Consider adding account lockout after N failed attempts across all IPs for a future iteration (not in MVP). |
+
+**MVP implementation:**
+
+Use an in-memory store (e.g., `express-rate-limit` default memory store). This is sufficient for single-instance deployments.
+
+**Production upgrade path:**
+
+When scaling to multiple server instances, replace the in-memory store with a Redis-backed store so rate limit state is shared across all instances.
+
+**Additional measures (future, not MVP):**
+
+- Account-level lockout after N failed attempts across all IPs
+- CAPTCHA after N failed attempts
+- Progressive delay (exponential backoff) on repeated failures
 
 ---
 
