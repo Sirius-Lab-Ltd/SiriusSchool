@@ -265,31 +265,166 @@ This follows REST conventions: PATCH for partial modification, PUT for full repl
 
 ## FR-AUTH-02
 
-**FR-AUTH-02** authenticates School Admin and Manager credentials against the `users` table, scoped to the tenant identified by the subdomain in the HTTP Host header. The tenant is resolved from the URL (e.g., `springfield.sirius-skool.com` → tenant with subdomain `springfield`), and credentials are checked only within that tenant's user records.
+**FR-AUTH-02** authenticates School Admin and Manager credentials against the `users` table, scoped to the tenant identified by the subdomain in the HTTP Host header. The tenant is resolved from the URL (e.g., `springfield.sirius-skool.com` → tenant with subdomain `springfield`), and credentials are checked only within that tenant's user records. [Read more below](#fr-auth-02.1).
+
+<a id="fr-auth-02.1"></a>
+#### FR-AUTH-02.1 Tenant-Scoped Authentication — Detailed Breakdown
+
+**FR-AUTH-02** is the main authentication flow for tenant users (School Admin and Manager). Unlike Platform Admin login (FR-AUTH-01) against the `platform_admins` table, this authenticates against the `users` table and is scoped to a specific tenant via subdomain.
+
+**How it works:**
+1. **Tenant resolution** — Subdomain is extracted from the Host header (FR-AUTH-03). `springfield.sirius-skool.com` → tenant slug `springfield`.
+2. **Credential check** — System looks up the user by email in `users` where `tenant_id` matches the resolved tenant.
+3. **Password verification** — bcrypt comparison against `password_hash`.
+4. **Active checks** — Both `tenants.is_active` and `users.is_active` must be `true`.
+
+**What happens on success:**
+- JWT access token (15 min) + refresh token (7 days) issued
+- Response includes user profile, tenant info, and role (`SCHOOL_ADMIN` or `MANAGER`)
+- User is redirected to their role-specific dashboard (FR-AUTH-05)
 
 **Validation:**
-- Invalid credentials → `401 INVALID_CREDENTIALS`
-- User inactive → `403 ACCOUNT_INACTIVE`
-- Tenant inactive → `403 TENANT_INACTIVE`
-- Rate limit → `429 RATE_LIMIT_EXCEEDED`
+
+| Status | Code | Condition |
+|--------|------|-----------|
+| 401 | `INVALID_CREDENTIALS` | Wrong email or password |
+| 403 | `ACCOUNT_INACTIVE` | `users.is_active = false` |
+| 403 | `TENANT_INACTIVE` | `tenants.is_active = false` |
+| 429 | `RATE_LIMIT_EXCEEDED` | >5 failed attempts/min from same IP |
+
+**Key differences from FR-AUTH-01 (Platform Admin login):**
+
+| Aspect | FR-AUTH-01 (Platform Admin) | FR-AUTH-02 (School Admin/Manager) |
+|--------|----------------------------|-----------------------------------|
+| **Auth table** | `platform_admins` | `users` |
+| **Login URL** | `admin.sirius-skool.com` | `{tenant}.sirius-skool.com` |
+| **Tenant scoping** | None (platform-wide) | Scoped by subdomain |
+| **Active checks** | None specified | Both user + tenant must be active |
+
+**Edge cases:**
+- Correct email/password but deactivated user → `403 ACCOUNT_INACTIVE` (not 401 — this distinguishes from wrong credentials)
+- Login to a deactivated tenant → `403 TENANT_INACTIVE` — blocks all users in that school
+- Same email in two different tenants → each tenant's users are fully isolated; login only resolves within the subdomain's tenant
 
 ---
 
 ## FR-AUTH-03
 
-**FR-AUTH-03** extracts the tenant identifier from the HTTP Host header before authentication occurs. For example, a request to `springfield.sirius-skool.com` extracts `springfield` as the subdomain, which is used to look up the `tenants` record. The `X-Tenant-Slug` header provides a fallback for local development environments.
+**FR-AUTH-03** extracts the tenant identifier from the HTTP Host header before authentication occurs. For example, a request to `springfield.sirius-skool.com` extracts `springfield` as the subdomain, which is used to look up the `tenants` record. The `X-Tenant-Slug` header provides a fallback for local development environments. [Read more below](#fr-auth-03.1).
+
+<a id="fr-auth-03.1"></a>
+#### FR-AUTH-03.1 Tenant Resolution — Detailed Breakdown
+
+**FR-AUTH-03** resolves which tenant the user belongs to **before** authentication happens. The system needs the tenant context first so it knows which `users` table records to check.
+
+**How it works:**
+
+1. User navigates to `https://springfield.sirius-skool.com/login`
+2. Browser sends HTTP request with `Host: springfield.sirius-skool.com`
+3. System parses the Host header and extracts `springfield` as the subdomain
+4. Looks up the `tenants` table for a row with `subdomain = 'springfield'`
+5. The resolved `tenant_id` is injected into the request context for downstream middleware and controllers
+
+**Why two methods?**
+
+| Method | Source | Environment | Example |
+|--------|--------|-------------|---------|
+| **Host header** | URL hostname | Production | `Host: springfield.sirius-skool.com` → `springfield` |
+| **X-Tenant-Slug** | Custom header | Local development | `X-Tenant-Slug: springfield` |
+
+In local development (`localhost:5173`), there's no subdomain in the URL. The `X-Tenant-Slug` header allows developers to specify the tenant directly for testing without needing DNS or subdomain configuration.
+
+**When it runs:**
+- Before authentication (FR-AUTH-02) — the tenant context is a prerequisite
+- Before any tenant-scoped API operation
+- As Express middleware that parses the header and attaches the tenant to `req.tenant`
+
+**Validation & fallback:**
+1. Parse `Host` header → extract subdomain
+2. If no valid subdomain → fall back to `X-Tenant-Slug` header
+3. If neither yields a tenant → `404` or authentication cannot proceed
+4. If tenant found but inactive → handled by FR-AUTH-13 (`403 TENANT_INACTIVE`)
 
 ---
 
 ## FR-AUTH-04
 
-**FR-AUTH-04** issues a JWT access token (15-minute expiry) and a UUID refresh token (7-day expiry) on successful authentication. The access token is sent on every API request for authorization. The refresh token enables session extension without requiring the user to re-enter credentials.
+**FR-AUTH-04** issues a JWT access token (15-minute expiry) and a UUID refresh token (7-day expiry) on successful authentication. The access token is sent on every API request for authorization. The refresh token enables session extension without requiring the user to re-enter credentials. [Read more below](#fr-auth-04.1).
+
+<a id="fr-auth-04.1"></a>
+#### FR-AUTH-04.1 Token Issuance — Detailed Breakdown
+
+**FR-AUTH-04** issues two tokens on successful login: a short-lived **access token** for API authorization and a longer-lived **refresh token** for session extension.
+
+**Token pair:**
+
+| Token | Type | Lifetime | Storage | Purpose |
+|-------|------|----------|---------|---------|
+| **Access token** | JWT | 15 minutes | Client (in-memory/header) | Sent on every API request in `Authorization: Bearer <token>` header. Contains user ID, tenant ID, role, and token version. |
+| **Refresh token** | UUID v4 | 7 days | Client + Server (DB or signed JWT) | Used only at `POST /api/auth/refresh` to get a new access token when the current one expires. |
+
+**Why two tokens?**
+
+| Benefit | Explanation |
+|----------|-------------|
+| **Security** | Short-lived access tokens limit damage if a token is leaked. A stolen 15-min token is far less risky than a stolen 7-day token. |
+| **UX** | Users don't need to re-login every 15 minutes. The refresh token handles silent background renewal. |
+| **Revocation** | Access tokens can't be revoked (stateless JWT). Refresh tokens can be revoked server-side, allowing session termination. |
+
+**What happens on login:**
+1. Credentials validated (FR-AUTH-01 or FR-AUTH-02)
+2. Access token signed with user claims: `{ sub: user_id, tenant_id, role, token_version, iat, exp }`
+3. Refresh token (UUID) generated and stored server-side
+4. Both tokens returned in the response body
+
+**Response:**
+```json
+{
+  "access_token": "eyJ...",
+  "refresh_token": "uuid",
+  "token_type": "Bearer",
+  "expires_in": 900,
+  "user": { ... }
+}
+```
+
+**Open question (Q-AUTH-02):** Refresh token storage is undecided — either a `refresh_tokens` DB table (revocable, queryable) or signed JWTs without DB lookup (faster, no storage). This decision affects the revocation strategy and reuse detection implementation (FR-AUTH-07).
 
 ---
 
 ## FR-AUTH-05
 
-**FR-AUTH-05** redirects users to their role-specific dashboard after successful login. Platform Admin → `/admin/dashboard`. School Admin and Manager → their tenant dashboard (`/dashboard`), with the Manager view scoped to their assigned permissions.
+**FR-AUTH-05** redirects users to their role-specific dashboard after successful login. Platform Admin → `/admin/dashboard`. School Admin and Manager → their tenant dashboard (`/dashboard`), with the Manager view scoped to their assigned permissions. [Read more below](#fr-auth-05.1).
+
+<a id="fr-auth-05.1"></a>
+#### FR-AUTH-05.1 Role-Based Redirection — Detailed Breakdown
+
+**FR-AUTH-05** handles post-login navigation — after tokens are issued (FR-AUTH-04), the system redirects the user to the appropriate dashboard based on their role.
+
+**Role-based routing:**
+
+| Role | Redirect Destination | What they see |
+|------|---------------------|---------------|
+| **Platform Admin** | `/admin/dashboard` | Platform-wide overview — all tenants, system health, SMS monitoring across schools |
+| **School Admin** | `/dashboard` | Full school dashboard — student count, attendance %, SMS balance, recent notices, quick actions |
+| **Manager** | `/dashboard` | Permission-scoped dashboard — only widgets for modules they have View access to (FR-DSH-02). A teacher with only attendance permission sees attendance widgets; a teacher with student + attendance sees both. |
+
+**How it works:**
+
+1. Login successful → tokens issued → response includes user `role`
+2. Frontend reads the `role` from the login response body
+3. Frontend router redirects to the role-specific path
+4. Dashboard component renders widgets based on permissions (Manager) or full view (School Admin/Platform Admin)
+
+**Why per-role dashboards?**
+
+- **Platform Admin** needs cross-tenant visibility, not school-level metrics
+- **School Admin** needs full operational view — attendance %, student count, SMS balance, quick actions
+- **Manager** only sees authorized modules — a teacher managing attendance shouldn't see SMS balance or system settings
+
+**Implementation responsibility:**
+- **Backend** — returns `role` in login response (`user.role`). No backend redirect needed.
+- **Frontend** — reads role, performs the actual redirect, and renders role-appropriate widgets. This is a client-side routing concern.
 
 ---
 
