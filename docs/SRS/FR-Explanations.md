@@ -253,6 +253,23 @@ This follows REST conventions: PATCH for partial modification, PUT for full repl
 
 ---
 
+## FR-PLT-11
+
+**FR-PLT-11** allows the Platform Admin to reset any tenant user's password (School Admin or Manager) without requiring the current password. This is the only way a tenant user can get a password reset — there is no self-service forgot-password flow.
+
+**How it works:**
+
+1. Platform Admin calls `PATCH /api/admin/users/{id}/reset-password` with `{ "new_password": "NewPass123" }`
+2. System updates the user's `password_hash` in the `users` table
+3. System increments `token_version` to invalidate all existing sessions (BR-AUTH-08)
+4. User must log in again with the new password
+
+**Validation:**
+- User not found → `404 USER_NOT_FOUND`
+- Only Platform Admin → `403 FORBIDDEN`
+
+---
+
 ## FR-AUTH-01
 
 **FR-AUTH-01** authenticates Platform Admin credentials against the `platform_admins` table at the dedicated admin login page (`admin.sirius-skool.com`). When the user submits `POST /api/admin/auth/login`, the system verifies the email and bcrypt-hashed password, then issues a JWT access token and refresh token on success.
@@ -505,28 +522,20 @@ This is the recommended pattern from OAuth2 security best practices (RFC 6749 / 
 
 ## FR-AUTH-08
 
-**FR-AUTH-08** initiates a password reset flow. The user submits their email via `POST /api/auth/forgot-password`. The system generates a time-limited reset token (1-hour expiry) and sends it via email. The endpoint always returns `200 OK` regardless of whether the email exists, preventing email enumeration attacks.
+**FR-AUTH-08** allows School Admin and Platform Admin to change their own password via `POST /api/auth/change-password`. The user provides their current password and a new password. The system verifies the current password before updating. Manager role is blocked from using this endpoint.
 
----
+**Who can use it:**
 
-## FR-AUTH-09
-
-**FR-AUTH-09** completes the password reset process. The user submits the reset token and a new password via `POST /api/auth/reset-password`. The system validates the token's existence, expiry, and usage status, then updates the password hash.
-
-**Validation:**
-- Token invalid → `400 INVALID_TOKEN`
-- Token expired → `400 TOKEN_EXPIRED`
-- Token already used → `400 TOKEN_ALREADY_USED`
-
----
-
-## FR-AUTH-10
-
-**FR-AUTH-10** allows an authenticated user to change their current password. The user provides their current password and a new password via `POST /api/auth/change-password`. The system verifies the current password before updating.
+| Role | Can change own password? |
+|------|-------------------------|
+| Platform Admin | Yes |
+| School Admin | Yes |
+| Manager | No — must contact School Admin for password reset |
 
 **Validation:**
 - Current password incorrect → `400 INCORRECT_CURRENT_PASSWORD`
 - New password same as current → `400 SAME_PASSWORD`
+- Manager attempts → `403 MANAGER_CANNOT_CHANGE_PASSWORD`
 
 ---
 
@@ -665,6 +674,23 @@ This is the recommended pattern from OAuth2 security best practices (RFC 6749 / 
 ## FR-UP-06
 
 **FR-UP-06** ensures immediate session invalidation when a Manager is deactivated. Deactivation increments the `token_version` field on the `users` record. All existing JWT tokens (which embed the token version at issuance) become invalid, forcing the Manager to re-authenticate if reactivated.
+
+---
+
+## FR-UP-07
+
+**FR-UP-07** allows the School Admin to reset a Manager's password without requiring the current password. This is needed when a Manager forgets their password or is locked out.
+
+**How it works:**
+
+1. School Admin calls `PATCH /api/managers/{id}/reset-password` with `{ "new_password": "NewPass123" }`
+2. System updates the Manager's `password_hash` in the `users` table
+3. System increments `token_version` to invalidate all existing sessions (BR-AUTH-09)
+4. Manager must log in again with the new password
+
+**Validation:**
+- Manager not found → `404 MANAGER_NOT_FOUND`
+- Only School Admin of the same tenant → `403 FORBIDDEN`
 
 ---
 

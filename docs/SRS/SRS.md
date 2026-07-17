@@ -274,6 +274,7 @@ Tenant
 | FR-PLT-08 | Platform Admin shall view a list of all tenants with status | P0 | Platform Admin is authenticated | GET /api/admin/tenants | [More](./FR-Explanations.md#fr-plt-08) |
 | FR-PLT-09 | Platform Admin shall adjust SMS balance for a tenant | P0 | Tenant exists | PATCH /api/admin/tenants/{id}/sms-balance | [More](./FR-Explanations.md#fr-plt-09) |
 | FR-PLT-10 | Platform Admin shall view notification logs across all tenants | P1 | Platform Admin is authenticated | GET /api/admin/notifications | [More](./FR-Explanations.md#fr-plt-10) |
+| FR-PLT-11 | Platform Admin shall reset any tenant user's password (School Admin or Manager) without current password | P0 | Platform Admin is authenticated, user exists | PATCH /api/admin/users/{id}/reset-password | [More](./FR-Explanations.md#fr-plt-11) |
 
 #### API Endpoints
 
@@ -383,6 +384,33 @@ Adjust SMS balance.
 |--------|------|-----------|
 | 400 | `INSUFFICIENT_BALANCE` | Adjustment would make balance negative |
 
+##### PATCH /api/admin/users/{id}/reset-password
+
+Reset any tenant user's password (Platform Admin only).
+
+**Request:**
+```json
+{
+  "new_password": "NewPass123"
+}
+```
+
+**Response `200 OK`:**
+```json
+{
+  "message": "Password reset successfully",
+  "user_id": "uuid",
+  "role": "SCHOOL_ADMIN"
+}
+```
+
+**Errors:**
+
+| Status | Code | Condition |
+|--------|------|-----------|
+| 404 | `USER_NOT_FOUND` | User not found |
+| 403 | `FORBIDDEN` | Only Platform Admin can reset passwords |
+
 #### Data Model
 
 **Table: `tenants`** — Full schema in DB Dictionary §Table 2.
@@ -431,7 +459,7 @@ Adjust SMS balance.
 
 ### 3.2 Authentication
 
-**Quick Summary:** All users authenticate through this module. Platform Admin uses a separate login page (`admin.sirius-skool.com`) and authenticates against the `platform_admins` table. School Admin and Managers log in via their tenant subdomain (`{tenant}.sirius-skool.com`) and authenticate against the `users` table. The system issues JWT access tokens (15 min) and refresh tokens (7 days) with rotation and reuse detection.
+**Quick Summary:** All users authenticate through this module. Platform Admin uses a separate login page (`admin.sirius-skool.com`) and authenticates against the `platform_admins` table. School Admin and Managers log in via their tenant subdomain (`{tenant}.sirius-skool.com`) and authenticate against the `users` table. The system issues JWT access tokens (15 min) and refresh tokens (7 days) with rotation and reuse detection. Password management: School Admin and Platform Admin can change their own password (requires current password). Platform Admin can reset any tenant user's password. School Admin can reset Manager passwords. Manager cannot change or reset passwords.
 
 #### Functional Requirements
 
@@ -444,9 +472,7 @@ Adjust SMS balance.
 | FR-AUTH-05 | System shall redirect to role-specific dashboard after login | P0 | Login succeeds | After token issuance | [More](./FR-Explanations.md#fr-auth-05) |
 | FR-AUTH-06 | System shall revoke refresh token on logout | P0 | User is authenticated | POST /api/auth/logout | [More](./FR-Explanations.md#fr-auth-06) |
 | FR-AUTH-07 | System shall issue new access token using valid refresh token (rotation + reuse detection) | P0 | Refresh token is valid | POST /api/auth/refresh | [More](./FR-Explanations.md#fr-auth-07) |
-| FR-AUTH-08 | System shall send password reset email with time-limited token (1 hour) | P0 | Email belongs to active account | POST /api/auth/forgot-password | [More](./FR-Explanations.md#fr-auth-08) |
-| FR-AUTH-09 | System shall reset password using valid, non-expired, non-used reset token | P0 | Token valid | POST /api/auth/reset-password | [More](./FR-Explanations.md#fr-auth-09) |
-| FR-AUTH-10 | System shall allow authenticated users to change password (requires current password) | P0 | User is authenticated | POST /api/auth/change-password | [More](./FR-Explanations.md#fr-auth-10) |
+| FR-AUTH-10 | System shall allow School Admin and Platform Admin to change their own password (requires current password). Manager cannot change password. | P0 | User is authenticated | POST /api/auth/change-password | [More](./FR-Explanations.md#fr-auth-10) |
 | FR-AUTH-11 | System shall return current user profile + permissions | P0 | Valid access token | GET /api/auth/me | [More](./FR-Explanations.md#fr-auth-11) |
 | FR-AUTH-12 | System shall block login for inactive users | P0 | `users.is_active = false` | Login attempt | [More](./FR-Explanations.md#fr-auth-12) |
 | FR-AUTH-13 | System shall block login for inactive tenants | P0 | `tenants.is_active = false` | Login attempt | [More](./FR-Explanations.md#fr-auth-13) |
@@ -579,54 +605,9 @@ Rotate refresh token. Issues new access + refresh token.
 | 401 | `TOKEN_EXPIRED` | Expired |
 | 401 | `TOKEN_REUSE_DETECTED` | Revoked token reused — all tokens for user revoked |
 
-##### POST /api/auth/forgot-password
-
-Send reset link (always returns 200 to prevent email enumeration).
-
-**Request:**
-```json
-{
-  "email": "admin@school.com"
-}
-```
-
-**Response `200 OK`:**
-```json
-{
-  "message": "If the email exists, a reset link has been sent"
-}
-```
-
-##### POST /api/auth/reset-password
-
-Reset password with token.
-
-**Request:**
-```json
-{
-  "token": "reset-token",
-  "password": "NewPass123"
-}
-```
-
-**Response `200 OK`:**
-```json
-{
-  "message": "Password reset successfully"
-}
-```
-
-**Errors:**
-
-| Status | Code | Condition |
-|--------|------|-----------|
-| 400 | `INVALID_TOKEN` | Token is invalid |
-| 400 | `TOKEN_EXPIRED` | Token expired |
-| 400 | `TOKEN_ALREADY_USED` | Token already used |
-
 ##### POST /api/auth/change-password
 
-Change password (authenticated).
+Change own password (School Admin and Platform Admin only — Manager cannot change password).
 
 **Request:**
 ```json
@@ -649,6 +630,7 @@ Change password (authenticated).
 |--------|------|-----------|
 | 400 | `INCORRECT_CURRENT_PASSWORD` | Current password is wrong |
 | 400 | `SAME_PASSWORD` | New password same as current |
+| 403 | `MANAGER_CANNOT_CHANGE_PASSWORD` | Manager role cannot change password |
 
 ##### GET /api/auth/me
 
@@ -697,7 +679,7 @@ Current user profile + permissions.
 | is_active | BOOLEAN | `true` |
 | last_login_at | TIMESTAMPTZ | `2026-07-10T10:00:00Z` |
 
-> **Note:** The Prisma schema (`docs/DB/schema.prisma`) does not currently define `refresh_tokens` or `password_resets` models. The developer must either add them to `schema.prisma` or implement token validation at the application level (e.g., signed JWTs for refresh tokens with no DB lookup).
+> **Note:** The Prisma schema (`docs/DB/schema.prisma`) does not currently define `refresh_tokens` model. The developer must either add it to `schema.prisma` or implement token validation at the application level (e.g., signed JWTs for refresh tokens with no DB lookup).
 
 #### Business Rules
 
@@ -707,9 +689,11 @@ Current user profile + permissions.
 | BR-AUTH-02 | IF user logs in via `{tenant}.sirius-skool.com` THEN authenticate against `users` scoped to that tenant |
 | BR-AUTH-03 | IF user.is_active = false THEN return 403 ACCOUNT_INACTIVE |
 | BR-AUTH-04 | IF tenant.is_active = false THEN return 403 TENANT_INACTIVE |
-| BR-AUTH-05 | IF reset token is reused THEN it is invalidated after first use |
+| BR-AUTH-05 | IF user role is MANAGER THEN POST /api/auth/change-password returns 403 MANAGER_CANNOT_CHANGE_PASSWORD |
 | BR-AUTH-06 | IF revoked refresh token is presented THEN revoke ALL refresh tokens for that user (reuse detection) |
 | BR-AUTH-07 | IF login fails >5 times in 1 minute from same IP THEN rate-limit (429) |
+| BR-AUTH-08 | IF Platform Admin calls PATCH /api/admin/users/{id}/reset-password THEN the user's password_hash is updated and token_version is incremented |
+| BR-AUTH-09 | IF School Admin calls PATCH /api/managers/{id}/reset-password THEN the Manager's password_hash is updated and token_version is incremented |
 
 #### Error Response Format (Standard)
 
@@ -727,7 +711,7 @@ Current user profile + permissions.
 
 | # | Question |
 |---|----------|
-| Q-AUTH-01 | Access token expiry — 15 minutes or configurable? |
+| Q-AUTH-01 | Access token expiry — 15 minutes or configurable? **→ Closed: Hardcoded 15 min for MVP** |
 | Q-AUTH-02 | Refresh token storage — add `refresh_tokens` model to Prisma, or use signed JWTs without DB lookup? |
 | Q-AUTH-03 | Single session per user — enforced in MVP or optional? |
 
@@ -1007,6 +991,7 @@ List academic years for the tenant.
 | FR-UP-04 | School Admin shall assign action-level permissions to a Manager per module | P0 | Manager exists, module is enabled | PUT /api/managers/{id}/permissions | [More](./FR-Explanations.md#fr-up-04) |
 | FR-UP-05 | School Admin shall only see modules assigned by Platform Admin in the permission UI | P0 | Authenticated | GET /api/permissions/available-modules | [More](./FR-Explanations.md#fr-up-05) |
 | FR-UP-06 | System shall deactivate a Manager immediately — all sessions invalidated | P0 | Manager deactivated | Token version incremented | [More](./FR-Explanations.md#fr-up-06) |
+| FR-UP-07 | School Admin shall reset a Manager's password without current password | P0 | Manager exists, School Admin is authenticated | PATCH /api/managers/{id}/reset-password | [More](./FR-Explanations.md#fr-up-07) |
 
 #### API Endpoints
 
@@ -1105,6 +1090,32 @@ List academic years for the tenant.
   ]
 }
 ```
+
+##### PATCH /api/managers/{id}/reset-password
+
+Reset a Manager's password (School Admin only).
+
+**Request:**
+```json
+{
+  "new_password": "NewPass123"
+}
+```
+
+**Response `200 OK`:**
+```json
+{
+  "message": "Password reset successfully",
+  "manager_id": "uuid"
+}
+```
+
+**Errors:**
+
+| Status | Code | Condition |
+|--------|------|-----------|
+| 404 | `MANAGER_NOT_FOUND` | Manager not found |
+| 403 | `FORBIDDEN` | Only School Admin of the same tenant can reset Manager passwords |
 
 #### Data Model
 
@@ -2093,11 +2104,11 @@ View notification logs.
 
 | Module | FR IDs | PRD § | DB Tables |
 |--------|--------|-------|-----------|
-| Platform & Multi-Tenant | FR-PLT-01 → FR-PLT-10 | §4, §5, §9 | tenants, tenant_settings, tenant_modules |
-| Authentication | FR-AUTH-01 → FR-AUTH-14 | §6.1, §10 | platform_admins, users |
+| Platform & Multi-Tenant | FR-PLT-01 → FR-PLT-11 | §4, §5, §9 | tenants, tenant_settings, tenant_modules |
+| Authentication | FR-AUTH-01 → FR-AUTH-07, FR-AUTH-10 → FR-AUTH-14 | §6.1, §10 | platform_admins, users |
 | Academic Structure | FR-ACA-01 → FR-ACA-08 | §6.9, §7.3 | academic_years, classes, sections, subjects |
 | Settings | FR-SET-01 → FR-SET-03 | §6.9 | tenant_settings |
-| User & Permission Mgmt | FR-UP-01 → FR-UP-06 | §7.1, §8 | users, manager_permissions |
+| User & Permission Mgmt | FR-UP-01 → FR-UP-07 | §7.1, §8 | users, manager_permissions |
 | Module Management | FR-MM-01 → FR-MM-03 | §7.2 | tenant_modules |
 | Student Management | FR-STU-01 → FR-STU-13 | §6.3, §9 | applications, students, student_enrollments |
 | Attendance | FR-ATT-01 → FR-ATT-07 | §6.4 | attendance_sessions, attendance_records |
@@ -2118,9 +2129,11 @@ View notification logs.
 | `INVALID_REFRESH_TOKEN` | 401 | Refresh token not found or revoked | Auth |
 | `TOKEN_EXPIRED` | 401 | Token has expired | Auth |
 | `TOKEN_REUSE_DETECTED` | 401 | Revoked token reused — all tokens revoked | Auth |
-| `TOKEN_ALREADY_USED` | 400 | Reset token already used | Auth |
 | `INCORRECT_CURRENT_PASSWORD` | 400 | Wrong current password | Auth |
 | `SAME_PASSWORD` | 400 | New password same as current | Auth |
+| `MANAGER_CANNOT_CHANGE_PASSWORD` | 403 | Manager role cannot change password | Auth |
+| `USER_NOT_FOUND` | 404 | User not found | Platform |
+| `MANAGER_NOT_FOUND` | 404 | Manager not found | User Mgmt |
 | `RATE_LIMIT_EXCEEDED` | 429 | Too many requests | Auth |
 | `VALIDATION_ERROR` | 422 | Request body validation failed | All |
 | `SUBDOMAIN_TAKEN` | 409 | Subdomain already in use | Platform |
@@ -2140,7 +2153,7 @@ View notification logs.
 |----|--------|----------|--------|
 | Q-PLT-01 | Platform | Should tenant deletion be implemented in MVP? | Open |
 | Q-PLT-02 | Platform | What is the default module set for new tenants? | Open |
-| Q-AUTH-01 | Auth | Access token expiry configurable? | Open |
+| Q-AUTH-01 | Auth | Access token expiry configurable? | Closed: Hardcoded 15 min for MVP |
 | Q-AUTH-02 | Auth | Refresh token storage — add `refresh_tokens` model to Prisma, or use signed JWTs without DB lookup? | Open |
 | Q-AUTH-03 | Auth | Single session per user enforced in MVP? | Open |
 | Q-ACA-01 | Academic | Close endpoint or just is_current toggle? | Open |
