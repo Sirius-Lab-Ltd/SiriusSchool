@@ -430,7 +430,26 @@ In local development (`localhost:5173`), there's no subdomain in the URL. The `X
 
 ## FR-AUTH-06
 
-**FR-AUTH-06** revokes the refresh token on logout via `POST /api/auth/logout`. The provided refresh token is invalidated in storage, making it unusable for future refresh attempts. The user must re-authenticate to obtain new tokens.
+**FR-AUTH-06** revokes the refresh token on logout via `POST /api/auth/logout`. The provided refresh token is invalidated in storage, making it unusable for future refresh attempts. The user must re-authenticate to obtain new tokens. [Read more below](#fr-auth-06.1).
+
+<a id="fr-auth-06.1"></a>
+#### FR-AUTH-06.1 Logout & Token Revocation — Detailed Breakdown
+
+**FR-AUTH-06** invalidates the refresh token when a user explicitly logs out, ensuring the session cannot be resumed.
+
+**How it works:**
+
+1. User clicks "Logout" → frontend sends `POST /api/auth/logout` with the current refresh token
+2. Server marks the refresh token as revoked in storage (DB table or blacklist)
+3. Server returns `200 OK` with `{ "message": "Logged out successfully" }`
+4. Frontend discards the access token from memory
+
+**What about the access token?**
+
+| Token | Revoked on logout? | Why |
+|-------|-------------------|-----|
+| **Refresh token** | Yes — marked revoked in server storage | Prevents future refresh attempts |
+| **Access token** | No — stateless JWT can't be revoked server-side | It expires naturally after 15 min. Frontend discards it, so it's effectively dead on the client. |
 
 **Validation:**
 - Token not found or already revoked → `401 INVALID_REFRESH_TOKEN`
@@ -439,16 +458,48 @@ In local development (`localhost:5173`), there's no subdomain in the URL. The `X
 
 ## FR-AUTH-07
 
-**FR-AUTH-07** implements refresh token rotation with reuse detection. When a valid refresh token is presented via `POST /api/auth/refresh`:
-1. Old refresh token is validated
-2. New access token + new refresh token are issued
-3. Old refresh token is revoked
-4. If an already-revoked token is presented → all refresh tokens for that user are revoked (signaling possible token theft)
+**FR-AUTH-07** issues new tokens via `POST /api/auth/refresh` using refresh token rotation with reuse detection. [Read more below](#fr-auth-07.1).
+
+<a id="fr-auth-07.1"></a>
+#### FR-AUTH-07.1 Token Refresh, Rotation & Reuse Detection — Detailed Breakdown
+
+**FR-AUTH-07** extends the session by issuing new tokens when the access token expires. It uses **rotation** (old token revoked, new one issued) and **reuse detection** (stolen token triggers full revocation).
+
+**Normal flow:**
+1. Access token expires (~15 min) → frontend calls `POST /api/auth/refresh` with the current refresh token
+2. Server validates the refresh token (exists, not revoked, not expired)
+3. Server issues a **new** access token + **new** refresh token
+4. Server revokes the **old** refresh token
+5. Frontend updates stored tokens — session continues seamlessly
+
+**Reuse detection flow (token theft scenario):**
+
+| Step | Attacker | Legitimate User |
+|------|----------|-----------------|
+| 1 | Steals refresh token (e.g., from localStorage XSS) | Unaware |
+| 2 | Uses stolen token → gets new tokens (step 3 normal flow) | Still has the old, now-revoked token |
+| 3 | Attacker's session works | Tries to use old token → server detects it's already revoked |
+| 4 | — | Server sees **presentation of a revoked token** → treats this as theft evidence |
+| 5 | Attacker's next refresh fails | **All refresh tokens for the user revoked** — both sessions killed |
+| 6 | Attacker loses access | User must re-authenticate with credentials |
 
 **Validation:**
-- Token not found → `401 INVALID_REFRESH_TOKEN`
-- Token expired → `401 TOKEN_EXPIRED`
-- Reuse detected → `401 TOKEN_REUSE_DETECTED`
+
+| Status | Code | Condition |
+|--------|------|-----------|
+| 401 | `INVALID_REFRESH_TOKEN` | Token not found or already revoked (first use after rotation) |
+| 401 | `TOKEN_EXPIRED` | Token lifetime (7 days) exceeded |
+| 401 | `TOKEN_REUSE_DETECTED` | Revoked token presented — all tokens for user revoked |
+
+**Why rotation + reuse detection?**
+
+| Mechanism | Purpose |
+|-----------|---------|
+| **Rotation** | Each refresh token is single-use. Even if stolen, it can only be used once before becoming invalid. |
+| **Reuse detection** | If a revoked token is used, it signals theft. All tokens are revoked, forcing the attacker out. |
+| **Combined effect** | Limits the window of a stolen token and provides automatic defense against token theft. |
+
+This is the recommended pattern from OAuth2 security best practices (RFC 6749 / RFC 6819).
 
 ---
 
