@@ -268,7 +268,11 @@ Tenant
 
 ---
 
-##### FR-PLT-01: Tenant Creation
+
+
+
+
+#### **1.** FR-PLT-01: Tenant Creation
 
 | Property | Value |
 |----------|-------|
@@ -444,9 +448,13 @@ Create a new tenant with its School Admin.
 |---|----------|
 | Q-PLT-02 | What is the default module set for a new tenant? |
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-PLT-02: Subdomain Uniqueness
+
+
+
+
+#### **2.** FR-PLT-02: Subdomain Uniqueness
 
 | Property | Value |
 |----------|-------|
@@ -469,9 +477,13 @@ Create a new tenant with its School Admin.
 |----|------|
 | BR-PLT-03 | IF subdomain already exists THEN return 409 SUBDOMAIN_TAKEN |
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-PLT-03: Auto-Create School Admin
+
+
+
+
+#### **3.** FR-PLT-03: Auto-Create School Admin
 
 | Property | Value |
 |----------|-------|
@@ -491,9 +503,13 @@ Create a new tenant with its School Admin.
 |----|------|
 | BR-PLT-01 | IF tenant is created THEN School Admin user, settings record, and module assignments are created in the same transaction |
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-PLT-04: Auto-Create Tenant Settings
+
+
+
+
+#### **4.** FR-PLT-04: Auto-Create Tenant Settings
 
 | Property | Value |
 |----------|-------|
@@ -513,9 +529,13 @@ Create a new tenant with its School Admin.
 |----|------|
 | BR-PLT-01 | IF tenant is created THEN School Admin user, settings record, and module assignments are created in the same transaction |
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-PLT-05: Seed Tenant Modules
+
+
+
+
+#### **5.** FR-PLT-05: Seed Tenant Modules
 
 | Property | Value |
 |----------|-------|
@@ -535,9 +555,13 @@ Create a new tenant with its School Admin.
 |----|------|
 | BR-PLT-01 | IF tenant is created THEN School Admin user, settings record, and module assignments are created in the same transaction |
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-PLT-06: Activate/Deactivate Tenant
+
+
+
+
+#### **6.** FR-PLT-06: Activate/Deactivate Tenant
 
 | Property | Value |
 |----------|-------|
@@ -621,9 +645,13 @@ Update tenant (activate/deactivate, change name, etc.). Deactivated tenants can 
 |---|----------|
 | Q-PLT-01 | Should tenant deletion be implemented in MVP? — Closed: Only soft-deactivation (is_active = false). Records are never hard-deleted. |
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-PLT-07: Deactivated Tenant Access
+
+
+
+
+#### **7.** FR-PLT-07: Deactivated Tenant Access
 
 | Property | Value |
 |----------|-------|
@@ -643,9 +671,13 @@ Update tenant (activate/deactivate, change name, etc.). Deactivated tenants can 
 |----|------|
 | BR-PLT-02 | IF tenant.is_active = false THEN login proceeds but tenant.is_active=false is returned in the login response. All API operations return 403 TENANT_INACTIVE. |
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-PLT-08: List Tenants
+
+
+
+
+#### **8.** FR-PLT-08: List Tenants
 
 | Property | Value |
 |----------|-------|
@@ -683,9 +715,13 @@ List all tenants.
 
 **No related business rules or open questions.**
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-PLT-09: Adjust SMS Balance
+
+
+
+
+#### **9.** FR-PLT-09: Adjust SMS Balance
 
 | Property | Value |
 |----------|-------|
@@ -762,9 +798,13 @@ Adjust SMS balance.
 |----|------|
 | BR-PLT-04 | IF SMS balance adjustment would go below 0 THEN return 400 |
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-PLT-10: View Cross-Tenant Notification Logs
+
+
+
+
+#### **10.** FR-PLT-10: View Cross-Tenant Notification Logs
 
 | Property | Value |
 |----------|-------|
@@ -806,9 +846,13 @@ Platform Admin views notification logs across all tenants.
 
 **No related business rules or open questions.**
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-PLT-11: Reset Tenant User Password
+
+
+
+
+#### **11.** FR-PLT-11: Reset Tenant User Password
 
 | Property | Value |
 |----------|-------|
@@ -887,7 +931,11 @@ Reset any tenant user's password (Platform Admin only).
 
 ---
 
-##### FR-AUTH-01: Platform Admin Authentication
+
+
+
+
+#### **1.** FR-AUTH-01: Platform Admin Authentication
 
 | Property | Value |
 |----------|-------|
@@ -954,9 +1002,13 @@ Platform Admin login.
 |---|----------|
 | Q-AUTH-01 | Access token expiry — 15 minutes or configurable? — Closed: Hardcoded 15 min for MVP |
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-AUTH-02: Tenant-Scoped Authentication
+
+
+
+
+#### **2.** FR-AUTH-02: Tenant-Scoped Authentication
 
 | Property | Value |
 |----------|-------|
@@ -1057,9 +1109,13 @@ School Admin / Manager login (tenant-scoped via subdomain).
 | BR-AUTH-02 | IF user logs in via `{tenant}.sirius-skool.com` THEN authenticate against `users` scoped to that tenant |
 | BR-AUTH-14 | IF a tenant user exists in Tenant A THEN they cannot authenticate via Tenant B's subdomain — users.tenant_id scopes all authentication |
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-AUTH-03: Tenant Resolution
+
+
+
+
+#### **3.** FR-AUTH-03: Tenant Resolution
 
 | Property | Value |
 |----------|-------|
@@ -1106,9 +1162,13 @@ In local development (`localhost:5173`), there's no subdomain in the URL. The `X
 
 **No related business rules or open questions.**
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-AUTH-04: Token Issuance
+
+
+
+
+#### **4.** FR-AUTH-04: Token Issuance
 
 | Property | Value |
 |----------|-------|
@@ -1172,9 +1232,13 @@ Refresh tokens are stored in the `refresh_tokens` DB table. This enables reuse d
 |---|----------|
 | Q-AUTH-02 | Refresh token storage — add `refresh_tokens` model to Prisma, or use signed JWTs without DB lookup? — Closed: DB-backed `refresh_tokens` model added to Prisma and DB Dictionary |
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-AUTH-05: Role-Based Redirection
+
+
+
+
+#### **5.** FR-AUTH-05: Role-Based Redirection
 
 | Property | Value |
 |----------|-------|
@@ -1217,9 +1281,13 @@ Refresh tokens are stored in the `refresh_tokens` DB table. This enables reuse d
 
 **No related business rules or open questions.**
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-AUTH-06: Logout & Token Revocation
+
+
+
+
+#### **6.** FR-AUTH-06: Logout & Token Revocation
 
 | Property | Value |
 |----------|-------|
@@ -1285,9 +1353,13 @@ Revoke refresh token.
 |----|------|
 | BR-AUTH-10 | IF user calls POST /api/v1/auth/logout THEN the provided refresh token is marked as revoked |
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-AUTH-07: Token Refresh & Rotation
+
+
+
+
+#### **7.** FR-AUTH-07: Token Refresh & Rotation
 
 | Property | Value |
 |----------|-------|
@@ -1379,9 +1451,13 @@ Rotate refresh token. Issues new access + refresh token.
 | BR-AUTH-06 | IF revoked refresh token is presented THEN revoke ALL refresh tokens for that user (reuse detection) |
 | BR-AUTH-11 | IF user is authenticated THEN access token must have been issued within the last 15 minutes. IF user calls POST /api/v1/auth/refresh THEN refresh token must have been issued within the last 7 days |
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-AUTH-08: Change Own Password
+
+
+
+
+#### **8.** FR-AUTH-08: Change Own Password
 
 | Property | Value |
 |----------|-------|
@@ -1445,9 +1521,13 @@ Change own password (School Admin and Platform Admin only — Manager cannot cha
 | BR-AUTH-05 | IF user role is MANAGER THEN POST /api/v1/auth/change-password returns 403 MANAGER_CANNOT_CHANGE_PASSWORD. IF user role is SCHOOL_ADMIN or PLATFORM_ADMIN THEN current_password must match the stored password_hash |
 | BR-AUTH-13 | IF a created or updated password does not meet policy (min 8 chars, at least one uppercase letter, one lowercase letter, one digit) THEN return 422 VALIDATION_ERROR |
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-AUTH-09: User Profile & Permissions
+
+
+
+
+#### **9.** FR-AUTH-09: User Profile & Permissions
 
 | Property | Value |
 |----------|-------|
@@ -1543,9 +1623,13 @@ Current user profile + permissions.
 
 **No related business rules or open questions.**
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-AUTH-10: Inactive User Login Block
+
+
+
+
+#### **10.** FR-AUTH-10: Inactive User Login Block
 
 | Property | Value |
 |----------|-------|
@@ -1587,9 +1671,13 @@ Current user profile + permissions.
 |----|------|
 | BR-AUTH-03 | IF user.is_active = false THEN return 403 ACCOUNT_INACTIVE |
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-AUTH-11: Inactive Tenant Access
+
+
+
+
+#### **11.** FR-AUTH-11: Inactive Tenant Access
 
 | Property | Value |
 |----------|-------|
@@ -1659,9 +1747,13 @@ Login request → Resolve tenant from subdomain (FR-AUTH-03)
 |----|------|
 | BR-AUTH-04 | IF tenant.is_active = false THEN login proceeds but returns tenant.is_active=false in the response. All subsequent API requests return 403 TENANT_INACTIVE. |
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-AUTH-12: Rate Limiting
+
+
+
+
+#### **12.** FR-AUTH-12: Rate Limiting
 
 | Property | Value |
 |----------|-------|
@@ -1744,7 +1836,11 @@ Login request → Resolve tenant from subdomain (FR-AUTH-03)
 
 ---
 
-##### FR-ACA-01: Create Academic Year
+
+
+
+
+#### **1.** FR-ACA-01: Create Academic Year
 
 | Property | Value |
 |----------|-------|
@@ -1808,9 +1904,13 @@ Login request → Resolve tenant from subdomain (FR-AUTH-03)
 | BR-ACA-02 | Academic year names must be unique per tenant |
 | BR-ACA-03 | Academic year date ranges must not overlap |
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-ACA-02: Single Current Academic Year
+
+
+
+
+#### **2.** FR-ACA-02: Single Current Academic Year
 
 | Property | Value |
 |----------|-------|
@@ -1830,9 +1930,13 @@ Login request → Resolve tenant from subdomain (FR-AUTH-03)
 |----|------|
 | BR-ACA-01 | A tenant can have only one current academic year at a time |
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-ACA-03: Prevent Overlapping Date Ranges
+
+
+
+
+#### **3.** FR-ACA-03: Prevent Overlapping Date Ranges
 
 | Property | Value |
 |----------|-------|
@@ -1852,9 +1956,13 @@ Login request → Resolve tenant from subdomain (FR-AUTH-03)
 |----|------|
 | BR-ACA-03 | Academic year date ranges must not overlap |
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-ACA-04: Create Class
+
+
+
+
+#### **4.** FR-ACA-04: Create Class
 
 | Property | Value |
 |----------|-------|
@@ -1898,9 +2006,13 @@ Login request → Resolve tenant from subdomain (FR-AUTH-03)
 |----|------|
 | BR-ACA-04 | Classes, sections, and subjects use `is_active` to disable (never delete) |
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-ACA-05: Create Section
+
+
+
+
+#### **5.** FR-ACA-05: Create Section
 
 | Property | Value |
 |----------|-------|
@@ -1943,9 +2055,13 @@ Login request → Resolve tenant from subdomain (FR-AUTH-03)
 |----|------|
 | BR-ACA-05 | A section belongs to exactly one class |
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-ACA-06: Create Subject
+
+
+
+
+#### **6.** FR-ACA-06: Create Subject
 
 | Property | Value |
 |----------|-------|
@@ -1991,9 +2107,13 @@ Login request → Resolve tenant from subdomain (FR-AUTH-03)
 | BR-ACA-06 | A subject belongs to exactly one class |
 | BR-ACA-07 | Subject codes must be unique within a class |
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-ACA-07: Set Current Academic Year
+
+
+
+
+#### **7.** FR-ACA-07: Set Current Academic Year
 
 | Property | Value |
 |----------|-------|
@@ -2040,9 +2160,13 @@ Set an academic year as current.
 |----|------|
 | BR-ACA-01 | A tenant can have only one current academic year at a time |
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-ACA-08: List Academic Entities
+
+
+
+
+#### **8.** FR-ACA-08: List Academic Entities
 
 | Property | Value |
 |----------|-------|
@@ -2103,7 +2227,11 @@ List academic years for the tenant.
 
 ---
 
-##### FR-SET-01: View Settings
+
+
+
+
+#### **1.** FR-SET-01: View Settings
 
 | Property | Value |
 |----------|-------|
@@ -2134,9 +2262,13 @@ List academic years for the tenant.
 
 **No related business rules or open questions.**
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-SET-02: Update Settings
+
+
+
+
+#### **2.** FR-SET-02: Update Settings
 
 | Property | Value |
 |----------|-------|
@@ -2176,9 +2308,13 @@ List academic years for the tenant.
 |----|------|
 | BR-SET-01 | Only School Admin can modify settings |
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-SET-03: Logo Upload
+
+
+
+
+#### **3.** FR-SET-03: Logo Upload
 
 | Property | Value |
 |----------|-------|
@@ -2215,7 +2351,11 @@ List academic years for the tenant.
 
 ---
 
-##### FR-UP-01: Create Manager
+
+
+
+
+#### **1.** FR-UP-01: Create Manager
 
 | Property | Value |
 |----------|-------|
@@ -2269,9 +2409,13 @@ List academic years for the tenant.
 |----|------|
 | BR-UP-01 | Only users with role `MANAGER` can have permission records |
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-UP-02: Activate/Deactivate Manager
+
+
+
+
+#### **2.** FR-UP-02: Activate/Deactivate Manager
 
 | Property | Value |
 |----------|-------|
@@ -2312,9 +2456,13 @@ Activate/deactivate a Manager.
 |----|------|
 | BR-UP-06 | Deactivating a Manager increments `token_version` to invalidate all sessions |
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-UP-03: List Managers
+
+
+
+
+#### **3.** FR-UP-03: List Managers
 
 | Property | Value |
 |----------|-------|
@@ -2352,9 +2500,13 @@ Activate/deactivate a Manager.
 
 **No related business rules or open questions.**
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-UP-04: Assign Manager Permissions
+
+
+
+
+#### **4.** FR-UP-04: Assign Manager Permissions
 
 | Property | Value |
 |----------|-------|
@@ -2423,9 +2575,13 @@ Activate/deactivate a Manager.
 |---|----------|
 | Q-UP-02 | Is `can_print` separate from `can_export` in the UI, or are they combined? |
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-UP-05: Available Modules for Permissions
+
+
+
+
+#### **5.** FR-UP-05: Available Modules for Permissions
 
 | Property | Value |
 |----------|-------|
@@ -2454,9 +2610,13 @@ Returns modules available for permission assignment.
 
 **No related business rules or open questions.**
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-UP-06: Immediate Session Invalidation
+
+
+
+
+#### **6.** FR-UP-06: Immediate Session Invalidation
 
 | Property | Value |
 |----------|-------|
@@ -2476,9 +2636,13 @@ Returns modules available for permission assignment.
 |----|------|
 | BR-UP-06 | Deactivating a Manager increments `token_version` to invalidate all sessions |
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-UP-07: Reset Manager Password
+
+
+
+
+#### **7.** FR-UP-07: Reset Manager Password
 
 | Property | Value |
 |----------|-------|
@@ -2548,7 +2712,11 @@ Reset a Manager's password (School Admin only).
 
 ---
 
-##### FR-MM-01: View Module Status
+
+
+
+
+#### **1.** FR-MM-01: View Module Status
 
 | Property | Value |
 |----------|-------|
@@ -2579,9 +2747,13 @@ Reset a Manager's password (School Admin only).
 
 **No related business rules or open questions.**
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-MM-02: Toggle Module
+
+
+
+
+#### **2.** FR-MM-02: Toggle Module
 
 | Property | Value |
 |----------|-------|
@@ -2621,9 +2793,13 @@ Reset a Manager's password (School Admin only).
 | BR-MM-01 | Authentication and Settings modules cannot be disabled |
 | BR-MM-02 | School Admin cannot enable a module not assigned by Platform Admin |
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-MM-03: Disable Module Enforcement
+
+
+
+
+#### **3.** FR-MM-03: Disable Module Enforcement
 
 | Property | Value |
 |----------|-------|
@@ -2656,7 +2832,11 @@ Reset a Manager's password (School Admin only).
 
 ---
 
-##### FR-STU-01: Submit Application
+
+
+
+
+#### **1.** FR-STU-01: Submit Application
 
 | Property | Value |
 |----------|-------|
@@ -2711,9 +2891,13 @@ Submit admission application (public — no auth required, or optionally protect
 
 **No related business rules or open questions.**
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-STU-02: Application Number Generation
+
+
+
+
+#### **2.** FR-STU-02: Application Number Generation
 
 | Property | Value |
 |----------|-------|
@@ -2733,9 +2917,13 @@ Submit admission application (public — no auth required, or optionally protect
 |----|------|
 | BR-STU-01 | Registration number format: `YY` (admission year) + continuous sequence per tenant |
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-STU-03: View Pending Applications
+
+
+
+
+#### **3.** FR-STU-03: View Pending Applications
 
 | Property | Value |
 |----------|-------|
@@ -2775,9 +2963,13 @@ List applications (filterable by status).
 
 **No related business rules or open questions.**
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-STU-04: Approve Application
+
+
+
+
+#### **4.** FR-STU-04: Approve Application
 
 | Property | Value |
 |----------|-------|
@@ -2831,9 +3023,13 @@ List applications (filterable by status).
 |----|------|
 | BR-STU-06 | Approving an application creates student + enrollment in a single transaction |
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-STU-05: Reject Application
+
+
+
+
+#### **5.** FR-STU-05: Reject Application
 
 | Property | Value |
 |----------|-------|
@@ -2870,9 +3066,13 @@ List applications (filterable by status).
 
 **No related business rules or open questions.**
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-STU-06: Registration Number Generation
+
+
+
+
+#### **6.** FR-STU-06: Registration Number Generation
 
 | Property | Value |
 |----------|-------|
@@ -2894,9 +3094,13 @@ List applications (filterable by status).
 | BR-STU-02 | Registration number sequence is generated atomically using `SELECT ... FOR UPDATE` |
 | BR-STU-03 | Registration number is permanent and never changes |
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-STU-07: Roll Number Assignment
+
+
+
+
+#### **7.** FR-STU-07: Roll Number Assignment
 
 | Property | Value |
 |----------|-------|
@@ -2916,9 +3120,13 @@ List applications (filterable by status).
 |----|------|
 | BR-STU-04 | Roll numbers are unique per (section + academic year) |
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-STU-08: Student CRUD
+
+
+
+
+#### **8.** FR-STU-08: Student CRUD
 
 | Property | Value |
 |----------|-------|
@@ -2974,9 +3182,13 @@ List applications (filterable by status).
 | BR-STU-07 | Student statuses: `ACTIVE`, `DROPPED`, `TRANSFERRED`, `GRADUATED` (see Prisma `StudentStatus` enum) |
 | BR-STU-08 | Enrollment statuses: `ACTIVE`, `COMPLETED`, `PROMOTED`, `REPEATED` (see Prisma `EnrollmentStatus` enum) |
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-STU-09: Student Search
+
+
+
+
+#### **9.** FR-STU-09: Student Search
 
 | Property | Value |
 |----------|-------|
@@ -2992,9 +3204,13 @@ List applications (filterable by status).
 
 **No related business rules or open questions.**
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-STU-10: Student Promotion
+
+
+
+
+#### **10.** FR-STU-10: Student Promotion
 
 | Property | Value |
 |----------|-------|
@@ -3039,9 +3255,13 @@ Bulk promote students to next class.
 
 **No related business rules or open questions.**
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-STU-11: End-of-Year Outcomes
+
+
+
+
+#### **11.** FR-STU-11: End-of-Year Outcomes
 
 | Property | Value |
 |----------|-------|
@@ -3064,9 +3284,13 @@ Each outcome updates the student's status and enrollment record accordingly.
 
 **No related business rules or open questions.**
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-STU-12: Import Students from Excel
+
+
+
+
+#### **12.** FR-STU-12: Import Students from Excel
 
 | Property | Value |
 |----------|-------|
@@ -3082,9 +3306,13 @@ Each outcome updates the student's status and enrollment record accordingly.
 
 **No related business rules or open questions.**
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-STU-13: Export Student List
+
+
+
+
+#### **13.** FR-STU-13: Export Student List
 
 | Property | Value |
 |----------|-------|
@@ -3133,7 +3361,11 @@ Each outcome updates the student's status and enrollment record accordingly.
 
 ---
 
-##### FR-ATT-01: Load Enrolled Students
+
+
+
+
+#### **1.** FR-ATT-01: Load Enrolled Students
 
 | Property | Value |
 |----------|-------|
@@ -3149,9 +3381,13 @@ Each outcome updates the student's status and enrollment record accordingly.
 
 **No related business rules or open questions.**
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-ATT-02: Default to Present
+
+
+
+
+#### **2.** FR-ATT-02: Default to Present
 
 | Property | Value |
 |----------|-------|
@@ -3171,9 +3407,13 @@ Each outcome updates the student's status and enrollment record accordingly.
 |----|------|
 | BR-ATT-02 | Attendance defaults to `PRESENT` — only absentees are explicitly marked |
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-ATT-03: Save Attendance Session
+
+
+
+
+#### **3.** FR-ATT-03: Save Attendance Session
 
 | Property | Value |
 |----------|-------|
@@ -3236,9 +3476,13 @@ Create (or update) an attendance session.
 | Q-ATT-01 | Should attendance status include more than PRESENT/ABSENT/LATE/LEAVE? |
 | Q-ATT-03 | Backdate limit — 7 days configurable? Or fixed? |
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-ATT-04: Submit Attendance
+
+
+
+
+#### **4.** FR-ATT-04: Submit Attendance
 
 | Property | Value |
 |----------|-------|
@@ -3275,9 +3519,13 @@ Create (or update) an attendance session.
 
 **No related business rules or open questions.**
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-ATT-05: Edit Attendance After Submission
+
+
+
+
+#### **5.** FR-ATT-05: Edit Attendance After Submission
 
 | Property | Value |
 |----------|-------|
@@ -3297,9 +3545,13 @@ Create (or update) an attendance session.
 |----|------|
 | BR-ATT-03 | Attendance corrections after submission are logged in `audit_logs` |
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-ATT-06: Send Absentee SMS
+
+
+
+
+#### **6.** FR-ATT-06: Send Absentee SMS
 
 | Property | Value |
 |----------|-------|
@@ -3332,9 +3584,13 @@ Create (or update) an attendance session.
 |----|------|
 | BR-ATT-04 | Each SMS sent consumes 1 credit from `tenants.sms_balance` |
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-ATT-07: Attendance Reports
+
+
+
+
+#### **7.** FR-ATT-07: Attendance Reports
 
 | Property | Value |
 |----------|-------|
@@ -3372,7 +3628,11 @@ Create (or update) an attendance session.
 
 ---
 
-##### FR-RES-01: Create Exam
+
+
+
+
+#### **1.** FR-RES-01: Create Exam
 
 | Property | Value |
 |----------|-------|
@@ -3420,9 +3680,13 @@ Create (or update) an attendance session.
 | BR-RES-01 | A class cannot have two exams with the same name in the same academic year |
 | BR-RES-02 | Marks can only be entered for the current academic year |
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-RES-02: Configure Exam Subjects
+
+
+
+
+#### **2.** FR-RES-02: Configure Exam Subjects
 
 | Property | Value |
 |----------|-------|
@@ -3456,9 +3720,13 @@ Create (or update) an attendance session.
 
 **No related business rules or open questions.**
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-RES-03: Create Grade Scale
+
+
+
+
+#### **3.** FR-RES-03: Create Grade Scale
 
 | Property | Value |
 |----------|-------|
@@ -3478,9 +3746,13 @@ Create (or update) an attendance session.
 |---|----------|
 | Q-RES-03 | Grade scale — is one per tenant enough, or per academic year? |
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-RES-04: Enter Marks
+
+
+
+
+#### **4.** FR-RES-04: Enter Marks
 
 | Property | Value |
 |----------|-------|
@@ -3528,9 +3800,13 @@ Create (or update) an attendance session.
 | Q-RES-01 | Should marks be enterable in a grid view (students × subjects) or one-by-one? |
 | Q-RES-02 | Can multiple managers enter marks for different subjects in the same exam? |
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-RES-05: Auto-Calculate Results
+
+
+
+
+#### **5.** FR-RES-05: Auto-Calculate Results
 
 | Property | Value |
 |----------|-------|
@@ -3550,9 +3826,13 @@ Create (or update) an attendance session.
 |----|------|
 | BR-RES-05 | Grades/GPA are calculated at runtime — never stored in `marks` table |
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-RES-06: Publish Results
+
+
+
+
+#### **6.** FR-RES-06: Publish Results
 
 | Property | Value |
 |----------|-------|
@@ -3597,9 +3877,13 @@ Sets `exams.result_published_at` and triggers SMS/Email notifications.
 | BR-RES-03 | Publish is exclusive to School Admin role |
 | BR-RES-04 | IF marks are published THEN editing requires unpublish first |
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-RES-07: Unpublish Results
+
+
+
+
+#### **7.** FR-RES-07: Unpublish Results
 
 | Property | Value |
 |----------|-------|
@@ -3619,9 +3903,13 @@ Sets `exams.result_published_at` and triggers SMS/Email notifications.
 |----|------|
 | BR-RES-04 | IF marks are published THEN editing requires unpublish first |
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-RES-08: Generate Rank List
+
+
+
+
+#### **8.** FR-RES-08: Generate Rank List
 
 | Property | Value |
 |----------|-------|
@@ -3651,7 +3939,11 @@ Sets `exams.result_published_at` and triggers SMS/Email notifications.
 
 ---
 
-##### FR-NTC-01: Upload Notice
+
+
+
+
+#### **1.** FR-NTC-01: Upload Notice
 
 | Property | Value |
 |----------|-------|
@@ -3695,9 +3987,13 @@ expires_at: "2026-12-20T00:00:00Z" (optional)
 |----|------|
 | BR-NTC-02 | Only PDF and IMAGE file types are supported |
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-NTC-02: Schedule Notice
+
+
+
+
+#### **2.** FR-NTC-02: Schedule Notice
 
 | Property | Value |
 |----------|-------|
@@ -3713,9 +4009,13 @@ expires_at: "2026-12-20T00:00:00Z" (optional)
 
 **No related business rules or open questions.**
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-NTC-03: Auto-Publish Scheduled Notice
+
+
+
+
+#### **3.** FR-NTC-03: Auto-Publish Scheduled Notice
 
 | Property | Value |
 |----------|-------|
@@ -3731,9 +4031,13 @@ expires_at: "2026-12-20T00:00:00Z" (optional)
 
 **No related business rules or open questions.**
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-NTC-04: Archive Notice
+
+
+
+
+#### **4.** FR-NTC-04: Archive Notice
 
 | Property | Value |
 |----------|-------|
@@ -3753,9 +4057,13 @@ expires_at: "2026-12-20T00:00:00Z" (optional)
 |----|------|
 | BR-NTC-01 | Published notices cannot be edited (must archive and recreate) |
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-NTC-05: View Published Notices
+
+
+
+
+#### **5.** FR-NTC-05: View Published Notices
 
 | Property | Value |
 |----------|-------|
@@ -3794,9 +4102,13 @@ expires_at: "2026-12-20T00:00:00Z" (optional)
 |----|------|
 | BR-NTC-03 | All authenticated users in the tenant can view published notices |
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-NTC-06: Auto-Hide Expired Notice
+
+
+
+
+#### **6.** FR-NTC-06: Auto-Hide Expired Notice
 
 | Property | Value |
 |----------|-------|
@@ -3830,7 +4142,11 @@ expires_at: "2026-12-20T00:00:00Z" (optional)
 
 ---
 
-##### FR-NOT-01: Send Absentee SMS
+
+
+
+
+#### **1.** FR-NOT-01: Send Absentee SMS
 
 | Property | Value |
 |----------|-------|
@@ -3846,9 +4162,13 @@ expires_at: "2026-12-20T00:00:00Z" (optional)
 
 **No related business rules or open questions.**
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-NOT-02: Send Result Notification
+
+
+
+
+#### **2.** FR-NOT-02: Send Result Notification
 
 | Property | Value |
 |----------|-------|
@@ -3864,9 +4184,13 @@ expires_at: "2026-12-20T00:00:00Z" (optional)
 
 **No related business rules or open questions.**
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-NOT-04: Ad-Hoc Notification
+
+
+
+
+#### **3.** FR-NOT-04: Ad-Hoc Notification
 
 | Property | Value |
 |----------|-------|
@@ -3911,9 +4235,13 @@ Ad-hoc notification.
 
 **No related business rules or open questions.**
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-NOT-05: Deduct SMS Balance
+
+
+
+
+#### **4.** FR-NOT-05: Deduct SMS Balance
 
 | Property | Value |
 |----------|-------|
@@ -3933,9 +4261,13 @@ Ad-hoc notification.
 |----|------|
 | BR-NOT-02 | Each SMS deducts 1 credit from `tenants.sms_balance` |
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-NOT-06: Block SMS at Zero Balance
+
+
+
+
+#### **5.** FR-NOT-06: Block SMS at Zero Balance
 
 | Property | Value |
 |----------|-------|
@@ -3955,9 +4287,13 @@ Ad-hoc notification.
 |----|------|
 | BR-NOT-03 | IF `sms_balance` = 0 THEN SMS is blocked (email still works) |
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-NOT-07: Log Notifications
+
+
+
+
+#### **6.** FR-NOT-07: Log Notifications
 
 | Property | Value |
 |----------|-------|
@@ -4009,9 +4345,13 @@ View notification logs.
 |---|----------|
 | Q-NOT-01 | What SMS/Email provider will be used in MVP? (Twilio, SendGrid, local?) |
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-NOT-08: Retry Failed Notifications
+
+
+
+
+#### **7.** FR-NOT-08: Retry Failed Notifications
 
 | Property | Value |
 |----------|-------|
@@ -4046,7 +4386,11 @@ View notification logs.
 
 ---
 
-##### FR-RPT-01: Generate ID Card PDF
+
+
+
+
+#### **1.** FR-RPT-01: Generate ID Card PDF
 
 | Property | Value |
 |----------|-------|
@@ -4068,9 +4412,13 @@ View notification logs.
 
 **No related business rules or open questions.**
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-RPT-02: Generate Transfer Certificate
+
+
+
+
+#### **2.** FR-RPT-02: Generate Transfer Certificate
 
 | Property | Value |
 |----------|-------|
@@ -4086,9 +4434,13 @@ View notification logs.
 
 **No related business rules or open questions.**
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-RPT-03: Generate Attendance Report
+
+
+
+
+#### **3.** FR-RPT-03: Generate Attendance Report
 
 | Property | Value |
 |----------|-------|
@@ -4112,9 +4464,13 @@ View notification logs.
 
 **No related business rules or open questions.**
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-RPT-04: Generate Result Report
+
+
+
+
+#### **4.** FR-RPT-04: Generate Result Report
 
 | Property | Value |
 |----------|-------|
@@ -4130,9 +4486,13 @@ View notification logs.
 
 **No related business rules or open questions.**
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-RPT-05: Embed School Branding
+
+
+
+
+#### **5.** FR-RPT-05: Embed School Branding
 
 | Property | Value |
 |----------|-------|
@@ -4175,7 +4535,11 @@ View notification logs.
 
 ---
 
-##### FR-DSH-01: School Admin Dashboard
+
+
+
+
+#### **1.** FR-DSH-01: School Admin Dashboard
 
 | Property | Value |
 |----------|-------|
@@ -4218,9 +4582,13 @@ View notification logs.
 | BR-DSH-01 | Dashboard data is scoped to the current academic year |
 | BR-DSH-03 | Dashboard fetches real-time data (no caching for MVP) |
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-DSH-02: Manager Dashboard
+
+
+
+
+#### **2.** FR-DSH-02: Manager Dashboard
 
 | Property | Value |
 |----------|-------|
@@ -4248,9 +4616,13 @@ View notification logs.
 |----|------|
 | BR-DSH-02 | Managers only see metrics for modules they have View permission on |
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-DSH-03: Current Year Scoping
+
+
+
+
+#### **3.** FR-DSH-03: Current Year Scoping
 
 | Property | Value |
 |----------|-------|
@@ -4284,7 +4656,11 @@ View notification logs.
 
 ---
 
-##### FR-AUD-01: Log Student CUD
+
+
+
+
+#### **1.** FR-AUD-01: Log Student CUD
 
 | Property | Value |
 |----------|-------|
@@ -4306,9 +4682,13 @@ View notification logs.
 | BR-AUD-03 | Only business-critical actions are logged (see AUDIT_ACTION enum) |
 | BR-AUD-04 | `old_values` and `new_values` use JSONB for flexible schema |
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-AUD-02: Log Attendance Corrections
+
+
+
+
+#### **2.** FR-AUD-02: Log Attendance Corrections
 
 | Property | Value |
 |----------|-------|
@@ -4324,9 +4704,13 @@ View notification logs.
 
 **No related business rules or open questions.**
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-AUD-03: Log Result Publish/Unpublish
+
+
+
+
+#### **3.** FR-AUD-03: Log Result Publish/Unpublish
 
 | Property | Value |
 |----------|-------|
@@ -4342,9 +4726,13 @@ View notification logs.
 
 **No related business rules or open questions.**
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-AUD-04: Log Permission Changes
+
+
+
+
+#### **4.** FR-AUD-04: Log Permission Changes
 
 | Property | Value |
 |----------|-------|
@@ -4360,9 +4748,13 @@ View notification logs.
 
 **No related business rules or open questions.**
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-AUD-05: Log SMS Balance Changes
+
+
+
+
+#### **5.** FR-AUD-05: Log SMS Balance Changes
 
 | Property | Value |
 |----------|-------|
@@ -4378,9 +4770,13 @@ View notification logs.
 
 **No related business rules or open questions.**
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-AUD-06: Log Tenant Activation
+
+
+
+
+#### **6.** FR-AUD-06: Log Tenant Activation
 
 | Property | Value |
 |----------|-------|
@@ -4396,9 +4792,13 @@ View notification logs.
 
 **No related business rules or open questions.**
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-AUD-07: View Tenant Audit Logs
+
+
+
+
+#### **7.** FR-AUD-07: View Tenant Audit Logs
 
 | Property | Value |
 |----------|-------|
@@ -4445,9 +4845,13 @@ View notification logs.
 |----|------|
 | BR-AUD-01 | Audit logs are append-only — existing records must never be modified or deleted |
 
----
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-##### FR-AUD-08: View Cross-Tenant Audit Logs
+
+
+
+
+#### **8.** FR-AUD-08: View Cross-Tenant Audit Logs
 
 | Property | Value |
 |----------|-------|
