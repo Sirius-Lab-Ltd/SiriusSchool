@@ -688,7 +688,15 @@ Current user profile + permissions.
 | is_active | BOOLEAN | `true` |
 | last_login_at | TIMESTAMPTZ | `2026-07-10T10:00:00Z` |
 
-> **Note:** The Prisma schema (`docs/DB/schema.prisma`) does not currently define `refresh_tokens` model. The developer must either add it to `schema.prisma` or implement token validation at the application level (e.g., signed JWTs for refresh tokens with no DB lookup).
+**Table: `refresh_tokens`** — DB Dictionary §Table 6.
+
+| Column | Type | Example |
+|--------|------|---------|
+| token | UUID | `uuid` |
+| user_id | UUID? | `uuid` (null for Platform Admin tokens) |
+| platform_admin_id | UUID? | `uuid` (null for tenant user tokens) |
+| expires_at | TIMESTAMPTZ | `7 days from creation` |
+| revoked_at | TIMESTAMPTZ? | `null` (set on logout/rotation) |
 
 #### Business Rules
 
@@ -726,7 +734,7 @@ Current user profile + permissions.
 | # | Question |
 |---|----------|
 | Q-AUTH-01 | Access token expiry — 15 minutes or configurable? **→ Closed: Hardcoded 15 min for MVP** |
-| Q-AUTH-02 | Refresh token storage — add `refresh_tokens` model to Prisma, or use signed JWTs without DB lookup? |
+| Q-AUTH-02 | Refresh token storage — add `refresh_tokens` model to Prisma, or use signed JWTs without DB lookup? | **→ Closed: DB-backed `refresh_tokens` model added to Prisma and DB Dictionary** |
 | Q-AUTH-03 | Single session per user — enforced in MVP or optional? |
 
 ---
@@ -2167,7 +2175,7 @@ View notification logs.
 | Q-PLT-01 | Platform | Should tenant deletion be implemented in MVP? | Open |
 | Q-PLT-02 | Platform | What is the default module set for new tenants? | Open |
 | Q-AUTH-01 | Auth | Access token expiry configurable? | Closed: Hardcoded 15 min for MVP |
-| Q-AUTH-02 | Auth | Refresh token storage — add `refresh_tokens` model to Prisma, or use signed JWTs without DB lookup? | Open |
+| Q-AUTH-02 | Auth | Refresh token storage — add `refresh_tokens` model to Prisma, or use signed JWTs without DB lookup? | Closed: DB-backed `refresh_tokens` model added |
 | Q-AUTH-03 | Auth | Single session per user enforced in MVP? | Closed: Not enforced in MVP. BR-AUTH-12 (token_version) handles session invalidation on deactivation/reset. |
 | Q-ACA-01 | Academic | Close endpoint or just is_current toggle? | Open |
 | Q-ACA-02 | Academic | Verify no pending data before closing year? | Open |

@@ -10,6 +10,7 @@
 | **tenant_modules** | Stores which modules are allocated by the Platform Admin and enabled by the School Admin. | Enables module licensing, feature toggles, and future subscription plans. | Module management becomes difficult and requires redesign later. | ⭐⭐⭐⭐☆ |
 | **users** | Stores School Admin and Manager accounts. | Handles authentication and user management for each school. | No school login system or user management. | ⭐⭐⭐⭐⭐ |
 | **manager_permissions** | Stores module-level CRUD permissions for each Manager. | Allows School Admins to assign different permissions to different Managers. | Permission logic becomes hardcoded or stored in JSON, making it harder to maintain and query. | ⭐⭐⭐⭐☆ |
+| **refresh_tokens** | Stores refresh tokens for JWT authentication with rotation and reuse detection. | Enables secure session management and token revocation. | Refresh tokens must be implemented without DB storage, making reuse detection impossible. | ⭐⭐⭐⭐☆ |
 | **academic_years** | Represents academic sessions (e.g., 2026–2027). | Preserves yearly academic history, promotions, attendance, and results. | Promotions overwrite previous academic information, making historical records unreliable. | ⭐⭐⭐⭐⭐ |
 | **classes** | Stores class definitions (Nursery, KG, Class 1–10, etc.). | Allows each school to define its own class structure. | Classes become hardcoded and inflexible. | ⭐⭐⭐⭐⭐ |
 | **sections** | Stores sections within classes (A, B, C, etc.). | Supports multiple sections and roll number uniqueness within a class. | Difficult to organize students and manage section-based operations. | ⭐⭐⭐⭐⭐ |
@@ -34,7 +35,7 @@
 |----------|--------|
 | **Platform** | platform_admins |
 | **Core & Multi-Tenant** | tenants, tenant_settings, tenant_modules |
-| **Authentication & Authorization** | users, manager_permissions |
+| **Authentication & Authorization** | users, manager_permissions, refresh_tokens |
 | **Academic Structure** | academic_years, classes, sections, subjects, ~~class_subjects~~ |
 | **Student Management** | applications, students, student_enrollments |
 | **Attendance** | attendance_sessions, attendance_records |
@@ -48,14 +49,14 @@
 |------|------:|
 | Platform Tables | 1 |
 | Core & Multi-Tenant Tables | 3 |
-| Authentication & Authorization Tables | 2 |
+| Authentication & Authorization Tables | 3 |
 | Academic Structure Tables | 4 |
 | Student Management Tables | 3 |
 | Attendance Tables | 2 |
 | Examination & Results Tables | 4 |
 | Communication Tables | 2 |
 | System Tables | 1 |
-| **Total Tables** | **22** |
+| **Total Tables** | **23** |
 
 ## Architecture Principles
 
@@ -1442,6 +1443,121 @@ This table can be extended later with additional permissions such as:
 
 without requiring any structural redesign.
 
+
+### Table 6 — refresh_tokens
+
+## Purpose
+
+Stores refresh tokens issued to users and Platform Admins for JWT authentication. Each token is a UUID stored server-side, enabling secure token rotation and reuse detection.
+
+This table supports the authentication system by providing a server-side record of active refresh tokens. On logout or token rotation, the previous token is marked as revoked (`revoked_at`). If a revoked token is presented, all tokens for that user are revoked (BR-AUTH-06 — reuse detection).
+
+---
+
+## Schema
+
+| Column | Type | Required | Default | Description |
+|---------|------|----------|----------|-------------|
+| id | UUID | ✅ | `gen_random_uuid()` | Primary Key |
+| token | UUID | ✅ | — | The refresh token value (UUID v4) |
+| user_id | UUID | ❌ | `NULL` | References the tenant user (if token belongs to a School Admin or Manager) |
+| platform_admin_id | UUID | ❌ | `NULL` | References the Platform Admin (if token belongs to a Platform Admin) |
+| expires_at | TIMESTAMPTZ | ✅ | — | Token expiration date/time (7 days from issuance) |
+| revoked_at | TIMESTAMPTZ | ❌ | `NULL` | Date/time when the token was revoked (on logout or rotation) |
+| created_at | TIMESTAMPTZ | ✅ | `NOW()` | Record creation timestamp |
+
+---
+
+## Primary Key
+
+```text
+id
+```
+
+---
+
+## Foreign Keys
+
+| Column | References |
+|---------|------------|
+| user_id | users(id) |
+| platform_admin_id | platform_admins(id) |
+
+Exactly one of `user_id` or `platform_admin_id` must be set. The other must be `NULL`.
+
+---
+
+## Unique Constraints
+
+```text
+UNIQUE(token)
+```
+
+Every refresh token must be globally unique.
+
+---
+
+## Recommended Indexes
+
+- UNIQUE(token)
+- INDEX(user_id)
+- INDEX(platform_admin_id)
+
+---
+
+## Relationships
+
+```text
+users (1)
+      │
+      ▼
+refresh_tokens (Many)
+
+platform_admins (1)
+      │
+      ▼
+refresh_tokens (Many)
+```
+
+A user or Platform Admin can have multiple active refresh tokens (one per session). Revoked tokens are retained for reuse detection.
+
+---
+
+## Business Rules
+
+- Every refresh token belongs to either a tenant `User` or a `PlatformAdmin` (never both).
+- Tokens expire 7 days after issuance.
+- `revoked_at` is set when:
+  - The user logs out (FR-AUTH-06).
+  - The token is rotated (a new token is issued, the old one is revoked).
+- If a revoked token is presented at the refresh endpoint, ALL tokens for that user are revoked (BR-AUTH-06 — reuse detection).
+- Expired tokens (`expires_at < NOW()`) are treated as invalid.
+- Only one of `user_id` or `platform_admin_id` may be non-null (enforced by application logic).
+
+---
+
+## Notes
+
+### Why store tokens in the database?
+
+Storing refresh tokens in the database enables reuse detection (BR-AUTH-06). If an attacker steals a refresh token and uses it after the legitimate user has rotated it, the system detects the fraud and revokes all tokens for that user.
+
+### Why two foreign keys (user_id + platform_admin_id)?
+
+Platform Admin and tenant users authenticate through different tables (`platform_admins` vs `users`). Using two nullable foreign keys with a `CHECK` constraint (application-level) allows a single `refresh_tokens` table to serve both authentication domains.
+
+### Future Expansion
+
+The table can be safely extended later with fields such as:
+
+- device_info
+- ip_address
+- user_agent
+- last_used_at
+
+without requiring any structural redesign.
+
+---
 
 ## 📁 Academic Structure
 

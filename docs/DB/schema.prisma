@@ -134,11 +134,13 @@ enum AuditAction {
 // ═════════════════════════════════════════════════════════════
 
 model PlatformAdmin {
-  id            String   @id @default(uuid()) @db.Uuid
-  email         String   @unique @db.VarChar(255)
+  id            String          @id @default(uuid()) @db.Uuid
+  email         String          @unique @db.VarChar(255)
   password_hash String
-  created_at    DateTime @default(now()) @db.Timestamptz
-  updated_at    DateTime @updatedAt @db.Timestamptz
+  created_at    DateTime        @default(now()) @db.Timestamptz
+  updated_at    DateTime        @updatedAt @db.Timestamptz
+
+  refresh_tokens RefreshToken[] @relation("PlatformAdminRefreshTokens")
 
   @@map("platform_admins")
 }
@@ -235,6 +237,7 @@ model User {
   uploaded_notices      Notice[]            @relation("NoticeUploader")
   sent_notifications    Notification[]      @relation("NotificationSender")
   audit_logs            AuditLog[]
+  refresh_tokens        RefreshToken[]      @relation("UserRefreshTokens")
 
   @@index([tenant_id])
   @@index([role])
@@ -261,6 +264,23 @@ model ManagerPermission {
   @@index([user_id])
   @@index([tenant_module_id])
   @@map("manager_permissions")
+}
+
+model RefreshToken {
+  id                String         @id @default(uuid()) @db.Uuid
+  token             String         @unique @db.Uuid
+  user_id           String?        @db.Uuid
+  user              User?          @relation("UserRefreshTokens", fields: [user_id], references: [id], onDelete: Cascade)
+  platform_admin_id String?        @db.Uuid
+  platform_admin    PlatformAdmin? @relation("PlatformAdminRefreshTokens", fields: [platform_admin_id], references: [id], onDelete: Cascade)
+  expires_at        DateTime       @db.Timestamptz
+  revoked_at        DateTime?      @db.Timestamptz
+  created_at        DateTime       @default(now()) @db.Timestamptz
+
+  @@index([user_id])
+  @@index([platform_admin_id])
+  @@index([token])
+  @@map("refresh_tokens")
 }
 
 // ═════════════════════════════════════════════════════════════

@@ -406,7 +406,7 @@ In local development (`localhost:5173`), there's no subdomain in the URL. The `X
 }
 ```
 
-**Open question (Q-AUTH-02):** Refresh token storage is undecided — either a `refresh_tokens` DB table (revocable, queryable) or signed JWTs without DB lookup (faster, no storage). This decision affects the revocation strategy and reuse detection implementation (FR-AUTH-07).
+**Closed (Q-AUTH-02):** Refresh tokens are stored in the `refresh_tokens` DB table. This enables reuse detection (BR-AUTH-06) — if a revoked token is presented, all tokens for that user are revoked. The `RefreshToken` model is defined in `docs/DB/schema.prisma` and documented in the DB Dictionary §Table 6.
 
 ---
 
