@@ -362,7 +362,7 @@ The SMS credit system is a prepaid balance model that controls how many text mes
 **Registration number format:** `YY` (2-digit admission year) + `NNNNNN` (6-digit zero-padded sequence)
 
 - Example: `26000001` = admitted in 20**26**, sequence **000001**
-- The `YY` prefix changes with the admission year, but **the sequence counter never resets** — it increments perpetually per tenant
+- The `YY` prefix changes with the admission year, and **the sequence counter resets** at the start of each new academic year
 
 **How the sequence counter works:**
 
@@ -372,7 +372,8 @@ The SMS credit system is a prepaid balance model that controls how many text mes
 | **Initial value** | Set to `starting_sequence` at tenant creation |
 | **Increment** | +1 after each successful student creation |
 | **Atomicity** | Read + increment uses `SELECT ... FOR UPDATE` to prevent race conditions (BR-STU-02) |
-| **Scope** | Per-tenant, continuous across all academic years |
+| **Scope** | Per-tenant, resets at the start of each academic year |
+| **Reset trigger** | Setting a new academic year as current (FR-ACA-07) resets the counter to `starting_sequence` |
 | **Permanence** | Registration numbers never change, even if a student leaves or graduates (BR-STU-03) |
 
 **Example lifecycle (starting_sequence = 1):**
@@ -383,12 +384,12 @@ The SMS credit system is a prepaid balance model that controls how many text mes
 | 2 | Second admission | 2026 | 2 | `26000002` |
 | ... | ... | ... | ... | ... |
 | 150 | 150th admission | 2026 | 150 | `26000150` |
-| 151 | First admission next year | 2027 | 151 | `27000151` |
-| 152 | Another admission | 2027 | 152 | `27000152` |
+| 151 | First admission next year | 2027 | 1 | `27000001` |
+| 152 | Another admission | 2027 | 2 | `27000002` |
 
-Notice: the `YY` prefix changed from `26` to `27`, but the sequence counter continued from 151.
+Notice: the `YY` prefix changed from `26` to `27`, and the sequence counter reset to 1 for the new academic year.
 
-**Why make it configurable?** `starting_sequence` allows schools migrating from a legacy system to avoid conflicts with existing student IDs. For example, if a school already has 500 students in their old system and is migrating to Sirius-Skool, they can set `starting_sequence: 501` so new registration numbers start at `26000501` instead of `26000001`.
+**Why make it configurable?** `starting_sequence` allows schools migrating from a legacy system to avoid conflicts with existing student IDs. For example, if a school already has 500 students in their old system and is migrating to Sirius-Skool, they can set `starting_sequence: 501` so new registration numbers start at `26000501` instead of `26000001`. The sequence resets each academic year, so `starting_sequence` serves as the base for every year's registration counter.
 
 **API Endpoint(s):**
 
@@ -2125,7 +2126,7 @@ Login request → Resolve tenant from subdomain (FR-AUTH-03)
 
 **Explanation:**
 
-**FR-ACA-07** allows School Admin to set an academic year as the current year via `PATCH /api/v1/academic-years/{id}` with `{ "is_current": true }`. The system automatically unmarks the previously current year, ensuring exactly one current year per tenant at all times.
+**FR-ACA-07** allows School Admin to set an academic year as the current year via `PATCH /api/v1/academic-years/{id}` with `{ "is_current": true }`. The system automatically unmarks the previously current year, ensuring exactly one current year per tenant at all times. Additionally, setting a new current year resets the tenant's student registration counter (`current_student_sequence`) back to its `starting_sequence` value, ensuring registration numbers start fresh each academic year (see FR-PLT-01.3).
 
 **API Endpoint(s):**
 
@@ -2159,6 +2160,7 @@ Set an academic year as current.
 | ID | Rule |
 |----|------|
 | BR-ACA-01 | A tenant can have only one current academic year at a time |
+| BR-ACA-08 | Setting a new current academic year resets `current_student_sequence` to `starting_sequence` |
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -2915,7 +2917,7 @@ Submit admission application (public — no auth required, or optionally protect
 
 | ID | Rule |
 |----|------|
-| BR-STU-01 | Registration number format: `YY` (admission year) + continuous sequence per tenant |
+| BR-STU-01 | Registration number format: `YY` (admission year) + sequence per tenant (resets each academic year) |
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -3084,13 +3086,13 @@ List applications (filterable by status).
 
 **Explanation:**
 
-**FR-STU-06** auto-generates the registration number during application approval. The format is `YY` (2-digit admission year) + continuous sequence per tenant (e.g., the first student admitted in 2026 gets `26000001`). The sequence is generated atomically using `SELECT ... FOR UPDATE` to prevent race conditions (BR-STU-02). The registration number is permanent and never changes (BR-STU-03).
+**FR-STU-06** auto-generates the registration number during application approval. The format is `YY` (2-digit admission year) + sequence per tenant, resetting each academic year (e.g., the first student admitted in 2026 gets `26000001`). The sequence is generated atomically using `SELECT ... FOR UPDATE` to prevent race conditions (BR-STU-02). The registration number is permanent and never changes (BR-STU-03).
 
 **Related Business Rules:**
 
 | ID | Rule |
 |----|------|
-| BR-STU-01 | Registration number format: `YY` (admission year) + continuous sequence per tenant |
+| BR-STU-01 | Registration number format: `YY` (admission year) + sequence per tenant (resets each academic year) |
 | BR-STU-02 | Registration number sequence is generated atomically using `SELECT ... FOR UPDATE` |
 | BR-STU-03 | Registration number is permanent and never changes |
 
@@ -5023,7 +5025,7 @@ View notification logs.
 | BR-MM-02 | School Admin cannot enable a module not assigned by Platform Admin | Module Mgmt |
 | BR-MM-03 | Disabling a module hides it for the entire tenant (all roles) | Module Mgmt |
 | BR-MM-04 | Re-enabling restores access to existing data | Module Mgmt |
-| BR-STU-01 | Registration number format: YY + continuous sequence per tenant | Student |
+| BR-STU-01 | Registration number format: YY + sequence per tenant (resets each academic year) | Student |
 | BR-STU-02 | Registration number sequence is generated atomically using SELECT ... FOR UPDATE | Student |
 | BR-STU-03 | Registration number is permanent and never changes | Student |
 | BR-STU-04 | Roll numbers are unique per (section + academic year) | Student |
