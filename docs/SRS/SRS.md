@@ -3369,6 +3369,38 @@ Bulk promote students to next class.
 
 Each outcome updates the student's status and enrollment record accordingly.
 
+**API Endpoint(s):**
+
+##### POST /api/v1/students/{id}/outcome
+
+Set end-of-year outcome for a student.
+
+**Request:**
+```json
+{
+  "outcome": "PROMOTED",
+  "academic_year_id": "uuid",
+  "next_class_id": "uuid",
+  "next_section_id": "uuid"
+}
+```
+
+**Response `200 OK`:**
+```json
+{
+  "student_id": "uuid",
+  "outcome": "PROMOTED",
+  "enrollment_id": "uuid"
+}
+```
+
+**Errors:**
+
+| Status | Code | Condition |
+|--------|------|-----------|
+| 422 | `VALIDATION_ERROR` | Invalid outcome value |
+| 404 | `NOT_FOUND` | Student not found |
+
 **No related business rules or open questions.**
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -3391,6 +3423,26 @@ Each outcome updates the student's status and enrollment record accordingly.
 
 **FR-STU-12** allows School Admin to import students from an Excel file via `POST /api/v1/students/import`. The system parses the file, validates rows, and creates student + enrollment records. Validation errors are reported per row without rolling back successful imports (partial success model).
 
+**API Endpoint(s):**
+
+##### POST /api/v1/students/import
+
+Import students from Excel file.
+
+**Request:** `multipart/form-data`
+- `file`: Excel file (.xlsx)
+
+**Response `200 OK`:**
+```json
+{
+  "imported": 45,
+  "errors": [
+    { "row": 12, "message": "Invalid email format" },
+    { "row": 23, "message": "Duplicate registration number" }
+  ]
+}
+```
+
 **No related business rules or open questions.**
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -3412,6 +3464,16 @@ Each outcome updates the student's status and enrollment record accordingly.
 **Explanation:**
 
 **FR-STU-13** allows School Admin to export student lists to Excel or PDF via `GET /api/v1/students/export`. The export includes all student details and their current enrollment information, filtered by the provided query parameters.
+
+**API Endpoint(s):**
+
+##### GET /api/v1/students/export
+
+Export student list.
+
+**Query params:** `?class_id=uuid&section_id=uuid&academic_year_id=uuid&format=excel|pdf`
+
+**Response:** Binary file stream (Excel or PDF)
 
 **No related business rules or open questions.**
 
@@ -3476,6 +3538,34 @@ Each outcome updates the student's status and enrollment record accordingly.
 **Explanation:**
 
 **FR-ATT-01** initializes an attendance session by loading enrolled students for a given class, section, and date via `GET /api/v1/attendance/sessions/init`. The response includes all students enrolled in that section for the current academic year, each defaulted to `PRESENT`. The user can then modify individual attendance statuses before saving.
+
+**API Endpoint(s):**
+
+##### GET /api/v1/attendance/sessions/init
+
+Load enrolled students for attendance marking.
+
+**Query params:** `?class_id=uuid&section_id=uuid&date=2026-07-10`
+
+**Response `200 OK`:**
+```json
+{
+  "session_id": "uuid",
+  "class_id": "uuid",
+  "section_id": "uuid",
+  "date": "2026-07-10",
+  "students": [
+    { "student_id": "uuid", "roll_number": 1, "full_name": "Alice", "status": "PRESENT" },
+    { "student_id": "uuid", "roll_number": 2, "full_name": "Bob", "status": "PRESENT" }
+  ]
+}
+```
+
+**Errors:**
+
+| Status | Code | Condition |
+|--------|------|-----------|
+| 404 | `NOT_FOUND` | Class/section not found |
 
 **No related business rules or open questions.**
 
@@ -3637,6 +3727,36 @@ Create (or update) an attendance session.
 
 **FR-ATT-05** allows editing attendance records after submission. Changes are tracked in `audit_logs` with old and new values. This provides an audit trail for attendance corrections. Edits are only possible for users with the appropriate permission.
 
+**API Endpoint(s):**
+
+##### PATCH /api/v1/attendance/sessions/{id}/records
+
+Edit attendance records after submission.
+
+**Request:**
+```json
+{
+  "records": [
+    { "student_id": "uuid", "status": "ABSENT" }
+  ]
+}
+```
+
+**Response `200 OK`:**
+```json
+{
+  "updated": 1,
+  "session_id": "uuid"
+}
+```
+
+**Errors:**
+
+| Status | Code | Condition |
+|--------|------|-----------|
+| 404 | `NOT_FOUND` | Session not found |
+| 422 | `VALIDATION_ERROR` | Invalid status value |
+
 **Related Business Rules:**
 
 | ID | Rule |
@@ -3701,6 +3821,25 @@ Create (or update) an attendance session.
 **Explanation:**
 
 **FR-ATT-07** provides attendance reports for School Admin, filterable by class, student, and date range. The reports aggregate attendance data across sessions and can be used for monitoring student attendance patterns.
+
+**API Endpoint(s):**
+
+##### GET /api/v1/attendance/reports
+
+View attendance reports.
+
+**Query params:** `?class_id=uuid&student_id=uuid&from_date=2026-01-01&to_date=2026-12-31`
+
+**Response `200 OK`:**
+```json
+{
+  "class_id": "uuid",
+  "total_days": 180,
+  "records": [
+    { "student_id": "uuid", "full_name": "Alice", "present": 175, "absent": 5, "percentage": 97.2 }
+  ]
+}
+```
 
 **No related business rules or open questions.**
 
@@ -3849,6 +3988,38 @@ Create (or update) an attendance session.
 **Explanation:**
 
 **FR-RES-03** allows School Admin to create grade scales via `POST /api/v1/grade-scales`. Grade scales define the mapping from mark ranges to letter grades and GPA (e.g., 80-100 → A+ → 5.00). Grade scales are tenant-wide.
+
+**API Endpoint(s):**
+
+##### POST /api/v1/grade-scales
+
+Create a grade scale.
+
+**Request:**
+```json
+{
+  "name": "Standard Grade Scale",
+  "grades": [
+    { "min_marks": 80, "max_marks": 100, "grade_letter": "A+", "grade_point": 5.0 },
+    { "min_marks": 70, "max_marks": 79, "grade_letter": "A", "grade_point": 4.0 }
+  ]
+}
+```
+
+**Response `201 Created`:**
+```json
+{
+  "id": "uuid",
+  "name": "Standard Grade Scale",
+  "grade_count": 2
+}
+```
+
+**Errors:**
+
+| Status | Code | Condition |
+|--------|------|-----------|
+| 422 | `VALIDATION_ERROR` | Overlapping grade ranges |
 
 **Related Open Questions:**
 
@@ -4007,6 +4178,26 @@ Sets `exams.result_published_at` and triggers SMS/Email notifications.
 
 **FR-RES-07** unpublishes published results via `POST /api/v1/exams/{id}/unpublish`, allowing marks to be edited. This returns the exam to a state where marks can be modified. After editing, the exam must be published again for the changes to be visible.
 
+**API Endpoint(s):**
+
+##### POST /api/v1/exams/{id}/unpublish
+
+Unpublish exam results.
+
+**Response `200 OK`:**
+```json
+{
+  "exam_id": "uuid",
+  "status": "DRAFT"
+}
+```
+
+**Errors:**
+
+| Status | Code | Condition |
+|--------|------|-----------|
+| 400 | `ALREADY_DRAFT` | Exam is not published |
+
 **Related Business Rules:**
 
 | ID | Rule |
@@ -4032,6 +4223,29 @@ Sets `exams.result_published_at` and triggers SMS/Email notifications.
 **Explanation:**
 
 **FR-RES-08** generates a rank list for the exam via `GET /api/v1/exams/{id}/rank-list`. Students are ranked by total marks in descending order. Ranking is only available after results are published.
+
+**API Endpoint(s):**
+
+##### GET /api/v1/exams/{id}/rank-list
+
+Generate rank list for exam.
+
+**Response `200 OK`:**
+```json
+{
+  "exam_id": "uuid",
+  "ranks": [
+    { "rank": 1, "student_id": "uuid", "full_name": "Alice", "total_marks": 95.0 },
+    { "rank": 2, "student_id": "uuid", "full_name": "Bob", "total_marks": 88.5 }
+  ]
+}
+```
+
+**Errors:**
+
+| Status | Code | Condition |
+|--------|------|-----------|
+| 400 | `NOT_PUBLISHED` | Results not yet published |
 
 **No related business rules or open questions.**
 
@@ -4170,6 +4384,27 @@ expires_at: "2026-12-20T00:00:00Z" (optional)
 **Explanation:**
 
 **FR-NTC-04** archives a published notice via `POST /api/v1/notices/{id}/archive`. Archived notices are hidden from the regular notice list but preserved for record-keeping. Published notices cannot be edited — they must be archived and a new notice created (BR-NTC-01).
+
+**API Endpoint(s):**
+
+##### POST /api/v1/notices/{id}/archive
+
+Archive a published notice.
+
+**Response `200 OK`:**
+```json
+{
+  "notice_id": "uuid",
+  "status": "ARCHIVED"
+}
+```
+
+**Errors:**
+
+| Status | Code | Condition |
+|--------|------|-----------|
+| 400 | `ALREADY_ARCHIVED` | Notice is already archived |
+| 404 | `NOT_FOUND` | Notice not found |
 
 **Related Business Rules:**
 
@@ -4572,6 +4807,16 @@ View notification logs.
 
 **FR-RPT-02** generates a Transfer Certificate (TC) PDF for students with status `TRANSFERRED`. The TC includes student details, academic history, and the school's official seal and branding.
 
+**API Endpoint(s):**
+
+##### GET /api/v1/reports/students/{id}/tc
+
+Generate Transfer Certificate PDF.
+
+**Query params:** `?academic_year_id=uuid`
+
+**Response:** Binary PDF stream
+
 **No related business rules or open questions.**
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -4623,6 +4868,16 @@ View notification logs.
 **Explanation:**
 
 **FR-RPT-04** generates result report PDFs (per student or per exam). Per-student reports show all subjects and grades. Per-exam reports show all students' marks for a specific exam. Reports are generated only for published results.
+
+**API Endpoint(s):**
+
+##### GET /api/v1/reports/results
+
+Generate result report PDF.
+
+**Query params:** `?exam_id=uuid&student_id=uuid`
+
+**Response:** Binary PDF stream
 
 **No related business rules or open questions.**
 
@@ -5023,6 +5278,44 @@ View notification logs.
 **Explanation:**
 
 **FR-AUD-08** allows Platform Admin to view audit logs across all tenants via `GET /api/v1/admin/audit-logs`. This enables centralized monitoring and compliance auditing across the entire platform.
+
+**API Endpoint(s):**
+
+##### GET /api/v1/admin/audit-logs
+
+View audit logs across all tenants.
+
+**Query params:** `?tenant_id=uuid&action=TENANT_ACTIVATED&from=2026-01-01&to=2026-12-31&page=1&limit=50`
+
+**Response `200 OK`:**
+```json
+{
+  "data": [
+    {
+      "id": "uuid",
+      "tenant_id": "uuid",
+      "actor_id": "uuid",
+      "action": "TENANT_ACTIVATED",
+      "entity_type": "tenant",
+      "old_values": { "is_active": false },
+      "new_values": { "is_active": true },
+      "ip_address": "192.168.1.1",
+      "created_at": "2026-07-10T10:00:00Z"
+    }
+  ],
+  "meta": {
+    "page": 1,
+    "limit": 50,
+    "total": 128
+  }
+}
+```
+
+**Errors:**
+
+| Status | Code | Condition |
+|--------|------|-----------|
+| 403 | `FORBIDDEN` | Only Platform Admin can access |
 
 **No related business rules or open questions.**
 
