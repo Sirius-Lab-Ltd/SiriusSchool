@@ -1,8 +1,8 @@
 # Sirius-Skool — Software Requirements Specification
 
-> **Version:** 0.2  
+> **Version:** 1.0  
 > **Status:** Draft  
-> **Date:** July 10, 2026  
+> **Date:** July 18, 2026  
 > **Source Documents:** PRD v1.0 (`docs/PRD.md`), DB Dictionary (`docs/DB/DB-Dictionary.md`)
 
 ---
@@ -13,6 +13,7 @@
 |---------|------|--------|---------|
 | 0.1 | Jul 6 | — | Initial Auth module draft |
 | 0.2 | Jul 10 | — | Full rewrite: all MVP modules, API specs, data models, business rules |
+| 1.0 | Jul 18 | — | PRD-vs-SRS gap analysis — added FR-STU-14, FR-NTC-07, FR-RPT-06/07/08, FR-NOT-09, FR-ACA-09, missing API specs, BRs, updated RTM ranges, settings fields, dashboard warning |
 
 ---
 
