@@ -4,7 +4,7 @@
 
 ## FR-PLT-01
 
-**FR-PLT-01** is the first and most foundational requirement — it creates a new tenant (school) in the system. When a Platform Admin calls `POST /api/admin/tenants`, they provide:
+**FR-PLT-01** is the first and most foundational requirement — it creates a new tenant (school) in the system. When a Platform Admin calls `POST /api/v1/admin/tenants`, they provide:
 
 | Field | Explanation |
 |-------|-------------|
@@ -69,7 +69,7 @@ The SMS credit system is a prepaid balance model that controls how many text mes
 | **Consumption rate** | 1 credit per SMS sent. Applies to absent alerts (FR-ATT-06), result notifications (FR-NOT-02), and ad-hoc sends (FR-NOT-04). |
 | **When deducted** | Deducted atomically after the SMS provider confirms successful delivery (FR-NOT-05). |
 | **When blocked** | Balance = 0 → `402 SMS_QUOTA_EXCEEDED`. Email is NOT affected. |
-| **Top-up** | Platform Admin adds credits via PATCH `/api/admin/tenants/{id}/sms-balance` (FR-PLT-09). |
+| **Top-up** | Platform Admin adds credits via PATCH `/api/v1/admin/tenants/{id}/sms-balance` (FR-PLT-09). |
 | **Negative protection** | Balance can never go below 0. Deduction attempts that would underflow are rejected. |
 | **Audit trail** | Every adjustment and deduction is logged in `audit_logs` (FR-AUD-05). |
 
@@ -146,12 +146,12 @@ Notice: the `YY` prefix changed from `26` to `27`, but the sequence counter cont
 
 ## FR-PLT-06
 
-**FR-PLT-06** allows the Platform Admin to activate or deactivate a tenant via `PATCH /api/admin/tenants/{id}`. The request body includes `{ "is_active": false }` to deactivate. Deactivation immediately blocks all user access (FR-PLT-07). Reactivation restores login capability, but previous sessions are not restored. [Read more below](#fr-plt-06.1).
+**FR-PLT-06** allows the Platform Admin to activate or deactivate a tenant via `PATCH /api/v1/admin/tenants/{id}`. The request body includes `{ "is_active": false }` to deactivate. Deactivation immediately blocks all user access (FR-PLT-07). Reactivation restores login capability, but previous sessions are not restored. [Read more below](#fr-plt-06.1).
 
 <a id="fr-plt-06.1"></a>
 #### FR-PLT-06.1 Activate/Deactivate — Detailed Breakdown
 
-**FR-PLT-06** allows the Platform Admin to toggle a tenant's active status via `PATCH /api/admin/tenants/{id}`. This is how the Platform Admin controls which schools can access the system.
+**FR-PLT-06** allows the Platform Admin to toggle a tenant's active status via `PATCH /api/v1/admin/tenants/{id}`. This is how the Platform Admin controls which schools can access the system.
 
 **Request:**
 ```json
@@ -176,7 +176,7 @@ PATCH is used because the update is **partial** — you're only changing `is_act
 
 | Method | Behavior | Example |
 |--------|----------|---------|
-| **PATCH** | Partial update — only send the fields that change | `PATCH /api/admin/tenants/{id}` with `{ "is_active": false }` |
+| **PATCH** | Partial update — only send the fields that change | `PATCH /api/v1/admin/tenants/{id}` with `{ "is_active": false }` |
 | **PUT** | Full replacement — must send every field | Would require `{ "name": "...", "subdomain": "...", "is_active": false, ... }` |
 
 This follows REST conventions: PATCH for partial modification, PUT for full replacement.
@@ -204,13 +204,13 @@ This follows REST conventions: PATCH for partial modification, PUT for full repl
 
 ## FR-PLT-08
 
-**FR-PLT-08** provides the Platform Admin a list of all tenants with their name, subdomain, active status, SMS balance, and creation date via `GET /api/admin/tenants`. This is the main tenant management overview.
+**FR-PLT-08** provides the Platform Admin a list of all tenants with their name, subdomain, active status, SMS balance, and creation date via `GET /api/v1/admin/tenants`. This is the main tenant management overview.
 
 ---
 
 ## FR-PLT-09
 
-**FR-PLT-09** allows the Platform Admin to adjust a tenant's SMS balance via `PATCH /api/admin/tenants/{id}/sms-balance`. The adjustment can be positive (add credits) or negative (deduct). Negative adjustments are validated to prevent the balance from going below zero. [Read more below](#fr-plt-09.1).
+**FR-PLT-09** allows the Platform Admin to adjust a tenant's SMS balance via `PATCH /api/v1/admin/tenants/{id}/sms-balance`. The adjustment can be positive (add credits) or negative (deduct). Negative adjustments are validated to prevent the balance from going below zero. [Read more below](#fr-plt-09.1).
 
 <a id="fr-plt-09.1"></a>
 #### FR-PLT-09.1 SMS Balance Adjustment — Detailed Breakdown
@@ -250,7 +250,7 @@ This follows REST conventions: PATCH for partial modification, PUT for full repl
 
 ## FR-PLT-10
 
-**FR-PLT-10** provides a cross-tenant notification log view for the Platform Admin via `GET /api/admin/notifications`. This enables monitoring of SMS/Email delivery status across all tenants for troubleshooting and auditing.
+**FR-PLT-10** provides a cross-tenant notification log view for the Platform Admin via `GET /api/v1/admin/notifications`. This enables monitoring of SMS/Email delivery status across all tenants for troubleshooting and auditing.
 
 ---
 
@@ -260,7 +260,7 @@ This follows REST conventions: PATCH for partial modification, PUT for full repl
 
 **How it works:**
 
-1. Platform Admin calls `PATCH /api/admin/users/{id}/reset-password` with `{ "new_password": "NewPass123" }`
+1. Platform Admin calls `PATCH /api/v1/admin/users/{id}/reset-password` with `{ "new_password": "NewPass123" }`
 2. System updates the user's `password_hash` in the `users` table
 3. System increments `token_version` to invalidate all existing sessions (BR-AUTH-08)
 4. User must log in again with the new password
@@ -273,7 +273,7 @@ This follows REST conventions: PATCH for partial modification, PUT for full repl
 
 ## FR-AUTH-01
 
-**FR-AUTH-01** authenticates Platform Admin credentials against the `platform_admins` table at the dedicated admin login page (`admin.sirius-skool.com`). When the user submits `POST /api/admin/auth/login`, the system verifies the email and bcrypt-hashed password, then issues a JWT access token and refresh token on success.
+**FR-AUTH-01** authenticates Platform Admin credentials against the `platform_admins` table at the dedicated admin login page (`admin.sirius-skool.com`). When the user submits `POST /api/v1/admin/auth/login`, the system verifies the email and bcrypt-hashed password, then issues a JWT access token and refresh token on success.
 
 **Validation:**
 - Invalid email or password → `401 INVALID_CREDENTIALS`
@@ -379,7 +379,7 @@ In local development (`localhost:5173`), there's no subdomain in the URL. The `X
 | Token | Type | Lifetime | Storage | Purpose |
 |-------|------|----------|---------|---------|
 | **Access token** | JWT | 15 minutes | Client (in-memory/header) | Sent on every API request in `Authorization: Bearer <token>` header. Contains user ID, tenant ID, role, and token version. |
-| **Refresh token** | UUID v4 | 7 days | Client + Server (DB or signed JWT) | Used only at `POST /api/auth/refresh` to get a new access token when the current one expires. |
+| **Refresh token** | UUID v4 | 7 days | Client + Server (DB or signed JWT) | Used only at `POST /api/v1/auth/refresh` to get a new access token when the current one expires. |
 
 **Why two tokens?**
 
@@ -448,7 +448,7 @@ In local development (`localhost:5173`), there's no subdomain in the URL. The `X
 
 ## FR-AUTH-06
 
-**FR-AUTH-06** revokes the refresh token on logout via `POST /api/auth/logout`. The provided refresh token is invalidated in storage, making it unusable for future refresh attempts. The user must re-authenticate to obtain new tokens. [Read more below](#fr-auth-06.1).
+**FR-AUTH-06** revokes the refresh token on logout via `POST /api/v1/auth/logout`. The provided refresh token is invalidated in storage, making it unusable for future refresh attempts. The user must re-authenticate to obtain new tokens. [Read more below](#fr-auth-06.1).
 
 <a id="fr-auth-06.1"></a>
 #### FR-AUTH-06.1 Logout & Token Revocation — Detailed Breakdown
@@ -457,7 +457,7 @@ In local development (`localhost:5173`), there's no subdomain in the URL. The `X
 
 **How it works:**
 
-1. User clicks "Logout" → frontend sends `POST /api/auth/logout` with the current refresh token
+1. User clicks "Logout" → frontend sends `POST /api/v1/auth/logout` with the current refresh token
 2. Server marks the refresh token as revoked in storage (DB table or blacklist)
 3. Server returns `200 OK` with `{ "message": "Logged out successfully" }`
 4. Frontend discards the access token from memory
@@ -476,7 +476,7 @@ In local development (`localhost:5173`), there's no subdomain in the URL. The `X
 
 ## FR-AUTH-07
 
-**FR-AUTH-07** issues new tokens via `POST /api/auth/refresh` using refresh token rotation with reuse detection. [Read more below](#fr-auth-07.1).
+**FR-AUTH-07** issues new tokens via `POST /api/v1/auth/refresh` using refresh token rotation with reuse detection. [Read more below](#fr-auth-07.1).
 
 <a id="fr-auth-07.1"></a>
 #### FR-AUTH-07.1 Token Refresh, Rotation & Reuse Detection — Detailed Breakdown
@@ -484,7 +484,7 @@ In local development (`localhost:5173`), there's no subdomain in the URL. The `X
 **FR-AUTH-07** extends the session by issuing new tokens when the access token expires. It uses **rotation** (old token revoked, new one issued) and **reuse detection** (stolen token triggers full revocation).
 
 **Normal flow:**
-1. Access token expires (~15 min) → frontend calls `POST /api/auth/refresh` with the current refresh token
+1. Access token expires (~15 min) → frontend calls `POST /api/v1/auth/refresh` with the current refresh token
 2. Server validates the refresh token (exists, not revoked, not expired)
 3. Server issues a **new** access token + **new** refresh token
 4. Server revokes the **old** refresh token
@@ -523,7 +523,7 @@ This is the recommended pattern from OAuth2 security best practices (RFC 6749 / 
 
 ## FR-AUTH-08
 
-**FR-AUTH-08** allows School Admin and Platform Admin to change their own password via `POST /api/auth/change-password`. The user provides their current password and a new password. The system verifies the current password before updating. Manager role is blocked from using this endpoint.
+**FR-AUTH-08** allows School Admin and Platform Admin to change their own password via `POST /api/v1/auth/change-password`. The user provides their current password and a new password. The system verifies the current password before updating. Manager role is blocked from using this endpoint.
 
 **Who can use it:**
 
@@ -543,7 +543,7 @@ This is the recommended pattern from OAuth2 security best practices (RFC 6749 / 
 
 ## FR-AUTH-09
 
-**FR-AUTH-09** returns the current authenticated user's profile, tenant information, and effective permissions via `GET /api/auth/me`. Platform Admin sees platform-level data. School Admin sees their tenant info plus all enabled module permissions. Manager sees their tenant info plus their assigned action-level permissions. [Read more below](#fr-auth-09.1).
+**FR-AUTH-09** returns the current authenticated user's profile, tenant information, and effective permissions via `GET /api/v1/auth/me`. Platform Admin sees platform-level data. School Admin sees their tenant info plus all enabled module permissions. Manager sees their tenant info plus their assigned action-level permissions. [Read more below](#fr-auth-09.1).
 
 <a id="fr-auth-09.1"></a>
 #### FR-AUTH-09.1 User Profile & Permissions — Detailed Breakdown
@@ -552,7 +552,7 @@ This is the recommended pattern from OAuth2 security best practices (RFC 6749 / 
 
 **Why a dedicated endpoint?**
 
-Instead of embedding all user/tenant/permission data in the login response (which would make login responses bulky), the login endpoint returns minimal user info plus tokens. The frontend then calls `GET /api/auth/me` to get the full profile. This keeps the login response lightweight and allows the profile to be refreshed without re-authentication.
+Instead of embedding all user/tenant/permission data in the login response (which would make login responses bulky), the login endpoint returns minimal user info plus tokens. The frontend then calls `GET /api/v1/auth/me` to get the full profile. This keeps the login response lightweight and allows the profile to be refreshed without re-authentication.
 
 **Per-role response structure:**
 
@@ -606,7 +606,7 @@ Instead of embedding all user/tenant/permission data in the login response (whic
 
 **How it works:**
 
-1. User submits credentials to `POST /api/auth/login`
+1. User submits credentials to `POST /api/v1/auth/login`
 2. System looks up the user by email in the `users` table (scoped by tenant)
 3. User is found → system checks `users.is_active`
 4. If `false` → return `403 ACCOUNT_INACTIVE` **before** password verification
@@ -680,14 +680,14 @@ The tenant check still comes **first**, but instead of blocking login, it branch
 | 2 | Response contains `tenant.is_active = false` |
 | 3 | Store tokens (needed for potential reactivation) |
 | 4 | Redirect to `/deactivated` page instead of dashboard |
-| 5 | Deactivation page shows the message and a "Try Again" button (which re-fetches `/api/auth/me` to check if tenant has been reactivated) |
+| 5 | Deactivation page shows the message and a "Try Again" button (which re-fetches `/api/v1/auth/me` to check if tenant has been reactivated) |
 
 **Edge cases:**
 
 | Scenario | Behavior |
 |----------|----------|
 | Tenant deactivated mid-session | Next API request middleware check detects `tenants.is_active = false` and returns `403 TENANT_INACTIVE`. Frontend redirects to deactivation page. |
-| Reactivated tenant | User on the deactivation page clicks "Try Again" → `/api/auth/me` returns `tenant.is_active = true` → frontend redirects to dashboard. |
+| Reactivated tenant | User on the deactivation page clicks "Try Again" → `/api/v1/auth/me` returns `tenant.is_active = true` → frontend redirects to dashboard. |
 | Reactivated tenant (new login) | Login proceeds normally — `tenant.is_active = true` in response — normal dashboard. |
 | User deactivated within deactivated tenant | Authentication fails with `403 ACCOUNT_INACTIVE` (user-level check still runs before issuing tokens). |
 | Platform Admin login | Not affected — Platform Admin authenticates against `platform_admins`, not the `users` table. |
@@ -745,7 +745,7 @@ When scaling to multiple server instances, replace the in-memory store with a Re
 
 ## FR-ACA-01
 
-**FR-ACA-01** allows School Admin to create academic years (e.g., "2026-2027") with a start date and end date via `POST /api/academic-years`. Academic years are the top-level entity that scopes enrollments, attendance, exams, and other time-bound data.
+**FR-ACA-01** allows School Admin to create academic years (e.g., "2026-2027") with a start date and end date via `POST /api/v1/academic-years`. Academic years are the top-level entity that scopes enrollments, attendance, exams, and other time-bound data.
 
 **What happens:**
 - A new `academic_years` row is created with the provided name and dates
@@ -772,25 +772,25 @@ When scaling to multiple server instances, replace the in-memory store with a Re
 
 ## FR-ACA-04
 
-**FR-ACA-04** allows School Admin to create classes (e.g., "Class 6", "Class 10") with a short code, display name, and sort order via `POST /api/classes`. Classes are permanent entities reused across academic years — they are soft-disabled rather than deleted (BR-ACA-04).
+**FR-ACA-04** allows School Admin to create classes (e.g., "Class 6", "Class 10") with a short code, display name, and sort order via `POST /api/v1/classes`. Classes are permanent entities reused across academic years — they are soft-disabled rather than deleted (BR-ACA-04).
 
 ---
 
 ## FR-ACA-05
 
-**FR-ACA-05** allows School Admin to create sections within a class (e.g., "Section A", "Section B") via `POST /api/classes/{classId}/sections`. Each section belongs to exactly one class (BR-ACA-05). Sections are where student enrollments and attendance are tracked.
+**FR-ACA-05** allows School Admin to create sections within a class (e.g., "Section A", "Section B") via `POST /api/v1/classes/{classId}/sections`. Each section belongs to exactly one class (BR-ACA-05). Sections are where student enrollments and attendance are tracked.
 
 ---
 
 ## FR-ACA-06
 
-**FR-ACA-06** allows School Admin to create subjects under a class (e.g., "Mathematics" for Class 6) via `POST /api/classes/{classId}/subjects`. Subject codes must be unique within a class (BR-ACA-07). Subject types include `MANDATORY` and `OPTIONAL`. These subjects are later referenced when configuring exams and marks.
+**FR-ACA-06** allows School Admin to create subjects under a class (e.g., "Mathematics" for Class 6) via `POST /api/v1/classes/{classId}/subjects`. Subject codes must be unique within a class (BR-ACA-07). Subject types include `MANDATORY` and `OPTIONAL`. These subjects are later referenced when configuring exams and marks.
 
 ---
 
 ## FR-ACA-07
 
-**FR-ACA-07** allows School Admin to set an academic year as the current year via `PATCH /api/academic-years/{id}` with `{ "is_current": true }`. The system automatically unmarks the previously current year, ensuring exactly one current year per tenant at all times.
+**FR-ACA-07** allows School Admin to set an academic year as the current year via `PATCH /api/v1/academic-years/{id}` with `{ "is_current": true }`. The system automatically unmarks the previously current year, ensuring exactly one current year per tenant at all times.
 
 ---
 
@@ -802,13 +802,13 @@ When scaling to multiple server instances, replace the in-memory store with a Re
 
 ## FR-SET-01
 
-**FR-SET-01** allows School Admin to view their tenant's settings via `GET /api/settings`. The response includes the school logo URL, address, phone number, and email — all of which are used in report branding and communication.
+**FR-SET-01** allows School Admin to view their tenant's settings via `GET /api/v1/settings`. The response includes the school logo URL, address, phone number, and email — all of which are used in report branding and communication.
 
 ---
 
 ## FR-SET-02
 
-**FR-SET-02** allows School Admin to update school branding information via `PATCH /api/settings`. Fields include logo URL, address, phone, and email. Only the School Admin role can modify settings (BR-SET-01).
+**FR-SET-02** allows School Admin to update school branding information via `PATCH /api/v1/settings`. Fields include logo URL, address, phone, and email. Only the School Admin role can modify settings (BR-SET-01).
 
 ---
 
@@ -820,7 +820,7 @@ When scaling to multiple server instances, replace the in-memory store with a Re
 
 ## FR-UP-01
 
-**FR-UP-01** allows School Admin to create Manager accounts via `POST /api/managers`. The School Admin provides the Manager's name, email, password, and phone. The user is created in the `users` table with `role = MANAGER` and `is_active = true`.
+**FR-UP-01** allows School Admin to create Manager accounts via `POST /api/v1/managers`. The School Admin provides the Manager's name, email, password, and phone. The user is created in the `users` table with `role = MANAGER` and `is_active = true`.
 
 **Validation:**
 - Email already in use → `409 EMAIL_EXISTS`
@@ -829,25 +829,25 @@ When scaling to multiple server instances, replace the in-memory store with a Re
 
 ## FR-UP-02
 
-**FR-UP-02** allows School Admin to activate or deactivate a Manager via `PATCH /api/managers/{id}`. Deactivation immediately invalidates all the Manager's active sessions by incrementing `token_version` (BR-UP-06), and the Manager cannot log in until reactivated (FR-AUTH-12).
+**FR-UP-02** allows School Admin to activate or deactivate a Manager via `PATCH /api/v1/managers/{id}`. Deactivation immediately invalidates all the Manager's active sessions by incrementing `token_version` (BR-UP-06), and the Manager cannot log in until reactivated (FR-AUTH-12).
 
 ---
 
 ## FR-UP-03
 
-**FR-UP-03** provides the School Admin a list of all Managers with their active status, last login timestamp, and a summary of their assigned permissions via `GET /api/managers`. This is the main user management view.
+**FR-UP-03** provides the School Admin a list of all Managers with their active status, last login timestamp, and a summary of their assigned permissions via `GET /api/v1/managers`. This is the main user management view.
 
 ---
 
 ## FR-UP-04
 
-**FR-UP-04** allows School Admin to assign fine-grained action-level permissions to a Manager via `PUT /api/managers/{id}/permissions`. The School Admin specifies which modules the Manager can access and which actions (view, create, edit, delete, print, export) are allowed. Modules not listed are denied by default (BR-UP-05).
+**FR-UP-04** allows School Admin to assign fine-grained action-level permissions to a Manager via `PUT /api/v1/managers/{id}/permissions`. The School Admin specifies which modules the Manager can access and which actions (view, create, edit, delete, print, export) are allowed. Modules not listed are denied by default (BR-UP-05).
 
 ---
 
 ## FR-UP-05
 
-**FR-UP-05** ensures that the School Admin can only delegate modules that were assigned by the Platform Admin. The `GET /api/permissions/available-modules` endpoint returns only the modules present in the tenant's `tenant_modules` table. This enforces the Tier 2 permission model boundary.
+**FR-UP-05** ensures that the School Admin can only delegate modules that were assigned by the Platform Admin. The `GET /api/v1/permissions/available-modules` endpoint returns only the modules present in the tenant's `tenant_modules` table. This enforces the Tier 2 permission model boundary.
 
 ---
 
@@ -863,7 +863,7 @@ When scaling to multiple server instances, replace the in-memory store with a Re
 
 **How it works:**
 
-1. School Admin calls `PATCH /api/managers/{id}/reset-password` with `{ "new_password": "NewPass123" }`
+1. School Admin calls `PATCH /api/v1/managers/{id}/reset-password` with `{ "new_password": "NewPass123" }`
 2. System updates the Manager's `password_hash` in the `users` table
 3. System increments `token_version` to invalidate all existing sessions (BR-AUTH-09)
 4. Manager must log in again with the new password
@@ -876,13 +876,13 @@ When scaling to multiple server instances, replace the in-memory store with a Re
 
 ## FR-MM-01
 
-**FR-MM-01** allows School Admin to view all modules assigned by Platform Admin along with their current enabled/disabled status via `GET /api/tenant-modules`. This is the module management overview.
+**FR-MM-01** allows School Admin to view all modules assigned by Platform Admin along with their current enabled/disabled status via `GET /api/v1/tenant-modules`. This is the module management overview.
 
 ---
 
 ## FR-MM-02
 
-**FR-MM-02** allows School Admin to toggle a module on or off via `PATCH /api/tenant-modules/{module}`. The School Admin can only toggle modules that were pre-assigned by the Platform Admin (BR-MM-02). Disabling a module hides it from all users in the tenant.
+**FR-MM-02** allows School Admin to toggle a module on or off via `PATCH /api/v1/tenant-modules/{module}`. The School Admin can only toggle modules that were pre-assigned by the Platform Admin (BR-MM-02). Disabling a module hides it from all users in the tenant.
 
 ---
 
@@ -894,7 +894,7 @@ When scaling to multiple server instances, replace the in-memory store with a Re
 
 ## FR-STU-01
 
-**FR-STU-01** accepts admission applications from prospective students via `POST /api/applications`. The form collects applicant details including name, gender, date of birth, guardian contact, and address. The application is created with `status = PENDING` and awaits Manager review.
+**FR-STU-01** accepts admission applications from prospective students via `POST /api/v1/applications`. The form collects applicant details including name, gender, date of birth, guardian contact, and address. The application is created with `status = PENDING` and awaits Manager review.
 
 **What happens:**
 - A unique application number is generated: `APP-{year}-{seq}` (FR-STU-02)
@@ -910,13 +910,13 @@ When scaling to multiple server instances, replace the in-memory store with a Re
 
 ## FR-STU-03
 
-**FR-STU-03** allows Managers with admission permission to view pending applications via `GET /api/applications?status=PENDING`. Results are paginated and filterable. This is the admission review queue where Managers can approve or reject applicants.
+**FR-STU-03** allows Managers with admission permission to view pending applications via `GET /api/v1/applications?status=PENDING`. Results are paginated and filterable. This is the admission review queue where Managers can approve or reject applicants.
 
 ---
 
 ## FR-STU-04
 
-**FR-STU-04** approves a pending application via `POST /api/applications/{id}/approve`, which creates a student record and an enrollment in a single atomic transaction (BR-STU-06). The Manager specifies the section to enroll the student in. On approval:
+**FR-STU-04** approves a pending application via `POST /api/v1/applications/{id}/approve`, which creates a student record and an enrollment in a single atomic transaction (BR-STU-06). The Manager specifies the section to enroll the student in. On approval:
 1. `students` row created with auto-generated registration number
 2. `student_enrollments` row created for the specified section and academic year
 3. Application status updated to `APPROVED`
@@ -929,7 +929,7 @@ When scaling to multiple server instances, replace the in-memory store with a Re
 
 ## FR-STU-05
 
-**FR-STU-05** rejects a pending application via `POST /api/applications/{id}/reject`. The Manager provides a rejection reason. The application status is updated to `REJECTED`. No student record is created.
+**FR-STU-05** rejects a pending application via `POST /api/v1/applications/{id}/reject`. The Manager provides a rejection reason. The application status is updated to `REJECTED`. No student record is created.
 
 **Validation:**
 - Application already reviewed → `409 ALREADY_REVIEWED`
@@ -950,25 +950,25 @@ When scaling to multiple server instances, replace the in-memory store with a Re
 
 ## FR-STU-08
 
-**FR-STU-08** provides full CRUD operations on student personal information via `/api/students` endpoints. School Admin and authorized Managers can view, create, update, and search student records. This covers changes to name, address, guardian details, and other personal fields.
+**FR-STU-08** provides full CRUD operations on student personal information via `/api/v1/students` endpoints. School Admin and authorized Managers can view, create, update, and search student records. This covers changes to name, address, guardian details, and other personal fields.
 
 ---
 
 ## FR-STU-09
 
-**FR-STU-09** provides student search by name, roll number, registration number, or class via `GET /api/students?search=...`. Additional filters include `class_id` and `academic_year_id`. Results include the student's current enrollment details.
+**FR-STU-09** provides student search by name, roll number, registration number, or class via `GET /api/v1/students?search=...`. Additional filters include `class_id` and `academic_year_id`. Results include the student's current enrollment details.
 
 ---
 
 ## FR-STU-10
 
-**FR-STU-10** allows School Admin to promote students to the next class, either individually or in bulk via `POST /api/students/promote`. The request specifies the from-class, to-class, section, and list of student IDs. New enrollments are created for the next academic year with fresh roll numbers. The operation is transactional — all-or-nothing (BR-STU-10 edge case).
+**FR-STU-10** allows School Admin to promote students to the next class, either individually or in bulk via `POST /api/v1/students/promote`. The request specifies the from-class, to-class, section, and list of student IDs. New enrollments are created for the next academic year with fresh roll numbers. The operation is transactional — all-or-nothing (BR-STU-10 edge case).
 
 ---
 
 ## FR-STU-11
 
-**FR-STU-11** handles end-of-year outcomes for students via `POST /api/students/{id}/outcome`. Supported outcomes:
+**FR-STU-11** handles end-of-year outcomes for students via `POST /api/v1/students/{id}/outcome`. Supported outcomes:
 - **Promote** — moves to next class
 - **Repeat** — stays in same class
 - **Graduate** — marks as graduated
@@ -981,19 +981,19 @@ Each outcome updates the student's status and enrollment record accordingly.
 
 ## FR-STU-12
 
-**FR-STU-12** allows School Admin to import students from an Excel file via `POST /api/students/import`. The system parses the file, validates rows, and creates student + enrollment records. Validation errors are reported per row without rolling back successful imports (partial success model).
+**FR-STU-12** allows School Admin to import students from an Excel file via `POST /api/v1/students/import`. The system parses the file, validates rows, and creates student + enrollment records. Validation errors are reported per row without rolling back successful imports (partial success model).
 
 ---
 
 ## FR-STU-13
 
-**FR-STU-13** allows School Admin to export student lists to Excel or PDF via `GET /api/students/export`. The export includes all student details and their current enrollment information, filtered by the provided query parameters.
+**FR-STU-13** allows School Admin to export student lists to Excel or PDF via `GET /api/v1/students/export`. The export includes all student details and their current enrollment information, filtered by the provided query parameters.
 
 ---
 
 ## FR-ATT-01
 
-**FR-ATT-01** initializes an attendance session by loading enrolled students for a given class, section, and date via `GET /api/attendance/sessions/init`. The response includes all students enrolled in that section for the current academic year, each defaulted to `PRESENT`. The user can then modify individual attendance statuses before saving.
+**FR-ATT-01** initializes an attendance session by loading enrolled students for a given class, section, and date via `GET /api/v1/attendance/sessions/init`. The response includes all students enrolled in that section for the current academic year, each defaulted to `PRESENT`. The user can then modify individual attendance statuses before saving.
 
 ---
 
@@ -1005,7 +1005,7 @@ Each outcome updates the student's status and enrollment record accordingly.
 
 ## FR-ATT-03
 
-**FR-ATT-03** saves the attendance session with all student records via `POST /api/attendance/sessions`. The session is created in `DRAFT` status, allowing further edits before final submission.
+**FR-ATT-03** saves the attendance session with all student records via `POST /api/v1/attendance/sessions`. The session is created in `DRAFT` status, allowing further edits before final submission.
 
 **Validation:**
 - Duplicate date for same section → `409` (BR-ATT-01)
@@ -1014,7 +1014,7 @@ Each outcome updates the student's status and enrollment record accordingly.
 
 ## FR-ATT-04
 
-**FR-ATT-04** submits a draft attendance session, transitioning it from `DRAFT` to `SUBMITTED` via `POST /api/attendance/sessions/{id}/submit`. Once submitted, the session is considered final and corrections require explicit editing (FR-ATT-05) with audit logging.
+**FR-ATT-04** submits a draft attendance session, transitioning it from `DRAFT` to `SUBMITTED` via `POST /api/v1/attendance/sessions/{id}/submit`. Once submitted, the session is considered final and corrections require explicit editing (FR-ATT-05) with audit logging.
 
 **Validation:**
 - Already submitted → `409 ALREADY_SUBMITTED`
@@ -1041,7 +1041,7 @@ Each outcome updates the student's status and enrollment record accordingly.
 
 ## FR-RES-01
 
-**FR-RES-01** allows School Admin to create exams for a specific class via `POST /api/exams`. The exam includes a name, start/end dates, and is linked to an academic year and class. The exam starts in `DRAFT` status.
+**FR-RES-01** allows School Admin to create exams for a specific class via `POST /api/v1/exams`. The exam includes a name, start/end dates, and is linked to an academic year and class. The exam starts in `DRAFT` status.
 
 **Validation:**
 - Duplicate exam name for the same class and academic year → `409` (BR-RES-01)
@@ -1050,19 +1050,19 @@ Each outcome updates the student's status and enrollment record accordingly.
 
 ## FR-RES-02
 
-**FR-RES-02** configures the subjects that are part of an exam via `POST /api/exams/{id}/subjects`. For each subject, the School Admin specifies full marks, pass marks, and display order. Subjects are drawn from the class's subject pool. Configuration is only possible while the exam is in `DRAFT` status.
+**FR-RES-02** configures the subjects that are part of an exam via `POST /api/v1/exams/{id}/subjects`. For each subject, the School Admin specifies full marks, pass marks, and display order. Subjects are drawn from the class's subject pool. Configuration is only possible while the exam is in `DRAFT` status.
 
 ---
 
 ## FR-RES-03
 
-**FR-RES-03** allows School Admin to create grade scales via `POST /api/grade-scales`. Grade scales define the mapping from mark ranges to letter grades and GPA (e.g., 80-100 → A+ → 5.00). Grade scales are tenant-wide (see Q-RES-03 for per-year considerations).
+**FR-RES-03** allows School Admin to create grade scales via `POST /api/v1/grade-scales`. Grade scales define the mapping from mark ranges to letter grades and GPA (e.g., 80-100 → A+ → 5.00). Grade scales are tenant-wide (see Q-RES-03 for per-year considerations).
 
 ---
 
 ## FR-RES-04
 
-**FR-RES-04** allows Manager to enter marks per student per subject via `PUT /api/exams/{id}/marks`. The Manager provides obtained marks for each student-subject pair. If a student was absent, `is_absent = true` is set and marks must be null (BR-RES-06). Note: marks should be entered while the exam is in DRAFT — the precondition "Exam is PUBLISHED" is a known issue in the SRS.
+**FR-RES-04** allows Manager to enter marks per student per subject via `PUT /api/v1/exams/{id}/marks`. The Manager provides obtained marks for each student-subject pair. If a student was absent, `is_absent = true` is set and marks must be null (BR-RES-06). Note: marks should be entered while the exam is in DRAFT — the precondition "Exam is PUBLISHED" is a known issue in the SRS.
 
 **Validation:**
 - Absent student with marks → validation error
@@ -1077,7 +1077,7 @@ Each outcome updates the student's status and enrollment record accordingly.
 
 ## FR-RES-06
 
-**FR-RES-06** publishes exam results via `POST /api/exams/{id}/publish`. Only School Admin can publish (BR-RES-03). Publishing sets `exams.result_published_at` and automatically triggers SMS/Email notifications to guardians. Publishing is a one-way gate — editing requires unpublishing first.
+**FR-RES-06** publishes exam results via `POST /api/v1/exams/{id}/publish`. Only School Admin can publish (BR-RES-03). Publishing sets `exams.result_published_at` and automatically triggers SMS/Email notifications to guardians. Publishing is a one-way gate — editing requires unpublishing first.
 
 **Validation:**
 - Marks missing for some students → `400 MARKS_INCOMPLETE`
@@ -1087,19 +1087,19 @@ Each outcome updates the student's status and enrollment record accordingly.
 
 ## FR-RES-07
 
-**FR-RES-07** unpublishes published results via `POST /api/exams/{id}/unpublish`, allowing marks to be edited. This returns the exam to a state where marks can be modified. After editing, the exam must be published again for the changes to be visible.
+**FR-RES-07** unpublishes published results via `POST /api/v1/exams/{id}/unpublish`, allowing marks to be edited. This returns the exam to a state where marks can be modified. After editing, the exam must be published again for the changes to be visible.
 
 ---
 
 ## FR-RES-08
 
-**FR-RES-08** generates a rank list for the exam via `GET /api/exams/{id}/rank-list`. Students are ranked by total marks in descending order. Ranking is only available after results are published.
+**FR-RES-08** generates a rank list for the exam via `GET /api/v1/exams/{id}/rank-list`. Students are ranked by total marks in descending order. Ranking is only available after results are published.
 
 ---
 
 ## FR-NTC-01
 
-**FR-NTC-01** allows authorized users (School Admin or Manager with permission) to upload a notice as a PDF or image file via `POST /api/notices`. The file is uploaded to Cloudinary and the notice record stores the file URL. Notices can be scheduled for future publication (FR-NTC-02).
+**FR-NTC-01** allows authorized users (School Admin or Manager with permission) to upload a notice as a PDF or image file via `POST /api/v1/notices`. The file is uploaded to Cloudinary and the notice record stores the file URL. Notices can be scheduled for future publication (FR-NTC-02).
 
 ---
 
@@ -1117,13 +1117,13 @@ Each outcome updates the student's status and enrollment record accordingly.
 
 ## FR-NTC-04
 
-**FR-NTC-04** archives a published notice via `POST /api/notices/{id}/archive`. Archived notices are hidden from the regular notice list but preserved for record-keeping. Published notices cannot be edited — they must be archived and a new notice created (BR-NTC-01).
+**FR-NTC-04** archives a published notice via `POST /api/v1/notices/{id}/archive`. Archived notices are hidden from the regular notice list but preserved for record-keeping. Published notices cannot be edited — they must be archived and a new notice created (BR-NTC-01).
 
 ---
 
 ## FR-NTC-05
 
-**FR-NTC-05** allows all authenticated users within the tenant to view published notices via `GET /api/notices`. Only notices with `is_published = true` and `publish_at <= now()` are returned. Expired notices (past `expires_at`) are excluded.
+**FR-NTC-05** allows all authenticated users within the tenant to view published notices via `GET /api/v1/notices`. Only notices with `is_published = true` and `publish_at <= now()` are returned. Expired notices (past `expires_at`) are excluded.
 
 ---
 
@@ -1135,7 +1135,7 @@ Each outcome updates the student's status and enrollment record accordingly.
 
 ## FR-NOT-01
 
-**FR-NOT-01** sends SMS notifications to guardians of absent students when the Manager triggers it via `POST /api/attendance/sessions/{id}/send-sms`. Messages are sent through the centralized provider. Each SMS consumes 1 credit from the tenant's balance.
+**FR-NOT-01** sends SMS notifications to guardians of absent students when the Manager triggers it via `POST /api/v1/attendance/sessions/{id}/send-sms`. Messages are sent through the centralized provider. Each SMS consumes 1 credit from the tenant's balance.
 
 ---
 
@@ -1153,7 +1153,7 @@ Each outcome updates the student's status and enrollment record accordingly.
 
 ## FR-NOT-04
 
-**FR-NOT-04** allows authorized users to send ad-hoc SMS or Email messages via `POST /api/notifications/send`. The user specifies the channel (SMS/Email), recipient, and message content. This is useful for emergency communications or custom alerts.
+**FR-NOT-04** allows authorized users to send ad-hoc SMS or Email messages via `POST /api/v1/notifications/send`. The user specifies the channel (SMS/Email), recipient, and message content. This is useful for emergency communications or custom alerts.
 
 ---
 
@@ -1183,7 +1183,7 @@ Each outcome updates the student's status and enrollment record accordingly.
 
 ## FR-RPT-01
 
-**FR-RPT-01** generates a printable student ID card PDF via `GET /api/reports/students/{id}/id-card`. The card includes the student's photo, name, registration number, class, section, roll number, and school branding (logo + name from Settings). The PDF is streamed as a binary response.
+**FR-RPT-01** generates a printable student ID card PDF via `GET /api/v1/reports/students/{id}/id-card`. The card includes the student's photo, name, registration number, class, section, roll number, and school branding (logo + name from Settings). The PDF is streamed as a binary response.
 
 ---
 
@@ -1213,13 +1213,13 @@ Each outcome updates the student's status and enrollment record accordingly.
 
 ## FR-DSH-01
 
-**FR-DSH-01** displays the School Admin dashboard at `GET /api/dashboard/school-admin` with key metrics: total students, today's attendance percentage, whether today's attendance has been taken, recent notices, SMS balance/quota, and quick action links. All metrics are scoped to the current academic year (BR-DSH-01).
+**FR-DSH-01** displays the School Admin dashboard at `GET /api/v1/dashboard/school-admin` with key metrics: total students, today's attendance percentage, whether today's attendance has been taken, recent notices, SMS balance/quota, and quick action links. All metrics are scoped to the current academic year (BR-DSH-01).
 
 ---
 
 ## FR-DSH-02
 
-**FR-DSH-02** displays the Manager dashboard at `GET /api/dashboard/manager` with a subset of widgets based on the Manager's assigned permissions (BR-DSH-02). A Manager with only attendance access sees attendance widgets; a Manager with student management access sees student widgets.
+**FR-DSH-02** displays the Manager dashboard at `GET /api/v1/dashboard/manager` with a subset of widgets based on the Manager's assigned permissions (BR-DSH-02). A Manager with only attendance access sees attendance widgets; a Manager with student management access sees student widgets.
 
 ---
 
@@ -1267,10 +1267,10 @@ Each outcome updates the student's status and enrollment record accordingly.
 
 ## FR-AUD-07
 
-**FR-AUD-07** allows School Admin to view audit logs for their own tenant via `GET /api/audit-logs`. Logs are filterable by module, action type, and date range. This provides transparency for internal operations within the school.
+**FR-AUD-07** allows School Admin to view audit logs for their own tenant via `GET /api/v1/audit-logs`. Logs are filterable by module, action type, and date range. This provides transparency for internal operations within the school.
 
 ---
 
 ## FR-AUD-08
 
-**FR-AUD-08** allows Platform Admin to view audit logs across all tenants via `GET /api/admin/audit-logs`. This enables centralized monitoring and compliance auditing across the entire platform.
+**FR-AUD-08** allows Platform Admin to view audit logs across all tenants via `GET /api/v1/admin/audit-logs`. This enables centralized monitoring and compliance auditing across the entire platform.
