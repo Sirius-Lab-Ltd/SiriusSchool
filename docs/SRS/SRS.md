@@ -1444,7 +1444,7 @@ Bulk promote students to next class.
 | BR-STU-05 | A student can have only one enrollment per academic year |
 | BR-STU-06 | Approving an application creates student + enrollment in a single transaction |
 | BR-STU-07 | Student statuses: `ACTIVE`, `DROPPED`, `TRANSFERRED`, `GRADUATED` (see Prisma `StudentStatus` enum) |
-| BR-STU-08 | Enrollment statuses: `ACTIVE`, `PROMOTED`, `TRANSFERRED`, `GRADUATED` |
+| BR-STU-08 | Enrollment statuses: `ACTIVE`, `COMPLETED`, `PROMOTED`, `REPEATED` (see Prisma `EnrollmentStatus` enum) |
 
 #### Edge Cases & Error States
 

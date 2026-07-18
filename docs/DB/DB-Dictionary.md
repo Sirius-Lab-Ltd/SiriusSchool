@@ -244,7 +244,7 @@ This provides:
 
 Instead of soft delete with a `deleted_at` column, the system uses **status-based lifecycle management**:
 
-- `students` → `status` enum (`ACTIVE`, `INACTIVE`, `TRANSFERRED`, `GRADUATED`)
+- `students` → `status` enum (`ACTIVE`, `DROPPED`, `TRANSFERRED`, `GRADUATED`)
 - `users` → `is_active` boolean
 - `notices` → `is_published` boolean + `publish_at` / `expires_at`
 - `classes`, `sections`, `subjects` → `is_active` boolean
@@ -2583,7 +2583,7 @@ The `students` table is the central entity for all student-related operations.
 ```text
 ACTIVE
 
-INACTIVE
+DROPPED
 
 TRANSFERRED
 
@@ -2601,7 +2601,7 @@ GRADUATED
 - Personal information may be updated without affecting academic history.
 - Class, section, roll number, and academic year must **not** be stored in this table.
 - Student promotions must never update this table.
-- Setting `status` to `TRANSFERRED` or `GRADUATED` prevents the student from participating in future academic activities while preserving historical records.
+- Setting `status` to `DROPPED`, `TRANSFERRED`, or `GRADUATED` prevents the student from participating in future academic activities while preserving historical records.
 - Admission applications may be permanently deleted after the configured retention period without affecting this table.
 
 ---
@@ -2784,11 +2784,11 @@ Academic operations always reference the appropriate enrollment record rather th
 ```text
 ACTIVE
 
+COMPLETED
+
 PROMOTED
 
-TRANSFERRED
-
-GRADUATED
+REPEATED
 ```
 
 ---
