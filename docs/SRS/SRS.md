@@ -411,22 +411,7 @@ Reset any tenant user's password (Platform Admin only).
 | 404 | `USER_NOT_FOUND` | User not found |
 | 403 | `FORBIDDEN` | Only Platform Admin can reset passwords |
 
-#### Data Model
-
-**Table: `tenants`** — Full schema in DB Dictionary §Table 2.
-
-| Column | Type | Example |
-|--------|------|---------|
-| id | UUID | `a1b2c3d4-...` |
-| name | VARCHAR(255) | `Springfield School` |
-| subdomain | VARCHAR(100) | `springfield` |
-| is_active | BOOLEAN | `true` |
-| sms_balance | INTEGER | `500` |
-| current_student_sequence | INTEGER | `156` |
-
-**Table: `tenant_settings`** — DB Dictionary §Table 3. One-to-one with tenant. Logo, address, phone, email.
-
-**Table: `tenant_modules`** — DB Dictionary §Table 4. Links tenant to enabled modules.
+> **Data Model:** Full schema in DB Dictionary §Table 2 (tenants), §Table 3 (tenant_settings), §Table 4 (tenant_modules).
 
 #### Business Rules
 
@@ -665,38 +650,7 @@ Current user profile + permissions.
 | 401 | `UNAUTHORIZED` | No valid access token provided |
 | 401 | `TOKEN_EXPIRED` | Access token has expired |
 
-#### Data Model
-
-**Table: `platform_admins`** — DB Dictionary §Table 1.
-
-| Column | Type | Example |
-|--------|------|---------|
-| id | UUID | `uuid` |
-| email | VARCHAR(255) | `admin@sirius.com` |
-| password_hash | TEXT | `$2y$...` |
-
-**Table: `users`** — DB Dictionary §Table 5.
-
-| Column | Type | Example |
-|--------|------|---------|
-| id | UUID | `uuid` |
-| tenant_id | UUID | `uuid` |
-| full_name | VARCHAR(255) | `John Doe` |
-| email | VARCHAR(255) | `admin@school.com` |
-| password_hash | TEXT | `$2y$...` |
-| role | USER_ROLE | `SCHOOL_ADMIN` |
-| is_active | BOOLEAN | `true` |
-| last_login_at | TIMESTAMPTZ | `2026-07-10T10:00:00Z` |
-
-**Table: `refresh_tokens`** — DB Dictionary §Table 6.
-
-| Column | Type | Example |
-|--------|------|---------|
-| token | UUID | `uuid` |
-| user_id | UUID? | `uuid` (null for Platform Admin tokens) |
-| platform_admin_id | UUID? | `uuid` (null for tenant user tokens) |
-| expires_at | TIMESTAMPTZ | `7 days from creation` |
-| revoked_at | TIMESTAMPTZ? | `null` (set on logout/rotation) |
+> **Data Model:** Full schema in DB Dictionary §Table 1 (platform_admins), §Table 5 (users), §Table 6 (refresh_tokens).
 
 #### Business Rules
 
@@ -877,41 +831,7 @@ List academic years for the tenant.
 }
 ```
 
-#### Data Model
-
-**Table: `academic_years`** — DB Dictionary §Table 7.
-
-| Column | Example |
-|--------|---------|
-| name | `2026-2027` |
-| start_date | `2026-01-01` |
-| end_date | `2026-12-31` |
-| is_current | `true` |
-
-**Table: `classes`** — DB Dictionary §Table 8.
-
-| Column | Example |
-|--------|---------|
-| code | `6` |
-| name | `Class 6` |
-| display_order | `7` |
-
-**Table: `sections`** — DB Dictionary §Table 9.
-
-| Column | Example |
-|--------|---------|
-| class_id | `uuid` |
-| code | `A` |
-| name | `Section A` |
-
-**Table: `subjects`** — DB Dictionary §Table 10.
-
-| Column | Example |
-|--------|---------|
-| class_id | `uuid` |
-| code | `MATH` |
-| name | `Mathematics` |
-| subject_type | `MANDATORY` |
+> **Data Model:** Full schema in DB Dictionary §Table 7 (academic_years), §Table 8 (classes), §Table 9 (sections), §Table 10 (subjects).
 
 #### Business Rules
 
@@ -979,9 +899,7 @@ List academic years for the tenant.
 }
 ```
 
-#### Data Model
-
-**Table: `tenant_settings`** — DB Dictionary §Table 3. Single row per tenant.
+> **Data Model:** Single row per tenant in DB Dictionary §Table 3.
 
 #### Business Rules
 
@@ -1139,20 +1057,7 @@ Reset a Manager's password (School Admin only).
 | 404 | `MANAGER_NOT_FOUND` | Manager not found |
 | 403 | `FORBIDDEN` | Only School Admin of the same tenant can reset Manager passwords |
 
-#### Data Model
-
-**Table: `manager_permissions`** — DB Dictionary §Table 6. Stores per-module boolean permission flags.
-
-| Column | Example |
-|--------|---------|
-| user_id | `uuid` |
-| tenant_module_id | `uuid` |
-| can_view | `true` |
-| can_create | `true` |
-| can_edit | `false` |
-| can_delete | `false` |
-| can_print | `false` |
-| can_export | `false` |
+> **Data Model:** Full schema in DB Dictionary §Table 6 (manager_permissions).
 
 #### Business Rules
 
@@ -1210,17 +1115,7 @@ Reset a Manager's password (School Admin only).
 }
 ```
 
-#### Data Model
-
-**Table: `tenant_modules`** — DB Dictionary §Table 4.
-
-| Column | Example |
-|--------|---------|
-| tenant_id | `uuid` |
-| module | `STUDENT_MANAGEMENT` |
-| is_enabled | `true` |
-
-**Module ENUM:** `STUDENT_MANAGEMENT`, `ATTENDANCE_MANAGEMENT`, `RESULT_MANAGEMENT`, `NOTICE_BOARD`, `REPORTS`, `NOTIFICATIONS`
+> **Data Model:** Full schema in DB Dictionary §Table 4. Module ENUM values defined in `schema.prisma` `ModuleEnum` and DB Dictionary §Module ENUM.
 
 #### Business Rules
 
@@ -1412,34 +1307,7 @@ Bulk promote students to next class.
 }
 ```
 
-#### Data Model
-
-**Table: `applications`** — DB Dictionary §Table 12.
-
-| Column | Example |
-|--------|---------|
-| application_no | `APP-2026-000001` |
-| full_name | `Alice Johnson` |
-| status | `PENDING` |
-
-**Table: `students`** — DB Dictionary §Table 13.
-
-| Column | Example |
-|--------|---------|
-| registration_no | `26000001` |
-| full_name | `Alice Johnson` |
-| status | `ACTIVE` |
-
-**Table: `student_enrollments`** — DB Dictionary §Table 14.
-
-| Column | Example |
-|--------|---------|
-| student_id | `uuid` |
-| academic_year_id | `uuid` |
-| class_id | `uuid` |
-| section_id | `uuid` |
-| roll_number | `1` |
-| status | `ACTIVE` |
+> **Data Model:** Full schema in DB Dictionary §Table 12 (applications), §Table 13 (students), §Table 14 (student_enrollments).
 
 #### Business Rules
 
@@ -1550,25 +1418,7 @@ Create (or update) an attendance session.
 }
 ```
 
-#### Data Model
-
-**Table: `attendance_sessions`** — DB Dictionary §Table 15.
-
-| Column | Example |
-|--------|---------|
-| academic_year_id | `uuid` |
-| class_id | `uuid` |
-| section_id | `uuid` |
-| attendance_date | `2026-07-10` |
-| status | `DRAFT` or `SUBMITTED` |
-
-**Table: `attendance_records`** — DB Dictionary §Table 16.
-
-| Column | Example |
-|--------|---------|
-| attendance_session_id | `uuid` |
-| student_enrollment_id | `uuid` |
-| attendance_status | `ABSENT` |
+> **Data Model:** Full schema in DB Dictionary §Table 15 (attendance_sessions), §Table 16 (attendance_records).
 
 #### Business Rules
 
@@ -1681,42 +1531,7 @@ Sets `exams.result_published_at` and triggers SMS/Email notifications.
 | 400 | `MARKS_INCOMPLETE` | Not all students have marks |
 | 403 | `FORBIDDEN` | Only School Admin can publish |
 
-#### Data Model
-
-**Table: `exams`** — DB Dictionary §Table 17.
-
-| Column | Example |
-|--------|---------|
-| name | `Mid-Term Examination` |
-| status | `DRAFT` / `PUBLISHED` / `COMPLETED` |
-| result_published_at | `2026-07-25T10:00:00Z` |
-
-**Table: `exam_subjects`** — DB Dictionary §Table 18.
-
-| Column | Example |
-|--------|---------|
-| exam_id | `uuid` |
-| subject_id | `uuid` |
-| full_marks | `100` |
-| pass_marks | `33` |
-
-**Table: `marks`** — DB Dictionary §Table 19.
-
-| Column | Example |
-|--------|---------|
-| exam_subject_id | `uuid` |
-| student_enrollment_id | `uuid` |
-| obtained_marks | `85.00` |
-| is_absent | `false` |
-
-**Table: `grade_scales`** — DB Dictionary §Table 20.
-
-| Column | Example |
-|--------|---------|
-| min_marks | `80` |
-| max_marks | `100` |
-| grade_letter | `A+` |
-| grade_point | `5.00` |
+> **Data Model:** Full schema in DB Dictionary §Table 17 (exams), §Table 18 (exam_subjects), §Table 19 (marks), §Table 20 (grade_scales).
 
 #### Business Rules
 
@@ -1795,18 +1610,7 @@ expires_at: "2026-12-20T00:00:00Z" (optional)
 }
 ```
 
-#### Data Model
-
-**Table: `notices`** — DB Dictionary §Table 21.
-
-| Column | Example |
-|--------|---------|
-| title | `Final Exam Routine` |
-| file_url | `https://.../notice.pdf` |
-| file_type | `PDF` |
-| publish_at | `2026-12-01T08:00:00Z` |
-| expires_at | `2026-12-20T00:00:00Z` |
-| is_published | `true` |
+> **Data Model:** Full schema in DB Dictionary §Table 21.
 
 #### Business Rules
 
@@ -1887,18 +1691,7 @@ View notification logs.
 }
 ```
 
-#### Data Model
-
-**Table: `notifications`** — DB Dictionary §Table 22.
-
-| Column | Example |
-|--------|---------|
-| channel | `SMS` |
-| recipient | `+8801712345678` |
-| message | `Your child was absent today.` |
-| status | `SENT` / `FAILED` / `PENDING` |
-| trigger_type | `ATTENDANCE` / `RESULT` / `MANUAL` / `SYSTEM` |
-| retry_count | `0` |
+> **Data Model:** Full schema in DB Dictionary §Table 22.
 
 #### Business Rules
 
@@ -2054,21 +1847,7 @@ View notification logs.
 }
 ```
 
-#### Data Model
-
-**Table: `audit_logs`** — DB Dictionary §Table 23.
-
-| Column | Example |
-|--------|---------|
-| tenant_id | `uuid` |
-| user_id | `uuid` |
-| module | `STUDENT_MANAGEMENT` |
-| action | `CREATED` |
-| entity_type | `Student` |
-| entity_id | `uuid` |
-| description | `Created student Alice Johnson` |
-| old_values | `null` |
-| new_values | `{"registration_no": "26000001"}` |
+> **Data Model:** Full schema in DB Dictionary §Table 23.
 
 #### Business Rules
 
