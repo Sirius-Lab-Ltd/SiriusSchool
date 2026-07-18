@@ -1145,12 +1145,6 @@ Each outcome updates the student's status and enrollment record accordingly.
 
 ---
 
-## FR-NOT-03
-
-**FR-NOT-03** sends password reset emails when a user requests a password reset via the forgot-password flow. This is a system-generated notification with a time-limited reset link.
-
----
-
 ## FR-NOT-04
 
 **FR-NOT-04** allows authorized users to send ad-hoc SMS or Email messages via `POST /api/v1/notifications/send`. The user specifies the channel (SMS/Email), recipient, and message content. This is useful for emergency communications or custom alerts.

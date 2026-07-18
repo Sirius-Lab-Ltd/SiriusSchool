@@ -1813,7 +1813,7 @@ expires_at: "2026-12-20T00:00:00Z" (optional)
 
 ### 3.11 Notification System
 
-**Quick Summary:** The system sends SMS and Email through a centralized gateway (no per-tenant provider config). SMS quota is managed per tenant by Platform Admin. Notifications are triggered by attendance marking (absentees), result publishing, forgot-password, and manual ad-hoc sends. All notifications are logged in the `notifications` table for delivery tracking and debugging.
+**Quick Summary:** The system sends SMS and Email through a centralized gateway (no per-tenant provider config). SMS quota is managed per tenant by Platform Admin. Notifications are triggered by attendance marking (absentees), result publishing, and manual ad-hoc sends. All notifications are logged in the `notifications` table for delivery tracking and debugging.
 
 #### Functional Requirements
 
@@ -1821,7 +1821,6 @@ expires_at: "2026-12-20T00:00:00Z" (optional)
 |----|-------------|----------|---------------|---------|------|
 | FR-NOT-01 | System shall send SMS to guardians of absent students when triggered | P1 | Attendance session submitted, absent students exist | POST /api/v1/attendance/sessions/{id}/send-sms | [More](./FR-Explanations.md#fr-not-01) |
 | FR-NOT-02 | System shall send SMS/Email to guardians when results are published | P1 | Exam results published | Auto-triggered on publish | [More](./FR-Explanations.md#fr-not-02) |
-| FR-NOT-03 | System shall send password reset email | P0 | Forgot-password requested | POST /api/v1/auth/forgot-password | [More](./FR-Explanations.md#fr-not-03) |
 | FR-NOT-04 | Authorized user shall send ad-hoc SMS/Email | P1 | Authenticated | POST /api/v1/notifications/send | [More](./FR-Explanations.md#fr-not-04) |
 | FR-NOT-05 | System shall deduct SMS balance per SMS sent | P1 | SMS sent successfully | After send | [More](./FR-Explanations.md#fr-not-05) |
 | FR-NOT-06 | System shall block SMS sending when balance is 0 | P1 | `sms_balance` = 0 | Before send | [More](./FR-Explanations.md#fr-not-06) |
@@ -2128,7 +2127,7 @@ View notification logs.
 | Attendance | FR-ATT-01 → FR-ATT-07 | §6.4 | attendance_sessions, attendance_records |
 | Results | FR-RES-01 → FR-RES-08 | §6.5 | exams, exam_subjects, marks, grade_scales |
 | Notice Board | FR-NTC-01 → FR-NTC-06 | §6.6 | notices |
-| Notifications | FR-NOT-01 → FR-NOT-08 | §6.7 | notifications |
+| Notifications | FR-NOT-01 → FR-NOT-02, FR-NOT-04 → FR-NOT-08 | §6.7 | notifications |
 | Reports | FR-RPT-01 → FR-RPT-05 | §6.8 | (read-only) |
 | Dashboard | FR-DSH-01 → FR-DSH-03 | §6.2 | (aggregated) |
 | Audit Logging | FR-AUD-01 → FR-AUD-08 | §10 | audit_logs |
