@@ -1877,6 +1877,7 @@ Login request → Resolve tenant from subdomain (FR-AUTH-03)
 | 6 | FR-ACA-06 | Create Subject | School Admin shall create subjects per class | P0 | Class exists | POST /api/v1/classes/{id}/subjects |
 | 7 | FR-ACA-07 | Set Current Academic Year | School Admin shall set one academic year as current | P0 | Academic year exists | PATCH /api/v1/academic-years/{id} |
 | 8 | FR-ACA-08 | List Academic Entities | System shall provide list endpoints for all academic entities (dropdowns) | P0 | Entity exists | GET endpoints |
+| 9 | FR-ACA-09 | Close/Reopen Academic Year | School Admin shall close an academic year (read-only) or reopen it | P0 | Academic year exists | POST /api/v1/academic-years/{id}/close |
 
 ---
 
@@ -2204,6 +2205,8 @@ Set an academic year as current.
 |----|------|
 | BR-ACA-01 | A tenant can have only one current academic year at a time |
 | BR-ACA-08 | Setting a new current academic year resets `current_student_sequence` to `starting_sequence` |
+| BR-ACA-09 | A closed academic year is read-only — no data edits allowed, only reports viewing |
+| BR-ACA-10 | Closing an academic year requires all attendance and results for that year to be finalized |
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -2253,12 +2256,65 @@ List academic years for the tenant.
 
 ---
 
+
+
+
+#### **9.** FR-ACA-09: Close/Reopen Academic Year
+
+| Property | Value |
+|----------|-------|
+| **ID** | FR-ACA-09 |
+| **Description** | School Admin shall close an academic year (read-only) or reopen it |
+| **Priority** | P0 |
+| **Preconditions** | Academic year exists |
+| **Trigger** | POST /api/v1/academic-years/{id}/close, POST /api/v1/academic-years/{id}/reopen |
+
+**Explanation:**
+
+**FR-ACA-09** allows School Admin to close an academic year via `POST /api/v1/academic-years/{id}/close`, making it read-only. Once closed, no attendance, results, or enrollment edits are permitted for that year — only report viewing is allowed (BR-ACA-09). All attendance and results must be finalized before closing (BR-ACA-10). A closed year can be reopened via `POST /api/v1/academic-years/{id}/reopen` if corrections are needed.
+
+**API Endpoint(s):**
+
+##### POST /api/v1/academic-years/{id}/close
+
+Close an academic year.
+
+**Response `200 OK`:**
+```json
+{
+  "id": "uuid",
+  "status": "CLOSED"
+}
+```
+
+**Errors:**
+
+| Status | Code | Condition |
+|--------|------|-----------|
+| 400 | `HAS_PENDING_DATA` | Attendance or results not finalized |
+
+##### POST /api/v1/academic-years/{id}/reopen
+
+Reopen a closed academic year.
+
+**Response `200 OK`:**
+```json
+{
+  "id": "uuid",
+  "status": "ACTIVE"
+}
+```
+
+**No related business rules or open questions.**
+
+---
+
 #### Open Questions
 
 | # | Question |
 |---|----------|
-| Q-ACA-01 | Do we need a `close` endpoint for academic years, or just `is_current` toggle? |
-| Q-ACA-02 | Should closing an academic year verify no pending attendance/results? |
+| Q-ACA-01 | Close endpoint or just is_current toggle? |
+| Q-ACA-02 | Verify no pending data before closing year? |
 
 ---
 
@@ -2274,7 +2330,7 @@ List academic years for the tenant.
 | # | ID | Name | Description | Priority | Preconditions | Trigger |
 |---|-----|------|-------------|----------|---------------|---------|
 | 1 | FR-SET-01 | View Settings | School Admin shall view their tenant settings | P0 | Authenticated as School Admin | GET /api/v1/settings |
-| 2 | FR-SET-02 | Update Settings | School Admin shall update school branding (logo, address, phone, email) | P0 | Authenticated | PATCH /api/v1/settings |
+| 2 | FR-SET-02 | Update Settings | School Admin shall update school information including branding, school code, notification settings, and localization | P0 | Authenticated | PATCH /api/v1/settings |
 | 3 | FR-SET-03 | Logo Upload | System shall upload logo to Cloudinary and store URL | P0 | File uploaded | During settings update |
 
 ---
@@ -2325,14 +2381,14 @@ List academic years for the tenant.
 | Property | Value |
 |----------|-------|
 | **ID** | FR-SET-02 |
-| **Description** | School Admin shall update school branding (logo, address, phone, email) |
+| **Description** | School Admin shall update school information including branding, school code, notification settings, and localization |
 | **Priority** | P0 |
 | **Preconditions** | Authenticated |
 | **Trigger** | PATCH /api/v1/settings |
 
 **Explanation:**
 
-**FR-SET-02** allows School Admin to update school branding information via `PATCH /api/v1/settings`. Fields include logo URL, address, phone, and email. Only the School Admin role can modify settings (BR-SET-01).
+**FR-SET-02** allows School Admin to update school information and configuration via `PATCH /api/v1/settings`. Fields include logo URL, school code, address, phone, email, timezone, date/number format, sender name/ID overrides for notifications, and per-trigger notification type toggles with customizable templates. Only the School Admin role can modify settings (BR-SET-01).
 
 **API Endpoint(s):**
 
@@ -2916,6 +2972,7 @@ Reset a Manager's password (School Admin only).
 | 11 | FR-STU-11 | End-of-Year Outcomes | System shall handle end-of-year outcomes: Promote, Repeat, Graduate, Transfer, Dropout | P0 | Academic year ending | POST /api/v1/students/{id}/outcome |
 | 12 | FR-STU-12 | Import Students from Excel | School Admin shall import students from Excel | P1 | Authenticated | POST /api/v1/students/import |
 | 13 | FR-STU-13 | Export Student List | School Admin shall export student list to Excel/PDF | P1 | Authenticated | GET /api/v1/students/export |
+| 14 | FR-STU-14 | Auto-Expire Pending Applications | System shall auto-delete applications in PENDING state after 30 days | P1 | Application is PENDING for 30+ days | Cron/queue job |
 
 ---
 
@@ -3476,6 +3533,31 @@ Export student list.
 **Response:** Binary file stream (Excel or PDF)
 
 **No related business rules or open questions.**
+
+---
+
+
+
+
+#### **14.** FR-STU-14: Auto-Expire Pending Applications
+
+| Property | Value |
+|----------|-------|
+| **ID** | FR-STU-14 |
+| **Description** | System shall auto-delete applications in PENDING state after 30 days |
+| **Priority** | P1 |
+| **Preconditions** | Application is PENDING for 30+ days |
+| **Trigger** | Cron/queue job |
+
+**Explanation:**
+
+**FR-STU-14** automatically deletes applications that have been in `PENDING` status for 30 days or more. This prevents the temporary admission table from accumulating stale records. The cleanup runs via a cron job or queue worker.
+
+**Related Business Rules:**
+
+| ID | Rule |
+|----|------|
+| BR-STU-09 | Applications in `PENDING` status for 30+ days are automatically deleted |
 
 ---
 
@@ -4270,6 +4352,7 @@ Generate rank list for exam.
 | 4 | FR-NTC-04 | Archive Notice | Authorized user shall archive a published notice | P1 | Notice is published | POST /api/v1/notices/{id}/archive |
 | 5 | FR-NTC-05 | View Published Notices | All authenticated users shall view published notices | P1 | Notice is published | GET /api/v1/notices |
 | 6 | FR-NTC-06 | Auto-Hide Expired Notice | System shall auto-hide expired notices based on `expires_at` | P1 | `expires_at` is reached | Cron/queue job |
+| 7 | FR-NTC-07 | Delete Notice | Authorized user shall soft-delete a notice | P1 | Notice exists | DELETE /api/v1/notices/{id} |
 
 ---
 
@@ -4485,6 +4568,45 @@ Archive a published notice.
 
 ---
 
+
+
+
+#### **7.** FR-NTC-07: Delete Notice
+
+| Property | Value |
+|----------|-------|
+| **ID** | FR-NTC-07 |
+| **Description** | Authorized user shall soft-delete a notice |
+| **Priority** | P1 |
+| **Preconditions** | Notice exists |
+| **Trigger** | DELETE /api/v1/notices/{id} |
+
+**Explanation:**
+
+**FR-NTC-07** allows authorized users to soft-delete a notice via `DELETE /api/v1/notices/{id}`. The notice's `status` is set to `DELETED`, hiding it from all views. Data is preserved for audit purposes.
+
+**API Endpoint(s):**
+
+##### DELETE /api/v1/notices/{id}
+
+**Response `200 OK`:**
+```json
+{
+  "notice_id": "uuid",
+  "status": "DELETED"
+}
+```
+
+**Errors:**
+
+| Status | Code | Condition |
+|--------|------|-----------|
+| 404 | `NOT_FOUND` | Notice not found |
+
+**No related business rules or open questions.**
+
+---
+
 ---
 
 ### 3.11 Notification System
@@ -4505,6 +4627,7 @@ Archive a published notice.
 | 5 | FR-NOT-06 | Block SMS at Zero Balance | System shall block SMS sending when balance is 0 | P1 | `sms_balance` = 0 | Before send |
 | 6 | FR-NOT-07 | Log Notifications | System shall log every notification with status, recipient, message | P0 | Notification sent or failed | After attempt |
 | 7 | FR-NOT-08 | Retry Failed Notifications | System shall retry failed notifications (configurable) | P1 | Status = FAILED | Cron/queue job |
+| 8 | FR-NOT-09 | Configure Notification Settings | School Admin shall enable/disable notification types and customize sender name | P1 | Authenticated as School Admin | PATCH /api/v1/settings/notifications |
 
 ---
 
@@ -4735,6 +4858,32 @@ View notification logs.
 
 ---
 
+
+
+
+#### **8.** FR-NOT-09: Configure Notification Settings
+
+| Property | Value |
+|----------|-------|
+| **ID** | FR-NOT-09 |
+| **Description** | School Admin shall enable/disable notification types and customize sender name |
+| **Priority** | P1 |
+| **Preconditions** | Authenticated as School Admin |
+| **Trigger** | PATCH /api/v1/settings/notifications |
+
+**Explanation:**
+
+**FR-NOT-09** allows School Admin to configure notification preferences per tenant:
+- **Notification types:** Enable/disable SMS and Email independently for each notification trigger (absentee alerts, result publication, ad-hoc sends).
+- **Sender name:** Override the default sender name/ID for SMS and Email.
+- **Templates:** Customize default notification templates using variables such as `{student_name}`, `{class}`, `{section}`, `{date}`, `{school_name}`, `{percentage}`, `{subject}`.
+
+Settings are stored in `tenant_settings` and apply to all subsequently triggered notifications. Template changes apply to the next notification, not retroactively.
+
+**No related business rules or open questions.**
+
+---
+
 #### Open Questions
 
 | # | Question |
@@ -4758,6 +4907,9 @@ View notification logs.
 | 3 | FR-RPT-03 | Generate Attendance Report | System shall generate attendance report PDF/Excel | P1 | Attendance records exist | GET /api/v1/reports/attendance |
 | 4 | FR-RPT-04 | Generate Result Report | System shall generate result report PDF (per student or per exam) | P1 | Results published | GET /api/v1/reports/results |
 | 5 | FR-RPT-05 | Embed School Branding | System shall embed school logo and name from Settings in all reports | P1 | Settings configured | During generation |
+| 6 | FR-RPT-06 | Generate Admission Form Report | System shall generate admission form PDF with applicant details | P1 | Student exists | GET /api/v1/reports/students/{id}/admission-form |
+| 7 | FR-RPT-07 | Generate Student Profile Report | System shall generate student profile PDF with complete history | P1 | Student exists | GET /api/v1/reports/students/{id}/profile |
+| 8 | FR-RPT-08 | Generate Character Certificate | System shall generate character certificate PDF | P1 | Student exists | GET /api/v1/reports/students/{id}/character-certificate |
 
 ---
 
@@ -4920,6 +5072,89 @@ Generate result report PDF.
 
 ---
 
+
+
+
+#### **6.** FR-RPT-06: Generate Admission Form Report
+
+| Property | Value |
+|----------|-------|
+| **ID** | FR-RPT-06 |
+| **Description** | System shall generate admission form PDF with applicant details |
+| **Priority** | P1 |
+| **Preconditions** | Student exists |
+| **Trigger** | GET /api/v1/reports/students/{id}/admission-form |
+
+**Explanation:**
+
+**FR-RPT-06** generates an admission form PDF with the student's original application details via `GET /api/v1/reports/students/{id}/admission-form`. The form includes the applicant's name, guardian details, address, date of birth, and admission date as recorded during application approval.
+
+**API Endpoint(s):**
+
+##### GET /api/v1/reports/students/{id}/admission-form
+
+**Response:** Binary PDF stream
+
+**No related business rules or open questions.**
+
+---
+
+
+
+
+#### **7.** FR-RPT-07: Generate Student Profile Report
+
+| Property | Value |
+|----------|-------|
+| **ID** | FR-RPT-07 |
+| **Description** | System shall generate student profile PDF with complete history |
+| **Priority** | P1 |
+| **Preconditions** | Student exists |
+| **Trigger** | GET /api/v1/reports/students/{id}/profile |
+
+**Explanation:**
+
+**FR-RPT-07** generates a comprehensive student profile PDF via `GET /api/v1/reports/students/{id}/profile`. The profile includes personal details, enrollment history across academic years, attendance records, exam results, and status changes.
+
+**API Endpoint(s):**
+
+##### GET /api/v1/reports/students/{id}/profile
+
+**Query params:** `?academic_year_id=uuid`
+
+**Response:** Binary PDF stream
+
+**No related business rules or open questions.**
+
+---
+
+
+
+
+#### **8.** FR-RPT-08: Generate Character Certificate
+
+| Property | Value |
+|----------|-------|
+| **ID** | FR-RPT-08 |
+| **Description** | System shall generate character certificate PDF |
+| **Priority** | P1 |
+| **Preconditions** | Student exists |
+| **Trigger** | GET /api/v1/reports/students/{id}/character-certificate |
+
+**Explanation:**
+
+**FR-RPT-08** generates a Character Certificate PDF via `GET /api/v1/reports/students/{id}/character-certificate`. The certificate attests to the student's conduct and character during their time at the school. It includes the student's name, period of study, and the school's official seal and branding.
+
+**API Endpoint(s):**
+
+##### GET /api/v1/reports/students/{id}/character-certificate
+
+**Response:** Binary PDF stream
+
+**No related business rules or open questions.**
+
+---
+
 ---
 
 ### 3.13 Dashboard
@@ -4946,14 +5181,14 @@ Generate result report PDF.
 | Property | Value |
 |----------|-------|
 | **ID** | FR-DSH-01 |
-| **Description** | System shall display School Admin dashboard with all metrics |
+| **Description** | System shall display School Admin dashboard with all metrics including SMS balance warning |
 | **Priority** | P0 |
 | **Preconditions** | Authenticated as School Admin |
 | **Trigger** | GET /api/v1/dashboard/school-admin |
 
 **Explanation:**
 
-**FR-DSH-01** displays the School Admin dashboard at `GET /api/v1/dashboard/school-admin` with key metrics: total students, today's attendance percentage, whether today's attendance has been taken, recent notices, SMS balance/quota, and quick action links. All metrics are scoped to the current academic year (BR-DSH-01).
+**FR-DSH-01** displays the School Admin dashboard at `GET /api/v1/dashboard/school-admin` with key metrics: total students, today's attendance percentage, whether today's attendance has been taken, recent notices, SMS balance/quota (with a warning banner when balance drops below 10% of the original quota), and quick action links. All metrics are scoped to the current academic year (BR-DSH-01).
 
 **API Endpoint(s):**
 
@@ -5433,6 +5668,13 @@ View audit logs across all tenants.
 | GET | /api/v1/dashboard/manager | Dashboard | FR-DSH-02 |
 | GET | /api/v1/audit-logs | Audit | FR-AUD-07 |
 | GET | /api/v1/admin/audit-logs | Audit | FR-AUD-08 |
+| DELETE | /api/v1/notices/{id} | Notice Board | FR-NTC-07 |
+| GET | /api/v1/reports/students/{id}/admission-form | Reports | FR-RPT-06 |
+| GET | /api/v1/reports/students/{id}/profile | Reports | FR-RPT-07 |
+| GET | /api/v1/reports/students/{id}/character-certificate | Reports | FR-RPT-08 |
+| PATCH | /api/v1/settings/notifications | Settings | FR-NOT-09 |
+| POST | /api/v1/academic-years/{id}/close | Academic | FR-ACA-09 |
+| POST | /api/v1/academic-years/{id}/reopen | Academic | FR-ACA-09 |
 ### B. Complete Business Rules
 
 | ID | Rule | Module |
@@ -5463,6 +5705,9 @@ View audit logs across all tenants.
 | BR-ACA-05 | A section belongs to exactly one class | Academic |
 | BR-ACA-06 | A subject belongs to exactly one class | Academic |
 | BR-ACA-07 | Subject codes must be unique within a class | Academic |
+| BR-ACA-08 | Setting a new current academic year resets `current_student_sequence` to `starting_sequence` | Academic |
+| BR-ACA-09 | A closed academic year is read-only — no data edits allowed, only reports viewing | Academic |
+| BR-ACA-10 | Closing an academic year requires all attendance and results for that year to be finalized | Academic |
 | BR-SET-01 | Only School Admin can modify settings | Settings |
 | BR-SET-02 | Every tenant has exactly one settings record | Settings |
 | BR-UP-01 | Only users with role MANAGER can have permission records | Permissions |
@@ -5483,6 +5728,7 @@ View audit logs across all tenants.
 | BR-STU-06 | Approving an application creates student + enrollment in a single transaction | Student |
 | BR-STU-07 | StudentStatus enum: ACTIVE, DROPPED, TRANSFERRED, GRADUATED | Student |
 | BR-STU-08 | EnrollmentStatus enum: ACTIVE, COMPLETED, PROMOTED, REPEATED | Student |
+| BR-STU-09 | Applications in PENDING status for 30+ days are automatically deleted | Student |
 | BR-ATT-01 | A section can have only one attendance session per date per academic year | Attendance |
 | BR-ATT-02 | Attendance defaults to PRESENT — only absentees are explicitly marked | Attendance |
 | BR-ATT-03 | Attendance corrections after submission are logged in audit_logs | Attendance |
@@ -5521,16 +5767,16 @@ View audit logs across all tenants.
 |--------|--------|-------|-----------|
 | Platform & Multi-Tenant | FR-PLT-01 → FR-PLT-11 | §4, §5, §9 | tenants, tenant_settings, tenant_modules |
 | Authentication | FR-AUTH-01 → FR-AUTH-12 | §6.1, §10 | platform_admins, users |
-| Academic Structure | FR-ACA-01 → FR-ACA-08 | §6.9, §7.3 | academic_years, classes, sections, subjects |
+| Academic Structure | FR-ACA-01 → FR-ACA-09 | §6.9, §7.3 | academic_years, classes, sections, subjects |
 | Settings | FR-SET-01 → FR-SET-03 | §6.9 | tenant_settings |
 | User & Permission Mgmt | FR-UP-01 → FR-UP-07 | §7.1, §8 | users, manager_permissions |
 | Module Management | FR-MM-01 → FR-MM-03 | §7.2 | tenant_modules |
-| Student Management | FR-STU-01 → FR-STU-13 | §6.3, §9 | applications, students, student_enrollments |
+| Student Management | FR-STU-01 → FR-STU-14 | §6.3, §9 | applications, students, student_enrollments |
 | Attendance | FR-ATT-01 → FR-ATT-07 | §6.4 | attendance_sessions, attendance_records |
 | Results | FR-RES-01 → FR-RES-08 | §6.5 | exams, exam_subjects, marks, grade_scales |
-| Notice Board | FR-NTC-01 → FR-NTC-06 | §6.6 | notices |
-| Notifications | FR-NOT-01 → FR-NOT-02, FR-NOT-04 → FR-NOT-08 | §6.7 | notifications |
-| Reports | FR-RPT-01 → FR-RPT-05 | §6.8 | (read-only) |
+| Notice Board | FR-NTC-01 → FR-NTC-07 | §6.6 | notices |
+| Notifications | FR-NOT-01 → FR-NOT-02, FR-NOT-04 → FR-NOT-09 | §6.7 | notifications |
+| Reports | FR-RPT-01 → FR-RPT-08 | §6.8 | (read-only) |
 | Dashboard | FR-DSH-01 → FR-DSH-03 | §6.2 | (aggregated) |
 | Audit Logging | FR-AUD-01 → FR-AUD-08 | §10 | audit_logs |
 
@@ -5571,8 +5817,8 @@ View audit logs across all tenants.
 | Q-AUTH-01 | Auth | Access token expiry configurable? | Closed: Hardcoded 15 min for MVP |
 | Q-AUTH-02 | Auth | Refresh token storage — add refresh_tokens model to Prisma, or use signed JWTs without DB lookup? | Closed: DB-backed refresh_tokens model added |
 | Q-AUTH-03 | Auth | Single session per user enforced in MVP? | Closed: Not enforced in MVP |
-| Q-ACA-01 | Academic | Close endpoint or just is_current toggle? | Open |
-| Q-ACA-02 | Academic | Verify no pending data before closing year? | Open |
+| Q-ACA-01 | Academic | Close endpoint or just is_current toggle? | Closed: Close/reopen endpoints added in FR-ACA-09 |
+| Q-ACA-02 | Academic | Verify no pending data before closing year? | Closed: BR-ACA-10 requires all attendance and results finalized |
 | Q-SET-01 | Settings | Where are notification templates stored? | Open |
 | Q-SET-02 | Settings | Password policy configurable or hardcoded? | Closed: Hardcoded for MVP (BR-AUTH-13) |
 | Q-UP-01 | Permissions | Can School Admin edit Manager email/password? | Open |
