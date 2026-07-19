@@ -5813,30 +5813,30 @@ View audit logs across all tenants.
 
 | ID | Module | Question | Status |
 |----|--------|----------|--------|
-| Q-PLT-01 | Platform | Should tenant deletion be implemented in MVP? | Open |
-| Q-PLT-02 | Platform | What is the default module set for new tenants? | Open |
+| Q-PLT-01 | Platform | Should tenant deletion be implemented in MVP? | Closed: Only deactivation, never delete |
+| Q-PLT-02 | Platform | What is the default module set for new tenants? | Closed: ALL checked marked while creating tanent |
 | Q-AUTH-01 | Auth | Access token expiry configurable? | Closed: Hardcoded 15 min for MVP |
-| Q-AUTH-02 | Auth | Refresh token storage — add refresh_tokens model to Prisma, or use signed JWTs without DB lookup? | Closed: DB-backed refresh_tokens model added |
+| Q-AUTH-02 | Auth | Refresh token storage — add refresh_tokens model to Prisma, or use signed JWTs without DB lookup? | Closed: Access and Refresh token workflow |
 | Q-AUTH-03 | Auth | Single session per user enforced in MVP? | Closed: Not enforced in MVP |
-| Q-ACA-01 | Academic | Close endpoint or just is_current toggle? | Closed: Close/reopen endpoints added in FR-ACA-09 |
-| Q-ACA-02 | Academic | Verify no pending data before closing year? | Closed: BR-ACA-10 requires all attendance and results finalized |
+| Q-ACA-01 | Academic | Close endpoint or just is_current toggle? | OPEN |
+| Q-ACA-02 | Academic | Verify no pending data before closing year? | Closed: Saved data as it is in current DB |
 | Q-SET-01 | Settings | Where are notification templates stored? | Open |
-| Q-SET-02 | Settings | Password policy configurable or hardcoded? | Closed: Hardcoded for MVP (BR-AUTH-13) |
-| Q-UP-01 | Permissions | Can School Admin edit Manager email/password? | Open |
-| Q-UP-02 | Permissions | can_print separate from can_export in UI? | Open |
-| Q-STU-01 | Student | Admission form public or authenticated? | Open |
-| Q-STU-02 | Student | Application number format? | Open |
-| Q-STU-03 | Student | CAPTCHA on public admission form? | Open |
-| Q-STU-04 | Student | Reactivate TRANSFERRED or GRADUATED students? | Open |
-| Q-ATT-01 | Attendance | Attendance status granularity? | Open |
-| Q-ATT-02 | Attendance | Month closure in MVP? | Open |
-| Q-ATT-03 | Attendance | Backdate limit value? | Open |
-| Q-RES-01 | Results | Grid view or one-by-one marks entry? | Open |
-| Q-RES-02 | Results | Multiple managers per exam subject-wise? | Open |
-| Q-RES-03 | Results | Grade scale per tenant or per year? | Open |
-| Q-NOT-01 | Notifications | SMS/Email provider in MVP? | Open |
-| Q-NOT-02 | Notifications | Customizable notification templates? | Open |
-| Q-RPT-01 | Reports | PDF generation library? | Open |
+| Q-SET-02 | Settings | Password policy configurable or hardcoded? | Closed: Hardcoded in validation zod |
+| Q-UP-01 | Permissions | Can School Admin edit Manager email/password? | Closed: YES |
+| Q-UP-02 | Permissions | can_print separate from can_export in UI? | Closed: Same |
+| Q-STU-01 | Student | Admission form public or authenticated? | Closed: A public endpoint for public users |
+| Q-STU-02 | Student | Application number format? | Closed: As it is in PRD  |
+| Q-STU-03 | Student | CAPTCHA on public admission form? | Closed: NO captcha, We can use rate limitter |
+| Q-STU-04 | Student | Reactivate TRANSFERRED or GRADUATED students? | Closed: Can reactive  |
+| Q-ATT-01 | Attendance | Attendance status granularity? | Closed: only Present and Absent |
+| Q-ATT-02 | Attendance | Month closure in MVP? | Closed: No, Can edit any time  |
+| Q-ATT-03 | Attendance | Backdate limit value? | OPEN |
+| Q-RES-01 | Results | Grid view or one-by-one marks entry? | OPEN |
+| Q-RES-02 | Results | Multiple managers per exam subject-wise? | Closed: There is no restriction or defined manager, any manager or multiple manager can entry or edit. |
+| Q-RES-03 | Results | Grade scale per tenant or per year? | Closed: Per tenant  |
+| Q-NOT-01 | Notifications | SMS/Email provider in MVP? | OPEN |
+| Q-NOT-02 | Notifications | Customizable notification templates? | Closed: Yes, from the setting of notification templates |
+| Q-RPT-01 | Reports | PDF generation library? | OPEN |
 | Q-RPT-02 | Reports | Excel export library? | Open |
 | Q-RPT-03 | Reports | Sync or async report generation? | Open |
 
