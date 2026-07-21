@@ -881,7 +881,7 @@ Platform Admin views notification logs across all tenants.
 
 **Explanation:**
 
-**FR-PLT-11** allows the Platform Admin to reset any tenant user's password (School Admin or Manager) without requiring the current password. This is the only way a tenant user can get a password reset — there is no self-service forgot-password flow.
+**FR-PLT-11** allows the Platform Admin to reset any tenant user's password (School Admin or Manager) without requiring the current password. There is no self-service forgot-password flow.
 
 **How it works:**
 1. Platform Admin calls `PATCH /api/v1/admin/users/{id}/reset-password` with `{ "new_password": "NewPass123" }`
@@ -3545,9 +3545,15 @@ Set end-of-year outcome for a student.
 
 **Explanation:**
 
-**FR-STU-12** allows School Admin to import students from an Excel file via `POST /api/v1/students/import`. The system parses the file, validates rows, and creates student + enrollment records. Validation errors are reported per row without rolling back successful imports (partial success model).
+**FR-STU-12** allows School Admin to import students from an Excel file via `POST /api/v1/students/import`. The system parses the file, validates rows, and creates student + enrollment records. Validation errors are reported per row without rolling back successful imports (partial success model). School Admin can download an Excel template with the required columns before importing.
 
 **API Endpoint(s):**
+
+##### GET /api/v1/students/import/template
+
+Download an Excel template with the required columns for student import.
+
+**Response:** Binary Excel stream (.xlsx) with column headers
 
 ##### POST /api/v1/students/import
 
@@ -3687,7 +3693,7 @@ Export student list.
 
 **Explanation:**
 
-**FR-ATT-01** initializes an attendance session by loading enrolled students for a given class, shift, section, and date via `GET /api/v1/attendance/sessions/init`. The response includes all students enrolled in that section for the current academic year, each defaulted to `PRESENT`. The user can then modify individual attendance statuses before saving.
+**FR-ATT-01** initializes an attendance session by loading enrolled students for a given class, shift, section, and date via `GET /api/v1/attendance/sessions/init`. Each student row displays Roll, Name, and previous 3 days attendance (P/A badges). The response includes all students enrolled in that section for the current academic year, each defaulted to `PRESENT`. The user can then modify individual attendance statuses before saving.
 
 **API Endpoint(s):**
 
@@ -3706,8 +3712,8 @@ Load enrolled students for attendance marking.
   "section_id": "uuid",
   "date": "2026-07-10",
   "students": [
-    { "student_id": "uuid", "roll_number": 1, "full_name": "Alice", "status": "PRESENT" },
-    { "student_id": "uuid", "roll_number": 2, "full_name": "Bob", "status": "PRESENT" }
+    { "student_id": "uuid", "roll_number": 1, "full_name": "Alice", "status": "PRESENT", "previous_attendance": ["P", "P", "A"] },
+    { "student_id": "uuid", "roll_number": 2, "full_name": "Bob", "status": "PRESENT", "previous_attendance": ["P", "P", "P"] }
   ]
 }
 ```
@@ -3877,7 +3883,7 @@ Create (or update) an attendance session.
 
 **Explanation:**
 
-**FR-ATT-05** allows editing attendance records after submission. Changes are tracked in `audit_logs` with old and new values. This provides an audit trail for attendance corrections. Edits are only possible for users with the appropriate permission.
+**FR-ATT-05** allows editing attendance records after submission. Changes are tracked in `audit_logs` with old and new values. This provides an audit trail for attendance corrections. Edits are only possible for users with the appropriate permission and are restricted to a configurable window (e.g., same day only) per BR-ATT-06.
 
 **API Endpoint(s):**
 
@@ -3914,6 +3920,7 @@ Edit attendance records after submission.
 | ID | Rule |
 |----|------|
 | BR-ATT-03 | Attendance corrections after submission are logged in `audit_logs` |
+| BR-ATT-06 | Attendance editing is restricted to a configurable window (e.g., same day only) |
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -3972,7 +3979,7 @@ Edit attendance records after submission.
 
 **Explanation:**
 
-**FR-ATT-07** provides attendance reports for School Admin, filterable by class, shift (optional), student, and date range. The reports aggregate attendance data across sessions and can be used for monitoring student attendance patterns.
+**FR-ATT-07** provides attendance reports for School Admin, filterable by class, shift (optional), student, and date range. The reports aggregate attendance data across sessions and can be used for monitoring student attendance patterns. Reports can be viewed as a monthly breakdown (tabular + summary) or as a full date-range summary.
 
 **API Endpoint(s):**
 
@@ -3980,16 +3987,28 @@ Edit attendance records after submission.
 
 View attendance reports.
 
-**Query params:** `?class_id=uuid&student_id=uuid&from_date=2026-01-01&to_date=2026-12-31`
+**Query params:** `?class_id=uuid&shift_id=uuid&student_id=uuid&from_date=2026-01-01&to_date=2026-12-31&group_by=monthly`
 
-**Response `200 OK`:**
+**Response `200 OK` (monthly grouping):**
 ```json
 {
   "class_id": "uuid",
-  "total_days": 180,
-  "records": [
-    { "student_id": "uuid", "full_name": "Alice", "present": 175, "absent": 5, "percentage": 97.2 }
-  ]
+  "group_by": "monthly",
+  "months": [
+    {
+      "month": "2026-01",
+      "total_days": 22,
+      "records": [
+        { "student_id": "uuid", "full_name": "Alice", "present": 21, "absent": 1, "percentage": 95.5 }
+      ]
+    }
+  ],
+  "summary": {
+    "total_days": 180,
+    "total_present": 175,
+    "total_absent": 5,
+    "overall_percentage": 97.2
+  }
 }
 ```
 
@@ -4009,7 +4028,7 @@ View attendance reports.
 
 ### 3.9 Result Management
 
-**Quick Summary:** School Admin creates exams for a class, adds subjects with full/pass marks, enters student marks, and publishes results. Grade scales define letter grade + GPA mapping. Results trigger SMS/Email notifications on publish. Publishing is School Admin-only.
+**Quick Summary:** School Admin creates exams for a class, adds subjects with full marks, pass marks, and subject weight, enters student marks, and publishes results. Grade scales define letter grade + GPA mapping. Results trigger SMS/Email notifications on publish. Publishing is School Admin-only.
 
 > **Data Model:** Full schema in DB Dictionary §Table 17 (exams), §Table 18 (exam_subjects), §Table 19 (marks), §Table 20 (grade_scales).
 
@@ -4092,14 +4111,14 @@ View attendance reports.
 | Property | Value |
 |----------|-------|
 | **ID** | FR-RES-02 |
-| **Description** | School Admin shall configure subjects for an exam (full marks, pass marks, display order) |
+| **Description** | School Admin shall configure subjects for an exam (full marks, pass marks, subject weight, display order) |
 | **Priority** | P1 |
 | **Preconditions** | Exam in DRAFT |
 | **Trigger** | POST /api/v1/exams/{id}/subjects |
 
 **Explanation:**
 
-**FR-RES-02** configures the subjects that are part of an exam via `POST /api/v1/exams/{id}/subjects`. For each subject, the School Admin specifies full marks, pass marks, and display order. Subjects are drawn from the class's subject pool. Configuration is only possible while the exam is in `DRAFT` status.
+**FR-RES-02** configures the subjects that are part of an exam via `POST /api/v1/exams/{id}/subjects`. For each subject, the School Admin specifies full marks, pass marks, subject weight (optional, default 1), and display order. Subject weight is a multiplier used for weighted percentage and GPA calculations. Subjects are drawn from the class's subject pool. Configuration is only possible while the exam is in `DRAFT` status.
 
 **API Endpoint(s):**
 
@@ -4113,6 +4132,7 @@ View attendance reports.
       "subject_id": "uuid",
       "full_marks": 100,
       "pass_marks": 33,
+      "subject_weight": 1,
       "display_order": 1
     }
   ]
@@ -5647,6 +5667,7 @@ View audit logs across all tenants.
 | POST | /api/v1/students/promote | Student | FR-STU-10 |
 | POST | /api/v1/students/{id}/outcome | Student | FR-STU-11 |
 | POST | /api/v1/students/import | Student | FR-STU-12 |
+| GET | /api/v1/students/import/template | Student | FR-STU-12 |
 | GET | /api/v1/students/export | Student | FR-STU-13 |
 | GET | /api/v1/attendance/sessions/init | Attendance | FR-ATT-01 |
 | POST | /api/v1/attendance/sessions | Attendance | FR-ATT-03 |
@@ -5739,6 +5760,7 @@ View audit logs across all tenants.
 | BR-ATT-03 | Attendance corrections after submission are logged in audit_logs | Attendance |
 | BR-ATT-04 | Each SMS sent consumes 1 credit from tenants.sms_balance | Attendance |
 | BR-ATT-05 | Only today's and future dates can have attendance taken (configurable backdate limit) | Attendance |
+| BR-ATT-06 | Attendance editing is restricted to a configurable window (e.g., same day only) | Attendance |
 | BR-RES-01 | A class cannot have two exams with the same name in the same academic year | Results |
 | BR-RES-02 | Marks can only be entered for the current academic year | Results |
 | BR-RES-03 | Publish is exclusive to School Admin role | Results |
