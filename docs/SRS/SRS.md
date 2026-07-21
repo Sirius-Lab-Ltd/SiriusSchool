@@ -2461,7 +2461,7 @@ Reopen a closed academic year.
 
 **Explanation:**
 
-**FR-SET-02** allows School Admin to update school information and configuration via `PATCH /api/v1/settings`. Fields include logo URL, school code, address, phone, email, timezone, date/number format, sender name/ID overrides for notifications, and per-trigger notification type toggles with customizable templates. Only the School Admin role can modify settings (BR-SET-01).
+**FR-SET-02** allows School Admin to update school information and configuration via `PATCH /api/v1/settings`. Fields include logo URL, school code, address, phone, email, timezone, date/number format, sender name/ID overrides for notifications, per-trigger notification type toggles with customizable templates, and an attendance month closure toggle (if enabled, past month attendance is read-only). Only the School Admin role can modify settings (BR-SET-01).
 
 **API Endpoint(s):**
 
@@ -4021,7 +4021,7 @@ View attendance reports.
 | # | Question |
 |---|----------|
 | Q-ATT-01 | Should attendance status include more than PRESENT/ABSENT? *(Closed: only Present and Absent supported per PRD §6.4)* |
-| Q-ATT-02 | Is "month closure" (making attendance read-only) in MVP scope? |
+| Q-ATT-02 | Is "month closure" (making attendance read-only) in MVP scope? *(Closed: configurable toggle in Settings — see FR-SET-02)* |
 | Q-ATT-03 | Backdate limit — 7 days configurable? Or fixed? |
 
 ---
@@ -4040,7 +4040,7 @@ View attendance reports.
 | 1 | FR-RES-01 | Create Exam | School Admin shall create exams with name, start/end date, class | P1 | Academic year exists, class exists | POST /api/v1/exams |
 | 2 | FR-RES-02 | Configure Exam Subjects | School Admin shall configure subjects for an exam (full marks, pass marks, display order) | P1 | Exam in DRAFT | POST /api/v1/exams/{id}/subjects |
 | 3 | FR-RES-03 | Create Grade Scale | School Admin shall create grade scales for the tenant | P1 | Authenticated | POST /api/v1/grade-scales |
-| 4 | FR-RES-04 | Enter Marks | Manager shall enter marks per student per subject | P1 | Exam is PUBLISHED | PUT /api/v1/exams/{id}/marks |
+| 4 | FR-RES-04 | Enter Marks | Manager shall enter marks per student per subject | P1 | Exam in DRAFT | PUT /api/v1/exams/{id}/marks |
 | 5 | FR-RES-05 | Auto-Calculate Results | System shall auto-calculate total, percentage, grade, GPA | P1 | Marks entered | During calculation/display |
 | 6 | FR-RES-06 | Publish Results | School Admin shall publish exam results | P1 | All marks entered | POST /api/v1/exams/{id}/publish |
 | 7 | FR-RES-07 | Unpublish Results | School Admin shall unpublish results for editing | P1 | Results are published | POST /api/v1/exams/{id}/unpublish |
@@ -4212,12 +4212,12 @@ Create a grade scale.
 | **ID** | FR-RES-04 |
 | **Description** | Manager shall enter marks per student per subject |
 | **Priority** | P1 |
-| **Preconditions** | Exam is PUBLISHED |
+| **Preconditions** | Exam in DRAFT |
 | **Trigger** | PUT /api/v1/exams/{id}/marks |
 
 **Explanation:**
 
-**FR-RES-04** allows Manager to enter marks per student per subject via `PUT /api/v1/exams/{id}/marks`. The Manager provides obtained marks for each student-subject pair. If a student was absent, `is_absent = true` is set and marks must be null (BR-RES-06). Note: marks should be entered while the exam is in DRAFT — the precondition "Exam is PUBLISHED" is a known issue in the SRS.
+**FR-RES-04** allows Manager to enter marks per student per subject via `PUT /api/v1/exams/{id}/marks`. The Manager provides obtained marks for each student-subject pair. If a student was absent, `is_absent = true` is set and marks must be null (BR-RES-06). Marks can only be entered while the exam is in DRAFT status — results must be published separately (FR-RES-06) after all marks are entered.
 
 **Validation:**
 - Absent student with marks → validation error
@@ -5863,7 +5863,7 @@ View audit logs across all tenants.
 | Q-STU-03 | Student | CAPTCHA on public admission form? | Closed: NO captcha, We can use rate limitter |
 | Q-STU-04 | Student | Reactivate TRANSFERRED or GRADUATED students? | Closed: Can reactive  |
 | Q-ATT-01 | Attendance | Attendance status granularity? | Closed: only Present and Absent |
-| Q-ATT-02 | Attendance | Month closure in MVP? | Closed: No, Can edit any time  |
+| Q-ATT-02 | Attendance | Month closure in MVP? | Closed: Configurable toggle in Settings (FR-SET-02) — if enabled, past month attendance is read-only |
 | Q-ATT-03 | Attendance | Backdate limit value? | OPEN |
 | Q-RES-01 | Results | Grid view or one-by-one marks entry? | OPEN |
 | Q-RES-02 | Results | Multiple managers per exam subject-wise? | Closed: There is no restriction or defined manager, any manager or multiple manager can entry or edit. |

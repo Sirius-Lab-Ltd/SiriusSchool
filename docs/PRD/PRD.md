@@ -392,13 +392,14 @@ At the end of each academic year, every student must be assigned one of the foll
 |---|---|
 | **Format** | `YY + Sequence` (e.g., `26000001`) |
 | **YY** | Last two digits of the admission calendar year (e.g., `26` for 2026, `27` for 2027) |
-| **Sequence** | Continuous, never-resetting integer per tenant, padded to minimum width |
-| **Examples** | `26000001`, `26000568`, `27001569`, `341000000` (padded width auto-expands) |
+| **Sequence** | Resets each academic year per tenant, padded to fixed width (6 digits) |
+| **Examples** | `26000001`, `26000568`, `27000001`, `27000002` (resets each academic year) |
 
 **Generation Mechanism:**
 - A `current_student_sequence` column on the `tenants` table stores the counter per tenant.
+- The sequence resets to 1 at the start of each new academic year.
 - On admission: read counter → generate `YY + padded(sequence)` → increment counter → commit (all in one atomic transaction).
-- The sequence starts at 1 for new tenants. For schools migrating from legacy data, the starting value is configurable at tenant setup.
+- The sequence starts at 1 for a new tenant's first academic year. For schools migrating from legacy data, the starting value is configurable at tenant setup.
 
 > **Registration year vs Academic Year:** The registration number uses the **calendar year** of admission (e.g., a student admitted in January 2027 gets `27xxxxx` in the sequence), while the student's enrollment belongs to an **Academic Year** (e.g., `2026-2027`). These are independent concepts — a single Academic Year can contain students admitted across two different calendar years (e.g., a student admitted in June 2026 and another admitted in January 2027 can both be enrolled in Academic Year `2026-2027`).
 
@@ -476,7 +477,7 @@ student_enrollments (
 - All students default to Present — only absentees are explicitly marked
 - Only today's and future dates can have attendance taken (no back-dating beyond 7 days, configurable)
 - Edited attendance is logged (who changed what, when)
-- Once a month is closed (configured by School Admin), attendance becomes read-only
+- Attendance editing for past months can be restricted via a toggle in Settings — if enabled, attendance for closed months becomes read-only
 - "Send SMS" sends only to guardians of absent students (uses system's centralized SMS gateway)
 - Each SMS sent consumes from the tenant's SMS quota (see Notification System)
 
@@ -830,10 +831,10 @@ Module: User Management — (School Admin only — not assignable)
 18. Platform Admin can adjust the quota for any tenant from the platform dashboard at any time.
 
 ### Registration Number Rules
-19. Registration number format is `YY + continuous_sequence` (e.g., `26000001`). No class, section, or other changeable attribute is embedded.
+19. Registration number format is `YY + sequence` (e.g., `26000001`). The sequence resets each academic year. No class, section, or other changeable attribute is embedded.
 20. The sequence is stored per tenant in `tenants.current_student_sequence` and increments atomically on each admission.
 21. Registration number is unique per tenant (`UNIQUE(tenant_id, registration_number)`) and never changes for the student's entire tenure.
-22. Starting sequence value is configurable at tenant creation for legacy migrations.
+22. Starting sequence value is configurable at tenant creation for legacy migrations. The sequence resets to the configured starting value each academic year.
 
 ### Data Rules
 23. Deleting a record performs a soft delete (data preserved for reports/audit).
