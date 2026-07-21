@@ -1,0 +1,1737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SiriusSchool — School Admin Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" referrerpolicy="no-referrer" />
+<style>
+/* ===== RESET ===== */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px;-webkit-font-smoothing:antialiased}
+body{font-family:'Inter',-apple-system,sans-serif;color:#1F2937;background:#F3F4F6;height:100vh;overflow:hidden}
+a{text-decoration:none;color:inherit}
+ul{list-style:none}
+button{cursor:pointer;font-family:inherit}
+input,select,textarea,button{font-size:inherit}
+
+/* ===== VARIABLES ===== */
+:root{
+  --sidebar-w:240px;
+  --topbar-h:60px;
+  --gray-50:#F9FAFB;
+  --gray-100:#F3F4F6;
+  --gray-200:#E5E7EB;
+  --gray-300:#D1D5DB;
+  --gray-400:#9CA3AF;
+  --gray-500:#6B7280;
+  --gray-600:#4B5563;
+  --gray-700:#374151;
+  --gray-800:#1F2937;
+  --gray-900:#111827;
+  --white:#FFFFFF;
+  --green:#10B981;
+  --red:#EF4444;
+  --yellow:#F59E0B;
+  --blue:#3B82F6;
+  --indigo:#6366F1;
+  --primary:#4F46E5;
+  --primary-hover:#4338CA;
+  --font:'Inter',sans-serif;
+  --shadow-sm:0 1px 2px rgba(0,0,0,.05);
+  --shadow-md:0 4px 6px rgba(0,0,0,.07);
+  --shadow-lg:0 10px 15px rgba(0,0,0,.1);
+  --radius-sm:4px;
+  --radius-md:6px;
+  --radius-lg:8px;
+  --radius-full:999px;
+}
+
+/* ===== FONT AWESOME ICON STYLING ===== */
+.sidebar-nav .fas,.sidebar-footer .fas{width:20px;text-align:center;font-size:15px}
+.btn .fas{font-size:13px}
+.btn-icon .fas{font-size:14px}
+.stat-icon .fas{font-size:20px}
+.card-header h2 .fas{font-size:15px;margin-right:6px}
+.module-info .fas{font-size:20px;width:24px;text-align:center}
+.report-card .fas{font-size:28px;width:36px;text-align:center}
+.sms-badge .fas{font-size:13px}
+.notif-btn .fas{font-size:16px}
+.user-menu .fas{font-size:14px}
+
+/* ===== LAYOUT ===== */
+.layout{display:grid;grid-template-columns:var(--sidebar-w) 1fr;grid-template-rows:var(--topbar-h) 1fr;grid-template-areas:"sidebar topbar" "sidebar main";height:100vh}
+.sidebar{grid-area:sidebar;background:var(--white);border-right:1px solid var(--gray-200);display:flex;flex-direction:column;overflow:hidden}
+.topbar{grid-area:topbar;background:var(--white);border-bottom:1px solid var(--gray-200);display:flex;align-items:center;padding:0 24px}
+.main{grid-area:main;overflow-y:auto;padding:24px;background:var(--gray-50)}
+
+/* ===== SIDEBAR ===== */
+.sidebar-brand{display:flex;align-items:center;gap:10px;padding:16px 20px;border-bottom:1px solid var(--gray-200);min-height:60px}
+.sidebar-brand .logo{width:32px;height:32px;background:var(--primary);border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;color:var(--white);font-weight:700;font-size:16px;flex-shrink:0}
+.sidebar-brand span{font-weight:600;font-size:15px;color:var(--gray-800);white-space:nowrap}
+.sidebar-nav{flex:1;overflow-y:auto;padding:8px 0}
+.sidebar-nav li a{display:flex;align-items:center;gap:10px;padding:10px 20px;font-size:14px;color:var(--gray-600);transition:.15s;border-left:3px solid transparent}
+.sidebar-nav li a:hover{background:var(--gray-50);color:var(--gray-800)}
+.sidebar-nav li a.active{background:var(--gray-50);color:var(--primary);border-left-color:var(--primary);font-weight:500}
+.sidebar-nav .nav-group a .arrow{margin-left:auto;font-size:10px;transition:.2s}
+.sidebar-nav .nav-group.open a .arrow{transform:rotate(180deg)}
+.sub-nav{display:none;background:var(--gray-50)}
+.nav-group.open .sub-nav{display:block}
+.sub-nav a{padding-left:52px!important;font-size:13px!important;border-left-color:transparent!important}
+.sub-nav a.active{color:var(--primary)!important;font-weight:500!important}
+.sidebar-footer{border-top:1px solid var(--gray-200);padding:8px 0}
+.sidebar-footer a{padding:10px 20px;font-size:14px;color:var(--gray-600);display:flex;align-items:center;gap:10px}
+.sidebar-footer a:hover{background:var(--gray-50)}
+.text-danger{color:var(--red)!important}
+
+/* ===== TOPBAR ===== */
+.topbar-left{display:flex;align-items:center;gap:12px;font-size:14px;color:var(--gray-500);flex:1}
+.topbar-left .hamburger{display:none;background:none;border:none;font-size:20px;color:var(--gray-500);padding:4px}
+.topbar-right{display:flex;align-items:center;gap:16px;flex:1;justify-content:flex-end}
+.sms-badge{display:flex;align-items:center;gap:6px;padding:4px 12px;background:var(--gray-100);border-radius:var(--radius-full);font-size:13px;font-weight:500;color:var(--gray-700)}
+.sms-badge .sms-warn{color:var(--yellow)}
+.notif-btn{position:relative;background:none;border:none;font-size:18px;padding:6px;border-radius:var(--radius-md);color:var(--gray-500)}
+.notif-btn:hover{background:var(--gray-100)}
+.notif-btn .badge-dot{position:absolute;top:2px;right:2px;width:8px;height:8px;background:var(--red);border-radius:50%;border:2px solid var(--white)}
+.user-menu{display:flex;align-items:center;gap:8px;padding:4px 8px;border-radius:var(--radius-md);cursor:pointer;background:none;border:none}
+.user-menu:hover{background:var(--gray-100)}
+.avatar{width:32px;height:32px;border-radius:50%;background:var(--primary);display:flex;align-items:center;justify-content:center;color:var(--white);font-weight:600;font-size:14px}
+.user-name{font-size:14px;font-weight:500;color:var(--gray-700)}
+
+/* ===== BREADCRUMB ===== */
+.breadcrumb{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--gray-400);margin-bottom:20px}
+.breadcrumb a{color:var(--gray-500)}
+.breadcrumb a:hover{color:var(--primary)}
+.breadcrumb .sep{color:var(--gray-300)}
+.breadcrumb .current{color:var(--gray-700);font-weight:500}
+
+/* ===== PAGE SECTIONS ===== */
+.page-section{display:none}
+.page-section.active{display:block}
+
+/* ===== CARDS ===== */
+.card{background:var(--white);border-radius:var(--radius-lg);border:1px solid var(--gray-200);padding:20px;margin-bottom:16px}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.card-header h2{font-size:16px;font-weight:600;color:var(--gray-800)}
+.card-header h3{font-size:14px;font-weight:600;color:var(--gray-700)}
+
+/* ===== STATS GRID ===== */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-bottom:20px}
+.stat-card{background:var(--white);border-radius:var(--radius-lg);border:1px solid var(--gray-200);padding:16px 20px;display:flex;gap:14px;align-items:flex-start}
+.stat-icon{width:44px;height:44px;border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.stat-icon.blue{background:#EFF6FF;color:var(--blue)}
+.stat-icon.green{background:#ECFDF5;color:var(--green)}
+.stat-icon.yellow{background:#FFFBEB;color:var(--yellow)}
+.stat-icon.indigo{background:#EEF2FF;color:var(--indigo)}
+.stat-content{flex:1}
+.stat-value{font-size:24px;font-weight:700;color:var(--gray-800);line-height:1.2}
+.stat-label{font-size:13px;color:var(--gray-500);margin-top:2px}
+.stat-trend{font-size:12px;margin-top:4px;display:flex;align-items:center;gap:4px}
+.stat-trend.up{color:var(--green)}
+.stat-trend.down{color:var(--red)}
+.progress-sm{height:4px;background:var(--gray-200);border-radius:var(--radius-full);margin-top:8px;overflow:hidden}
+.progress-sm .bar{height:100%;border-radius:var(--radius-full);background:var(--green)}
+
+/* ===== DASHBOARD LAYOUT ===== */
+.dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.dash-grid .card{height:fit-content}
+
+/* ===== BUTTONS ===== */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--radius-md);font-size:14px;font-weight:500;border:1px solid transparent;transition:.15s;white-space:nowrap}
+.btn-primary{background:var(--primary);color:var(--white);border-color:var(--primary)}
+.btn-primary:hover{background:var(--primary-hover)}
+.btn-secondary{background:var(--white);color:var(--gray-600);border-color:var(--gray-300)}
+.btn-secondary:hover{background:var(--gray-50);border-color:var(--gray-400)}
+.btn-danger{background:var(--red);color:var(--white);border-color:var(--red)}
+.btn-danger:hover{background:#DC2626}
+.btn-success{background:var(--green);color:var(--white);border-color:var(--green)}
+.btn-success:hover{background:#059669}
+.btn-sm{padding:5px 10px;font-size:13px}
+.btn-icon{padding:6px;min-width:32px;min-height:32px;justify-content:center;font-size:15px;background:none;border:1px solid transparent;color:var(--gray-500);border-radius:var(--radius-md)}
+.btn-icon:hover{background:var(--gray-100);color:var(--gray-700)}
+.btn-icon.danger:hover{background:#FEF2F2;color:var(--red)}
+.disabled{opacity:.5;pointer-events:none}
+
+/* ===== FILTER BAR ===== */
+.filter-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:16px;padding:12px 16px;background:var(--white);border-radius:var(--radius-lg);border:1px solid var(--gray-200)}
+.filter-bar>.select,.filter-bar>.input{width:auto;flex:1;min-width:120px}
+
+/* ===== INPUTS ===== */
+.input,.select{padding:8px 12px;border:1px solid var(--gray-300);border-radius:var(--radius-md);font-size:14px;color:var(--gray-700);background:var(--white);outline:none;transition:.15s;min-width:0}
+.input:focus,.select:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(79,70,229,.1)}
+.input{width:100%}
+.select{-webkit-appearance:none;appearance:none;padding-right:32px;width:100%;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
+.textarea{width:100%;padding:8px 12px;border:1px solid var(--gray-300);border-radius:var(--radius-md);font-size:14px;resize:vertical;outline:none;font-family:inherit;transition:.15s}
+.textarea:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(79,70,229,.1)}
+.form-group{margin-bottom:12px}
+.form-group label{display:block;font-size:13px;font-weight:500;color:var(--gray-700);margin-bottom:4px}
+.required{color:var(--red)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.form-row-4{grid-template-columns:1fr 1fr 1fr 1fr}
+.form-actions{display:flex;gap:8px;margin-top:12px;justify-content:flex-end}
+
+/* ===== INLINE FORM ===== */
+.inline-form{background:var(--white);border:1px solid var(--gray-200);border-radius:var(--radius-lg);margin-bottom:16px;overflow:hidden}
+.inline-form-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;cursor:pointer;user-select:none;background:var(--gray-50);border-bottom:1px solid var(--gray-200)}
+.inline-form-header:hover{background:var(--gray-100)}
+.inline-form-header .label{font-size:14px;font-weight:500;color:var(--gray-700);display:flex;align-items:center;gap:8px}
+.inline-form-header .toggle-icon{font-size:12px;color:var(--gray-400);transition:.2s}
+.inline-form.closed .inline-form-body{display:none}
+.inline-form.closed .inline-form-header{border-bottom:none}
+.inline-form-body{padding:16px}
+
+/* ===== DATA TABLE ===== */
+.table-wrapper{overflow-x:auto}
+.data-table{width:100%;border-collapse:collapse;font-size:14px}
+.data-table th{padding:12px 16px;text-align:left;font-weight:600;font-size:13px;color:var(--gray-500);background:var(--gray-50);border-bottom:2px solid var(--gray-200);white-space:nowrap}
+.data-table td{padding:12px 16px;border-bottom:1px solid var(--gray-100);color:var(--gray-700)}
+.data-table tbody tr:hover{background:var(--gray-50)}
+.data-table .actions-cell{display:flex;gap:4px;justify-content:center}
+.data-table .empty-row td{text-align:center;padding:32px 14px;color:var(--gray-400);font-size:14px}
+.data-table .cell-photo{width:32px;height:32px;border-radius:50%;background:var(--gray-200);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--gray-500);overflow:hidden;flex-shrink:0}
+
+/* ===== BADGES ===== */
+.badge{display:inline-flex;align-items:center;padding:2px 10px;border-radius:var(--radius-full);font-size:12px;font-weight:500;line-height:1.6}
+.badge-success{background:#ECFDF5;color:#065F46}
+.badge-danger{background:#FEF2F2;color:#991B1B}
+.badge-warning{background:#FFFBEB;color:#92400E}
+.badge-info{background:#EFF6FF;color:#1E40AF}
+.badge-secondary{background:var(--gray-100);color:var(--gray-600)}
+
+/* ===== PAGINATION ===== */
+.pagination{display:flex;align-items:center;gap:4px;padding:12px 0;flex-wrap:wrap}
+.pagination .page{min-width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:var(--radius-md);font-size:13px;color:var(--gray-600);cursor:pointer;border:1px solid transparent}
+.pagination .page:hover{background:var(--gray-100)}
+.pagination .page.active{background:var(--primary);color:var(--white)}
+.pagination .page-info{font-size:13px;color:var(--gray-400);margin-left:auto}
+
+/* ===== MODAL ===== */
+.modal-overlay{display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.4);align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:var(--white);border-radius:var(--radius-lg);width:440px;max-width:90vw;box-shadow:var(--shadow-lg);overflow:hidden}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--gray-200)}
+.modal-header h3{font-size:16px;font-weight:600;color:var(--gray-800)}
+.modal-close{background:none;border:none;font-size:18px;color:var(--gray-400);padding:4px}
+.modal-close:hover{color:var(--gray-600)}
+.modal-body{padding:16px 20px;font-size:14px;color:var(--gray-600);line-height:1.5}
+.modal-footer{padding:12px 20px;border-top:1px solid var(--gray-200);display:flex;gap:8px;justify-content:flex-end}
+
+/* ===== TOAST ===== */
+.toast{position:fixed;bottom:24px;right:24px;z-index:2000;padding:12px 20px;border-radius:var(--radius-md);font-size:14px;font-weight:500;display:flex;align-items:center;gap:10px;box-shadow:var(--shadow-lg);display:none;animation:slideUp .3s ease}
+.toast.show{display:flex}
+.toast-success{background:#ECFDF5;color:#065F46;border:1px solid #A7F3D0}
+.toast-error{background:#FEF2F2;color:#991B1B;border:1px solid #FECACA}
+.toast-close{background:none;border:none;font-size:16px;cursor:pointer;color:inherit;opacity:.6;margin-left:8px}
+@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+
+/* ===== TABS ===== */
+.tabs{display:flex;gap:0;border-bottom:2px solid var(--gray-200);margin-bottom:16px}
+.tab{padding:10px 20px;font-size:14px;font-weight:500;color:var(--gray-500);background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;transition:.15s;cursor:pointer}
+.tab:hover{color:var(--gray-700)}
+.tab.active{color:var(--primary);border-bottom-color:var(--primary)}
+.tab-pane{display:none}
+.tab-pane.active{display:block}
+
+/* ===== TOGGLE SWITCH ===== */
+.toggle-switch{position:relative;display:inline-flex;width:40px;height:22px;cursor:pointer}
+.toggle-switch input{display:none}
+.toggle-slider{position:absolute;inset:0;background:var(--gray-300);border-radius:var(--radius-full);transition:.2s}
+.toggle-switch input:checked+.toggle-slider{background:var(--primary)}
+.toggle-slider::after{content:'';position:absolute;width:18px;height:18px;border-radius:50%;background:var(--white);top:2px;left:2px;transition:.2s;box-shadow:var(--shadow-sm)}
+.toggle-switch input:checked+.toggle-slider::after{transform:translateX(18px)}
+
+/* ===== PERMISSION GRID ===== */
+.perm-grid{width:100%;border-collapse:collapse}
+.perm-grid th,.perm-grid td{padding:8px 12px;text-align:center;border:1px solid var(--gray-200);font-size:13px}
+.perm-grid th{background:var(--gray-50);font-weight:600;color:var(--gray-600);font-size:12px}
+.perm-grid td:first-child{text-align:left;font-weight:500;color:var(--gray-700)}
+.perm-grid input[type=checkbox]{width:16px;height:16px;cursor:pointer;accent-color:var(--primary)}
+
+/* ===== CHECKLIST ===== */
+.checklist{display:flex;flex-direction:column;gap:8px;padding:8px 0}
+.checklist label{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--gray-700);cursor:pointer}
+.checklist input[type=checkbox]{width:16px;height:16px;accent-color:var(--primary)}
+
+/* ===== MODULE LIST ===== */
+.module-item{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--gray-100)}
+.module-item:last-child{border-bottom:none}
+.module-info{display:flex;align-items:center;gap:10px}
+.module-info .icon{font-size:20px}
+.module-info .name{font-size:14px;font-weight:500;color:var(--gray-700)}
+.module-info .desc{font-size:12px;color:var(--gray-400);margin-top:2px}
+
+/* ===== ATTENDANCE GRID ===== */
+.att-status{display:flex;gap:6px;width:100%}
+.att-btn{padding:6px 12px;border-radius:var(--radius-full);font-size:13px;font-weight:500;border:1px solid var(--gray-300);background:var(--white);color:var(--gray-500);transition:.15s;cursor:pointer;flex:1;text-align:center;white-space:nowrap}
+.att-btn.active-present{background:#ECFDF5;color:#065F46;border-color:#A7F3D0}
+.att-btn.active-absent{background:#FEF2F2;color:#991B1B;border-color:#FECACA}
+.att-btn.active-late{background:#FFFBEB;color:#92400E;border-color:#FDE68A}
+.att-btn.active-leave{background:#EFF6FF;color:#1E40AF;border-color:#BFDBFE}
+.att-summary{display:flex;gap:16px;padding:12px 0;font-size:14px;flex-wrap:wrap}
+.att-summary span{display:flex;align-items:center;gap:6px}
+.att-summary .num{font-weight:600;color:var(--gray-700)}
+
+/* ===== MARKS GRID ===== */
+.marks-grid{width:100%;border-collapse:collapse;font-size:13px}
+.marks-grid th,.marks-grid td{padding:8px 10px;text-align:center;border:1px solid var(--gray-200)}
+.marks-grid th{background:var(--gray-50);font-weight:600;color:var(--gray-600);font-size:12px}
+.marks-grid td:first-child,.marks-grid td:nth-child(2){text-align:left}
+.marks-grid input[type=number]{width:56px;padding:4px 6px;border:1px solid var(--gray-300);border-radius:var(--radius-sm);text-align:center;font-size:13px}
+
+/* ===== SETTINGS TABS ===== */
+.settings-section{display:none}
+.settings-section.active{display:block}
+
+/* ===== REPORT CARDS ===== */
+.report-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+.report-card{background:var(--white);border:1px solid var(--gray-200);border-radius:var(--radius-lg);padding:20px;display:flex;flex-direction:column;gap:12px}
+.report-card .icon{font-size:32px}
+.report-card h3{font-size:15px;font-weight:600;color:var(--gray-700)}
+.report-card p{font-size:13px;color:var(--gray-400);line-height:1.4}
+.report-card .form-group{margin-bottom:0}
+
+/* ===== WELCOME BANNER ===== */
+.welcome-banner{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.welcome-banner h1{font-size:22px;font-weight:700;color:var(--gray-800)}
+.welcome-banner p{font-size:14px;color:var(--gray-400);margin-top:4px}
+.welcome-banner .ay-badge{padding:6px 14px;background:var(--gray-100);border-radius:var(--radius-full);font-size:13px;color:var(--gray-600);font-weight:500}
+
+/* ===== UTILITY ===== */
+.mb-16{margin-bottom:16px}
+.mt-8{margin-top:8px}
+.flex{display:flex;align-items:center;gap:8px}
+.flex-wrap{flex-wrap:wrap}
+.gap-16{gap:16px}
+.text-center{text-align:center}
+.text-sm{font-size:13px}
+.text-muted{color:var(--gray-400)}
+
+/* ===== RESPONSIVE ===== */
+@media(max-width:1024px){
+  :root{--sidebar-w:0px}
+  .sidebar{position:fixed;left:-240px;z-index:100;transition:.3s}
+  .sidebar.open{left:0;box-shadow:var(--shadow-lg)}
+  .topbar-left .hamburger{display:block}
+  .stats-grid{grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}
+  .dash-grid{grid-template-columns:1fr}
+  .form-row,.student-form-grid{grid-template-columns:1fr}
+}
+
+/* ===== SCROLLBAR ===== */
+.main::-webkit-scrollbar,.sidebar-nav::-webkit-scrollbar{width:4px}
+.main::-webkit-scrollbar-thumb,.sidebar-nav::-webkit-scrollbar-thumb{background:var(--gray-300);border-radius:var(--radius-full)}
+
+.student-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.student-form-grid .full-width{grid-column:1/-1}
+.pagination-wrapper{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;flex-wrap:wrap}
+.pagination-wrapper .page-info{font-size:13px;color:var(--gray-400)}
+.pagination-wrapper .pages{display:flex;align-items:center;gap:4px}
+.pagination-wrapper .pages .page{min-width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:var(--radius-md);font-size:13px;color:var(--gray-600);cursor:pointer;border:1px solid transparent}
+.pagination-wrapper .pages .page:hover{background:var(--gray-100)}
+.pagination-wrapper .pages .page.active{background:var(--primary);color:var(--white)}
+.modal-header-success{background:#ECFDF5;color:#065F46;border-bottom:1px solid #A7F3D0}
+.modal-header-error{background:#FEF2F2;color:#991B1B;border-bottom:1px solid #FECACA}
+.modal-header-info{background:#EFF6FF;color:#1E40AF;border-bottom:1px solid #BFDBFE}
+.new-roll-input{width:70px;padding:4px 6px;border:1px solid var(--gray-300);border-radius:var(--radius-sm);text-align:center;font-size:13px}
+.new-roll-input:disabled{background:var(--gray-50);color:var(--gray-400);cursor:not-allowed}
+
+.att-report-wrap{overflow-x:auto;overflow-y:auto;max-height:420px;border:1px solid var(--gray-200);border-radius:var(--radius-md)}
+.att-report-wrap table{width:max-content;min-width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
+.att-report-wrap th,.att-report-wrap td{padding:6px;text-align:center;border:1px solid var(--gray-200);white-space:nowrap;border-top:none}
+.att-report-wrap th{background:var(--gray-50);font-weight:600;font-size:12px;color:var(--gray-600)}
+.att-report-wrap .fixed-roll{position:sticky;left:0;top:0;z-index:3;background:var(--white);width:50px}
+.att-report-wrap .fixed-name{position:sticky;left:50px;top:0;z-index:3;background:var(--white);width:150px;text-align:left;padding-left:12px}
+.att-report-wrap thead .fixed-roll,.att-report-wrap thead .fixed-name{z-index:4;background:var(--gray-50);border-bottom:2px solid var(--gray-300)}
+.att-report-wrap .present{color:var(--green);font-size:16px}
+.att-report-wrap .absent{color:var(--red);font-size:16px}
+.att-report-wrap .date-cell{width:34px;font-size:11px;color:var(--gray-500)}
+.att-report-wrap tbody tr:hover td:not(.fixed-roll):not(.fixed-name):not(.stat-absent):not(.stat-present):not(.stat-pct){background:var(--gray-50)}
+.att-report-wrap tbody tr:hover .fixed-roll,.att-report-wrap tbody tr:hover .fixed-name{background:var(--gray-50)}
+.att-report-wrap .stat-absent{background:#FEF2F2;color:#991B1B;font-weight:600;position:sticky;right:0;top:0;z-index:3;width:80px}
+.att-report-wrap .stat-present{background:#ECFDF5;color:#065F46;font-weight:600;position:sticky;right:80px;top:0;z-index:3;width:80px}
+.att-report-wrap .stat-pct{background:#EFF6FF;color:#1E40AF;font-weight:600;position:sticky;right:160px;top:0;z-index:3;width:70px}
+.att-report-wrap thead .stat-absent,.att-report-wrap thead .stat-present,.att-report-wrap thead .stat-pct{z-index:4;border-bottom:2px solid var(--gray-300)}
+.att-report-wrap tbody tr:hover .stat-absent{background:#FDD}
+.att-report-wrap tbody tr:hover .stat-present{background:#C6F6D5}
+.att-report-wrap tbody tr:hover .stat-pct{background:#DEEBFF}
+</style>
+</head>
+<body>
+
+<div class="layout">
+
+<!-- ===== SIDEBAR ===== -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <div class="logo">S</div>
+    <span>SiriusSchool</span>
+  </div>
+  <ul class="sidebar-nav">
+    <li><a href="#" data-page="dashboard" class="active"><i class="fas fa-chart-pie"></i> Dashboard</a></li>
+    <li class="nav-group">
+      <a href="#" class="has-sub"><i class="fas fa-user-graduate"></i> Students <span class="arrow"><i class="fas fa-chevron-down"></i></span></a>
+      <ul class="sub-nav">
+        <li><a href="#" data-page="students" data-sub="list">All Students</a></li>
+        <li><a href="#" data-page="students" data-sub="applications">Admission Applications</a></li>
+        <li><a href="#" data-page="students" data-sub="promotion">Promotion</a></li>
+      </ul>
+    </li>
+    <li class="nav-group">
+      <a href="#" class="has-sub"><i class="fas fa-clipboard-check"></i> Attendance <span class="arrow"><i class="fas fa-chevron-down"></i></span></a>
+      <ul class="sub-nav">
+        <li><a href="#" data-page="attendance" data-sub="take">Take Attendance</a></li>
+        <li><a href="#" data-page="attendance" data-sub="report">Attendance Report</a></li>
+      </ul>
+    </li>
+    <li class="nav-group">
+      <a href="#" class="has-sub"><i class="fas fa-file-alt"></i> Results <span class="arrow"><i class="fas fa-chevron-down"></i></span></a>
+      <ul class="sub-nav">
+        <li><a href="#" data-page="results" data-sub="exams">Exams</a></li>
+        <li><a href="#" data-page="results" data-sub="grades">Grade Scales</a></li>
+      </ul>
+    </li>
+    <li><a href="#" data-page="notices"><i class="fas fa-bullhorn"></i> Notice Board</a></li>
+    <li><a href="#" data-page="smslog"><i class="fas fa-sms"></i> SMS Log</a></li>
+    <li><a href="#" data-page="reports"><i class="fas fa-folder-open"></i> Reports</a></li>
+    <li><a href="#" data-page="users"><i class="fas fa-users-cog"></i> Users & Permissions</a></li>
+    <li><a href="#" data-page="audit"><i class="fas fa-history"></i> Audit Logs</a></li>
+    <li class="nav-group">
+      <a href="#" class="has-sub"><i class="fas fa-cog"></i> Settings <span class="arrow"><i class="fas fa-chevron-down"></i></span></a>
+      <ul class="sub-nav">
+        <li><a href="#" data-page="settings" data-sub="school">School Info</a></li>
+        <li><a href="#" data-page="settings" data-sub="classes">Classes &amp; Sections</a></li>
+        <li><a href="#" data-page="settings" data-sub="subjects">Subjects</a></li>
+        <li><a href="#" data-page="settings" data-sub="academic">Academic Years</a></li>
+      </ul>
+    </li>
+  </ul>
+  <div class="sidebar-footer">
+    <a href="#" data-page="login" class="text-danger"><i class="fas fa-sign-out-alt"></i> Logout</a>
+  </div>
+</aside>
+
+<!-- ===== TOPBAR ===== -->
+<header class="topbar">
+  <div class="topbar-left">
+    <button class="hamburger" onclick="toggleSidebar()">☰</button>
+    <span>SiriusSchool</span>
+  </div>
+  <div class="topbar-right">
+    <div class="sms-badge"><i class="fas fa-envelope"></i> <span>420</span> / 500 SMS</div>
+    <button class="user-menu" onclick="showPage('profile')">
+      <div class="avatar">JD</div>
+    </button>
+  </div>
+</header>
+
+<!-- ===== MAIN ===== -->
+<main class="main" id="mainContent">
+
+<!-- ============================================================ -->
+<!-- DASHBOARD -->
+<!-- ============================================================ -->
+<section class="page-section active" id="page-dashboard">
+  <div class="welcome-banner">
+    <div>
+      <h1>Welcome, John <i class="fas fa-hand-wave"></i></h1>
+      <p>Here's what's happening at Springfield School today.</p>
+    </div>
+    <div class="ay-badge"><i class="fas fa-calendar-alt"></i> 2026-2027</div>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon blue"><i class="fas fa-user-graduate"></i></div>
+      <div class="stat-content">
+        <div class="stat-value">350</div>
+        <div class="stat-label">Total Students</div>
+        <div class="stat-trend up">↑ 12 this year</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon green"><i class="fas fa-clipboard-check"></i></div>
+      <div class="stat-content">
+        <div class="stat-value">95.2%</div>
+        <div class="stat-label">Today's Attendance</div>
+        <div class="stat-trend up">↑ 2.1% vs yesterday</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon yellow"><i class="fas fa-file-alt"></i></div>
+      <div class="stat-content">
+        <div class="stat-value">Mid-Term</div>
+        <div class="stat-label">Upcoming Exam</div>
+        <div class="stat-trend" style="color:var(--gray-500)">Dec 15 – Dec 20, 2026</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon indigo"><i class="fas fa-envelope"></i></div>
+      <div class="stat-content">
+        <div class="stat-value">420</div>
+        <div class="stat-label">SMS Balance</div>
+        <div class="progress-sm"><div class="bar" style="width:84%"></div></div>
+        <div class="stat-trend up">84% of 500 quota remaining</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><h2><i class="fas fa-bullhorn"></i> Recent Notices</h2><a href="#" onclick="showPage('notices');return false" style="font-size:13px;color:var(--primary)">View All</a></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div style="padding:14px;border:1px solid var(--gray-200);border-radius:var(--radius-md);background:var(--gray-50)">
+        <div style="font-weight:600;font-size:14px;color:var(--gray-700)">Final Exam Routine</div>
+        <div style="font-size:12px;color:var(--gray-400);margin-top:4px">Published Dec 1, 2026</div>
+      </div>
+      <div style="padding:14px;border:1px solid var(--gray-200);border-radius:var(--radius-md);background:var(--gray-50)">
+        <div style="font-weight:600;font-size:14px;color:var(--gray-700)">Winter Break Notice</div>
+        <div style="font-size:12px;color:var(--gray-400);margin-top:4px">Published Nov 28, 2026</div>
+      </div>
+      <div style="padding:14px;border:1px solid var(--gray-200);border-radius:var(--radius-md);background:var(--gray-50)">
+        <div style="font-weight:600;font-size:14px;color:var(--gray-700)">Sports Day Schedule</div>
+        <div style="font-size:12px;color:var(--gray-400);margin-top:4px">Published Nov 20, 2026</div>
+      </div>
+      <div style="padding:14px;border:1px solid var(--gray-200);border-radius:var(--radius-md);background:var(--gray-50)">
+        <div style="font-weight:600;font-size:14px;color:var(--gray-700)">Admission Circular 2027</div>
+        <div style="font-size:12px;color:var(--gray-400);margin-top:4px">Published Nov 15, 2026</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><h2><i class="fas fa-chart-pie"></i> Manager Activity</h2></div>
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead><tr><th>User</th><th>Action</th><th>Module</th><th>Time</th></tr></thead>
+        <tbody>
+          <tr><td>Jane Smith</td><td>Added Student</td><td>Student Mgmt</td><td>2 min ago</td></tr>
+          <tr><td>John Doe</td><td>Published Mid-Term</td><td>Results</td><td>1 hour ago</td></tr>
+          <tr><td>Bob Wilson</td><td>Took Attendance 6A</td><td>Attendance</td><td>3 hours ago</td></tr>
+          <tr><td>Jane Smith</td><td>Updated Notice</td><td>Notice Board</td><td>5 hours ago</td></tr>
+          <tr><td>Bob Wilson</td><td>Rejected Application</td><td>Student Mgmt</td><td>1 day ago</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- STUDENTS -->
+<!-- ============================================================ -->
+<section class="page-section" id="page-students">
+
+<div class="tabs" id="studentsTabs">
+    <button class="tab active" data-tab="students-list">All Students</button>
+    <button class="tab" data-tab="students-apps">Admission Applications</button>
+    <button class="tab" data-tab="students-promo">Promotion</button>
+  </div>
+
+  <!-- All Students Tab -->
+  <div class="tab-pane active" id="tab-students-list">
+    <div class="inline-form" id="studentForm">
+      <div class="inline-form-header" onclick="toggleForm(this)">
+        <span class="label">➕ Add New Student</span>
+        <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+      </div>
+      <div class="inline-form-body">
+        <div class="student-form-grid">
+          <div class="form-group"><label>Full Name <span class="required">*</span></label><input type="text" class="input" placeholder="Enter full name"></div>
+
+          <div style="display:flex;gap:12px">
+            <div class="form-group" style="flex:1"><label>Date of Birth <span class="required">*</span></label><input type="date" class="input"></div>
+            <div class="form-group" style="flex:1"><label>Gender <span class="required">*</span></label><select class="select"><option>Male</option><option>Female</option><option>Other</option></select></div>
+          </div>
+
+          <div style="display:flex;gap:12px">
+            <div class="form-group" style="flex:1"><label>Class <span class="required">*</span></label><select class="select"><option>Class 6</option><option>Class 7</option><option>Class 8</option><option>Class 9</option><option>Class 10</option></select></div>
+            <div class="form-group" style="flex:1"><label>Shift <span class="required">*</span></label><select class="select"><option>Morning</option><option>Evening</option><option>Day</option></select></div>
+            <div class="form-group" style="flex:1"><label>Section <span class="required">*</span></label><select class="select"><option>A</option><option>B</option><option>C</option></select></div>
+          </div>
+
+          <div class="form-group"><label>Photo</label><input type="file" class="input" accept="image/*"></div>
+
+          <div class="form-group"><label>Guardian Name <span class="required">*</span></label><input type="text" class="input" placeholder="Parent/guardian name"></div>
+          <div class="form-group"><label>Guardian Phone <span class="required">*</span></label><input type="tel" class="input" placeholder="+8801XXXXXXXXX"></div>
+
+          <div class="form-group full-width"><label>Address</label><textarea class="textarea" rows="2" placeholder="Full address"></textarea></div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" onclick="showMessage('success','Student Added','Student added successfully!')"><i class="fas fa-save"></i> Save</button>
+          <button class="btn btn-secondary" onclick="toggleForm(document.querySelector('#studentForm .inline-form-header'))">✕ Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="filter-bar">
+      <input type="text" class="input" style="flex:2;min-width:120px" placeholder="Search name, reg no...">
+      <select class="select" style="flex:1;min-width:100px"><option>All Classes</option><option>Class 6</option><option>Class 7</option><option>Class 8</option></select>
+      <select class="select" style="flex:1;min-width:90px"><option>All Shifts</option><option>Morning</option><option>Evening</option></select>
+      <select class="select" style="flex:1;min-width:90px"><option>All Sections</option><option>A</option><option>B</option><option>C</option></select>
+      <select class="select" style="flex:1;min-width:90px"><option>All Status</option><option>Active</option><option>Graduated</option><option>Transferred</option></select>
+      <button class="btn btn-primary" style="flex:none"><i class="fas fa-search"></i> Search</button>
+      <button class="btn btn-secondary" style="flex:none"><i class="fas fa-undo"></i> Reset</button>
+    </div>
+
+    <div class="card">
+      <div class="table-wrapper">
+        <table class="data-table" id="studentsTable">
+          <thead><tr><th>Photo</th><th>Reg No</th><th>Name</th><th>Class</th><th>Shift</th><th>Section</th><th>Roll</th><th>Status</th><th class="text-center">Actions</th></tr></thead>
+          <tbody>
+            <tr><td><div class="cell-photo">AJ</div></td><td>26000001</td><td>Alice Johnson</td><td>Class 6</td><td>Morning</td><td>A</td><td>1</td><td><span class="badge badge-success">Active</span></td><td class="actions-cell"><button class="btn btn-icon" onclick="viewProfile(this)" title="View"><i class="fas fa-eye"></i></button><button class="btn btn-icon" onclick="editStudent(this)" title="Edit"><i class="fas fa-edit"></i></button><button class="btn btn-icon" onclick="toggleDisableStudent(this)" title="Disable"><i class="fas fa-toggle-on" style="color:var(--green)"></i></button></td></tr>
+            <tr><td><div class="cell-photo">BS</div></td><td>26000002</td><td>Bob Smith</td><td>Class 6</td><td>Morning</td><td>A</td><td>2</td><td><span class="badge badge-success">Active</span></td><td class="actions-cell"><button class="btn btn-icon" onclick="viewProfile(this)"><i class="fas fa-eye"></i></button><button class="btn btn-icon" onclick="editStudent(this)"><i class="fas fa-edit"></i></button><button class="btn btn-icon" onclick="toggleDisableStudent(this)"><i class="fas fa-toggle-on" style="color:var(--green)"></i></button></td></tr>
+            <tr><td><div class="cell-photo">CW</div></td><td>26000003</td><td>Carol Williams</td><td>Class 6</td><td>Morning</td><td>B</td><td>1</td><td><span class="badge badge-success">Active</span></td><td class="actions-cell"><button class="btn btn-icon" onclick="viewProfile(this)"><i class="fas fa-eye"></i></button><button class="btn btn-icon" onclick="editStudent(this)"><i class="fas fa-edit"></i></button><button class="btn btn-icon" onclick="toggleDisableStudent(this)"><i class="fas fa-toggle-on" style="color:var(--green)"></i></button></td></tr>
+            <tr><td><div class="cell-photo">DB</div></td><td>26000004</td><td>David Brown</td><td>Class 7</td><td>Morning</td><td>A</td><td>5</td><td><span class="badge badge-success">Active</span></td><td class="actions-cell"><button class="btn btn-icon" onclick="viewProfile(this)"><i class="fas fa-eye"></i></button><button class="btn btn-icon" onclick="editStudent(this)"><i class="fas fa-edit"></i></button><button class="btn btn-icon" onclick="toggleDisableStudent(this)"><i class="fas fa-toggle-on" style="color:var(--green)"></i></button></td></tr>
+            <tr><td><div class="cell-photo">ED</div></td><td>26000005</td><td>Emma Davis</td><td>Class 7</td><td>Evening</td><td>B</td><td>3</td><td><span class="badge badge-success">Active</span></td><td class="actions-cell"><button class="btn btn-icon" onclick="viewProfile(this)"><i class="fas fa-eye"></i></button><button class="btn btn-icon" onclick="editStudent(this)"><i class="fas fa-edit"></i></button><button class="btn btn-icon" onclick="toggleDisableStudent(this)"><i class="fas fa-toggle-on" style="color:var(--green)"></i></button></td></tr>
+            <tr><td><div class="cell-photo">FM</div></td><td>26000006</td><td>Frank Miller</td><td>Class 8</td><td>Morning</td><td>A</td><td>8</td><td><span class="badge badge-warning">Transferred</span></td><td class="actions-cell"><button class="btn btn-icon" onclick="viewProfile(this)"><i class="fas fa-eye"></i></button><button class="btn btn-icon" onclick="editStudent(this)"><i class="fas fa-edit"></i></button><button class="btn btn-icon" onclick="toggleDisableStudent(this)"><i class="fas fa-toggle-off" style="color:var(--gray-400)"></i></button></td></tr>
+            <tr><td><div class="cell-photo">GJ</div></td><td>26000007</td><td>Grace Johnson</td><td>Class 9</td><td>Morning</td><td>A</td><td>2</td><td><span class="badge badge-success">Active</span></td><td class="actions-cell"><button class="btn btn-icon" onclick="viewProfile(this)"><i class="fas fa-eye"></i></button><button class="btn btn-icon" onclick="editStudent(this)"><i class="fas fa-edit"></i></button><button class="btn btn-icon" onclick="toggleDisableStudent(this)"><i class="fas fa-toggle-on" style="color:var(--green)"></i></button></td></tr>
+            <tr><td><div class="cell-photo">HW</div></td><td>26000008</td><td>Henry Wilson</td><td>Class 10</td><td>Evening</td><td>B</td><td>4</td><td><span class="badge badge-info">Graduated</span></td><td class="actions-cell"><button class="btn btn-icon" onclick="viewProfile(this)"><i class="fas fa-eye"></i></button><button class="btn btn-icon" onclick="editStudent(this)"><i class="fas fa-edit"></i></button><button class="btn btn-icon" onclick="toggleDisableStudent(this)"><i class="fas fa-toggle-off" style="color:var(--gray-400)"></i></button></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pagination-wrapper"><span class="page-info">Showing 1-8 of 350</span><div class="pages"><button class="btn btn-icon disabled"><i class="fas fa-chevron-left"></i></button><button class="page active">1</button><button class="page">2</button><button class="page">3</button><span style="color:var(--gray-300);padding:0 4px">...</span><button class="page">10</button><button class="btn btn-icon"><i class="fas fa-chevron-right"></i></button></div></div>
+    </div>
+  </div>
+
+  <!-- Admission Apps Tab -->
+  <div class="tab-pane" id="tab-students-apps">
+    <div class="filter-bar">
+      <select class="select" style="flex:1;min-width:100px"><option>All Academic Years</option><option>2026-2027</option><option>2025-2026</option></select>
+      <select class="select" style="flex:1;min-width:100px"><option>All Classes</option><option>Class 6</option><option>Class 7</option><option>Class 8</option><option>Class 9</option><option>Class 10</option></select>
+      <input type="text" class="input" style="flex:2;min-width:120px" placeholder="Search by name or app no...">
+      <button class="btn btn-primary" style="flex:none"><i class="fas fa-search"></i> Search</button>
+      <button class="btn btn-secondary" style="flex:none"><i class="fas fa-undo"></i> Reset</button>
+    </div>
+    <div class="card">
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead><tr><th>App No</th><th>Name</th><th>Class</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody>
+            <tr><td>APP-2026-001</td><td>Iris Green</td><td>Class 6</td><td>Dec 5, 2026</td><td><span class="badge badge-warning">Pending</span></td><td class="actions-cell"><button class="btn btn-sm btn-success" onclick="showConfirm('Approve Application','Approve Iris Green for Class 6?',function(){showToast('success','Application approved! Student created.')})">Approve</button></td></tr>
+            <tr><td>APP-2026-002</td><td>Jack Lee</td><td>Class 7</td><td>Dec 4, 2026</td><td><span class="badge badge-warning">Pending</span></td><td class="actions-cell"><button class="btn btn-sm btn-success" onclick="showConfirm('Approve Application','Approve Jack Lee?',function(){showToast('success','Application approved!')})">Approve</button></td></tr>
+            <tr><td>APP-2026-003</td><td>Kate Adams</td><td>Class 8</td><td>Dec 3, 2026</td><td><span class="badge badge-success">Approved</span></td><td class="actions-cell"><span style="font-size:13px;color:var(--gray-400)">—</span></td></tr>
+            <tr><td>APP-2026-004</td><td>Leo Clark</td><td>Class 6</td><td>Dec 2, 2026</td><td><span class="badge badge-danger">Rejected</span></td><td class="actions-cell"><span style="font-size:13px;color:var(--gray-400)">—</span></td></tr>
+            <tr><td>APP-2026-005</td><td>Mia Hall</td><td>Class 9</td><td>Dec 1, 2026</td><td><span class="badge badge-warning">Pending</span></td><td class="actions-cell"><button class="btn btn-sm btn-success" onclick="showConfirm('Approve Application','Approve Mia Hall?',function(){showToast('success','Application approved!')})">Approve</button></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Promotion Tab -->
+  <div class="tab-pane" id="tab-students-promo">
+    <div class="card">
+      <div class="form-row-3">
+        <div class="form-group"><label>From Class <span class="required">*</span></label><select class="select"><option>Class 6</option><option>Class 7</option><option>Class 8</option></select></div>
+        <div class="form-group"><label>From Shift <span class="required">*</span></label><select class="select"><option>Morning</option><option>Evening</option></select></div>
+        <div class="form-group"><label>From Section <span class="required">*</span></label><select class="select"><option>A</option><option>B</option><option>C</option></select></div>
+      </div>
+      <div class="form-row-3" style="margin-top:12px">
+        <div class="form-group"><label>To Class <span class="required">*</span></label><select class="select"><option>Class 7</option><option>Class 8</option><option>Class 9</option></select></div>
+        <div class="form-group"><label>To Shift <span class="required">*</span></label><select class="select"><option>Morning</option><option>Evening</option></select></div>
+        <div class="form-group"><label>To Section <span class="required">*</span></label><select class="select"><option>A</option><option>B</option><option>C</option></select></div>
+      </div>
+    </div>
+    <div class="filter-bar">
+      <input type="text" class="input" style="flex:2;min-width:200px" placeholder="Search by name or reg no...">
+      <button class="btn btn-primary" style="flex:none"><i class="fas fa-search"></i> Search</button>
+    </div>
+    <div class="card">
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead><tr><th style="width:40px"><input type="checkbox" onchange="document.querySelectorAll('#tab-students-promo .data-table tbody input[type=checkbox]').forEach(c=>c.checked=this.checked)"></th><th>Reg No</th><th>Name</th><th>Current Class</th><th>Current Roll</th><th>Promoted Class</th><th>New Roll</th></tr></thead>
+          <tbody>
+            <tr><td><input type="checkbox" onchange="toggleNewRoll(this)"></td><td>26000001</td><td>Alice Johnson</td><td>Class 6 - Morning - A</td><td>1</td><td>Class 7 - Morning - A</td><td><input type="number" class="new-roll-input" disabled placeholder="—"></td></tr>
+            <tr><td><input type="checkbox" onchange="toggleNewRoll(this)"></td><td>26000002</td><td>Bob Smith</td><td>Class 6 - Morning - A</td><td>2</td><td>Class 7 - Morning - A</td><td><input type="number" class="new-roll-input" disabled placeholder="—"></td></tr>
+            <tr><td><input type="checkbox" onchange="toggleNewRoll(this)"></td><td>26000003</td><td>Carol Williams</td><td>Class 6 - Morning - B</td><td>1</td><td>Class 7 - Morning - A</td><td><input type="number" class="new-roll-input" disabled placeholder="—"></td></tr>
+            <tr><td><input type="checkbox" onchange="toggleNewRoll(this)"></td><td>26000009</td><td>Noah Thomas</td><td>Class 6 - Morning - A</td><td>3</td><td>Class 7 - Morning - A</td><td><input type="number" class="new-roll-input" disabled placeholder="—"></td></tr>
+            <tr><td><input type="checkbox" onchange="toggleNewRoll(this)"></td><td>26000010</td><td>Olivia White</td><td>Class 6 - Evening - B</td><td>2</td><td>Class 7 - Morning - A</td><td><input type="number" class="new-roll-input" disabled placeholder="—"></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn btn-primary" onclick="promoteStudents()"><i class="fas fa-graduation-cap"></i> Promote Selected</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- ATTENDANCE -->
+<!-- ============================================================ -->
+<section class="page-section" id="page-attendance">
+  <div class="tabs" id="attendanceTabs">
+    <button class="tab active" data-tab="attendance-take">Take Attendance</button>
+    <button class="tab" data-tab="attendance-report">Attendance Report</button>
+  </div>
+
+  <div class="tab-pane active" id="tab-attendance-take">
+    <div class="card" style="padding:16px">
+      <div style="display:flex;gap:12px;align-items:flex-end">
+        <div class="form-group" style="flex:1;margin-bottom:0"><label>Class <span class="required">*</span></label><select class="select"><option>Class 6</option><option>Class 7</option><option>Class 8</option></select></div>
+        <div class="form-group" style="flex:1;margin-bottom:0"><label>Shift <span class="required">*</span></label><select class="select"><option>Morning</option><option>Evening</option></select></div>
+        <div class="form-group" style="flex:1;margin-bottom:0"><label>Section <span class="required">*</span></label><select class="select"><option>A</option><option>B</option><option>C</option></select></div>
+        <div class="form-group" style="flex:1;margin-bottom:0"><label>Date <span class="required">*</span></label><input type="date" class="input" value="2026-12-10"></div>
+        <button class="btn btn-primary" style="flex:none;height:38px" onclick="showToast('success','Loaded 50 students')">Load Students</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><h2><i class="fas fa-clipboard-check"></i> Class 6 — Morning — A</h2><span style="font-size:13px;color:var(--gray-400)">Dec 10, 2026</span></div>
+      <div class="att-summary">
+        <span>Total: <span class="num" id="attTotal">50</span></span>
+        <span style="color:var(--green)">Present: <span class="num" id="attPresent">48</span></span>
+        <span style="color:var(--red)">Absent: <span class="num" id="attAbsent">2</span></span>
+      </div>
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead><tr><th>Roll</th><th>Name</th><th>Dec 7</th><th>Dec 8</th><th>Dec 9</th><th style="text-align:center">Status</th><th style="text-align:center">SMS Status</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>Alice Johnson</td><td><span class="badge badge-success">P</span></td><td><span class="badge badge-success">P</span></td><td><span class="badge badge-success">P</span></td><td style="text-align:center"><div class="att-status"><button class="att-btn active-present" onclick="setAtt(this,'present')">Present</button><button class="att-btn" onclick="setAtt(this,'absent')">Absent</button></div></td><td style="text-align:center"><span style="color:var(--gray-400)">—</span></td></tr>
+            <tr><td>2</td><td>Bob Smith</td><td><span class="badge badge-success">P</span></td><td><span class="badge badge-success">P</span></td><td><span class="badge badge-success">P</span></td><td style="text-align:center"><div class="att-status"><button class="att-btn active-present" onclick="setAtt(this,'present')">Present</button><button class="att-btn" onclick="setAtt(this,'absent')">Absent</button></div></td><td style="text-align:center"><span style="color:var(--gray-400)">—</span></td></tr>
+            <tr><td>3</td><td>Carol Williams</td><td><span class="badge badge-success">P</span></td><td><span class="badge badge-danger">A</span></td><td><span class="badge badge-success">P</span></td><td style="text-align:center"><div class="att-status"><button class="att-btn active-present" onclick="setAtt(this,'present')">Present</button><button class="att-btn" onclick="setAtt(this,'absent')">Absent</button></div></td><td style="text-align:center"><span class="badge badge-success">Sent</span></td></tr>
+            <tr><td>4</td><td>David Brown</td><td><span class="badge badge-danger">A</span></td><td><span class="badge badge-success">P</span></td><td><span class="badge badge-success">P</span></td><td style="text-align:center"><div class="att-status"><button class="att-btn" onclick="setAtt(this,'present')">Present</button><button class="att-btn active-absent" onclick="setAtt(this,'absent')">Absent</button></div></td><td style="text-align:center"><button class="btn btn-sm btn-primary" style="height:24px;padding:0 10px;font-size:11px" onclick="showToast('success','SMS resent to David\'s guardian')"><i class="fas fa-redo"></i> Retry</button></td></tr>
+            <tr><td>5</td><td>Emma Davis</td><td><span class="badge badge-success">P</span></td><td><span class="badge badge-success">P</span></td><td><span class="badge badge-danger">A</span></td><td style="text-align:center"><div class="att-status"><button class="att-btn" onclick="setAtt(this,'present')">Present</button><button class="att-btn" onclick="setAtt(this,'absent')">Absent</button></div></td><td style="text-align:center"><button class="btn btn-sm btn-success" style="height:24px;padding:0 10px;font-size:11px" onclick="showToast('success','SMS sent to Emma\'s guardian')"><i class="fas fa-envelope"></i> Send</button></td></tr>
+            <tr><td>6</td><td>Frank Miller</td><td><span class="badge badge-success">P</span></td><td><span class="badge badge-success">P</span></td><td><span class="badge badge-success">P</span></td><td style="text-align:center"><div class="att-status"><button class="att-btn active-present" onclick="setAtt(this,'present')">Present</button><button class="att-btn" onclick="setAtt(this,'absent')">Absent</button></div></td><td style="text-align:center"><span style="color:var(--gray-400)">—</span></td></tr>
+            <tr><td>7</td><td>Grace Johnson</td><td><span class="badge badge-success">P</span></td><td><span class="badge badge-success">P</span></td><td><span class="badge badge-success">P</span></td><td style="text-align:center"><div class="att-status"><button class="att-btn active-present" onclick="setAtt(this,'present')">Present</button><button class="att-btn" onclick="setAtt(this,'absent')">Absent</button></div></td><td style="text-align:center"><span style="color:var(--gray-400)">—</span></td></tr>
+            <tr><td>8</td><td>Henry Wilson</td><td><span class="badge badge-success">P</span></td><td><span class="badge badge-success">P</span></td><td><span class="badge badge-success">P</span></td><td style="text-align:center"><div class="att-status"><button class="att-btn active-present" onclick="setAtt(this,'present')">Present</button><button class="att-btn" onclick="setAtt(this,'absent')">Absent</button></div></td><td style="text-align:center"><span style="color:var(--gray-400)">—</span></td></tr>
+            <tr><td>9</td><td>Iris Green</td><td><span class="badge badge-success">P</span></td><td><span class="badge badge-success">P</span></td><td><span class="badge badge-success">P</span></td><td style="text-align:center"><div class="att-status"><button class="att-btn active-present" onclick="setAtt(this,'present')">Present</button><button class="att-btn" onclick="setAtt(this,'absent')">Absent</button></div></td><td style="text-align:center"><span style="color:var(--gray-400)">—</span></td></tr>
+            <tr><td>10</td><td>Jack Lee</td><td><span class="badge badge-danger">A</span></td><td><span class="badge badge-success">P</span></td><td><span class="badge badge-success">P</span></td><td style="text-align:center"><div class="att-status"><button class="att-btn active-present" onclick="setAtt(this,'present')">Present</button><button class="att-btn" onclick="setAtt(this,'absent')">Absent</button></div></td><td style="text-align:center"><button class="btn btn-sm btn-success" style="height:24px;padding:0 10px;font-size:11px" onclick="showToast('success','SMS sent to Jack\'s guardian')"><i class="fas fa-envelope"></i> Send</button></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-secondary" onclick="showToast('success','Saved as draft')"><i class="fas fa-save"></i> Save Draft</button>
+      <button class="btn btn-primary" onclick="showConfirm('Submit Attendance','Submit attendance for Class 6 - Morning - A on Dec 10, 2026?',function(){showToast('success','Attendance submitted!')})"><i class="fas fa-upload"></i> Submit</button>
+      <button class="btn btn-success" onclick="showConfirm('Send SMS','Send absence SMS to 1 guardian(s)? SMS will consume 1 credit.',function(){showToast('success','SMS sent to 1 guardian')})"><i class="fas fa-envelope"></i> Send SMS</button>
+    </div>
+  </div>
+
+  <div class="tab-pane" id="tab-attendance-report">
+    <div class="card" style="padding:16px">
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        <div style="display:flex;gap:12px;flex:1;flex-wrap:wrap">
+          <div class="form-group" style="flex:1;min-width:140px;margin-bottom:0"><label>Class <span class="required">*</span></label><select class="select"><option>Class 6</option><option>Class 7</option><option>Class 8</option></select></div>
+          <div class="form-group" style="flex:1;min-width:140px;margin-bottom:0"><label>Shift <span class="required">*</span></label><select class="select"><option>Morning</option><option>Evening</option></select></div>
+          <div class="form-group" style="flex:1;min-width:140px;margin-bottom:0"><label>Section <span class="required">*</span></label><select class="select"><option>A</option><option>B</option><option>C</option></select></div>
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;margin-top:12px;align-items:flex-end;flex-wrap:wrap">
+        <div class="form-group" style="flex:1;min-width:200px;margin-bottom:0"><label>Month</label><input type="month" class="input" value="2026-12"></div>
+        <button class="btn btn-secondary" onclick="loadAttendanceReport('all')"><i class="fas fa-users"></i> All Student</button>
+      </div>
+      <div style="display:flex;gap:12px;margin-top:12px;align-items:flex-end;flex-wrap:wrap">
+        <div class="form-group" style="flex:1;min-width:200px;margin-bottom:0"><label>Roll (for Individual)</label><input type="number" class="input" placeholder="e.g. 1"></div>
+        <button class="btn btn-primary" onclick="loadAttendanceReport('individual')"><i class="fas fa-user"></i> Individual</button>
+      </div>
+    </div>
+
+    <div class="card" id="attReportCard" style="display:none">
+      <div class="card-header"><h2><i class="fas fa-calendar-check"></i> Monthly Attendance</h2></div>
+      <div class="att-report-wrap" id="attReportWrap">
+        <table>
+          <thead>
+            <tr>
+              <th class="fixed-roll">Roll</th>
+              <th class="fixed-name">Name</th>
+              <th class="date-cell">1</th><th class="date-cell">2</th><th class="date-cell">3</th><th class="date-cell">4</th>
+              <th class="date-cell">5</th><th class="date-cell">6</th><th class="date-cell">7</th><th class="date-cell">8</th>
+              <th class="date-cell">9</th><th class="date-cell">10</th><th class="date-cell">11</th><th class="date-cell">12</th>
+              <th class="date-cell">13</th><th class="date-cell">14</th><th class="date-cell">15</th><th class="date-cell">16</th>
+              <th class="date-cell">17</th><th class="date-cell">18</th><th class="date-cell">19</th><th class="date-cell">20</th>
+              <th class="date-cell">21</th><th class="date-cell">22</th><th class="date-cell">23</th><th class="date-cell">24</th>
+              <th class="date-cell">25</th><th class="date-cell">26</th><th class="date-cell">27</th><th class="date-cell">28</th>
+              <th class="date-cell">29</th><th class="date-cell">30</th><th class="date-cell">31</th>
+              <th style="background:#FEF2F2;color:#991B1B;width:80px;position:sticky;right:0;top:0;z-index:4">Total Absent</th>
+              <th style="background:#ECFDF5;color:#065F46;width:80px;position:sticky;right:80px;top:0;z-index:4">Total Present</th>
+              <th style="background:#EFF6FF;color:#1E40AF;width:70px;position:sticky;right:160px;top:0;z-index:4">%</th>
+            </tr>
+          </thead>
+          <tbody id="attReportBody">
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card" id="attReportEmpty">
+      <div style="text-align:center;padding:40px 20px;color:var(--gray-400)">
+        <i class="fas fa-calendar-alt" style="font-size:48px;margin-bottom:12px;display:block"></i>
+        <p style="font-size:15px">Select class, shift, section, and month then click <strong>Individual</strong> or <strong>All Student</strong> to view attendance.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- RESULTS -->
+<!-- ============================================================ -->
+<section class="page-section" id="page-results">
+  <div class="tabs" id="resultsTabs">
+    <button class="tab active" data-tab="results-exams">Exams</button>
+    <button class="tab" data-tab="results-grades">Grade Scales</button>
+    <button class="tab" data-tab="results-marks" id="marksTabBtn">Marks Entry</button>
+  </div>
+
+  <div class="tab-pane active" id="tab-results-exams">
+    <div class="inline-form" id="examForm">
+      <div class="inline-form-header" onclick="toggleForm(this)">
+        <span class="label">➕ Create New Exam</span>
+        <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+      </div>
+      <div class="inline-form-body">
+        <div style="display:flex;gap:12px;align-items:flex-end">
+          <div class="form-group" style="flex:1;margin-bottom:0"><label>Exam Name <span class="required">*</span></label><input type="text" class="input" placeholder="e.g. Mid-Term Examination"></div>
+          <div class="form-group" style="flex:1;margin-bottom:0"><label>Class <span class="required">*</span></label><select class="select"><option>Class 6</option><option>Class 7</option><option>Class 8</option><option>Class 9</option><option>Class 10</option></select></div>
+          <button class="btn btn-primary" style="height:38px;flex:none" onclick="showToast('success','Exam created! Now configure subjects.');toggleForm(document.querySelector('#examForm .inline-form-header'))"><i class="fas fa-save"></i> Create</button>
+        </div>
+      </div>
+    </div>
+    <div class="card" style="padding:12px">
+      <div style="display:flex;gap:12px;align-items:flex-end">
+        <div class="form-group" style="flex:1;margin-bottom:0"><label>Academic Year</label><select class="select"><option>2026</option><option>2027</option></select></div>
+        <div class="form-group" style="flex:1;margin-bottom:0"><label>Class</label><select class="select"><option>All Classes</option><option>Class 6</option><option>Class 7</option><option>Class 8</option><option>Class 9</option><option>Class 10</option></select></div>
+        <div class="form-group" style="flex:1;margin-bottom:0"><label>Shift</label><select class="select"><option>All Shifts</option><option>Morning</option><option>Evening</option></select></div>
+        <button class="btn btn-primary" style="flex:none" onclick="showToast('info','Exams loaded')"><i class="fas fa-search"></i> Load</button>
+      </div>
+    </div>
+    <div class="card">
+      <table class="data-table">
+        <thead><tr><th>Name</th><th>Class</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody>
+          <tr><td>Mid-Term Exam</td><td>Class 6</td><td><span class="badge badge-info">Published</span></td><td class="actions-cell"><button class="btn btn-sm btn-secondary"><i class="fas fa-eye"></i> View</button><button class="btn btn-sm btn-primary"><i class="fas fa-edit"></i> Edit</button></td></tr>
+          <tr><td>Final Exam</td><td>Class 6</td><td><span class="badge badge-secondary">Draft</span></td><td class="actions-cell"><button class="btn btn-sm btn-secondary"><i class="fas fa-eye"></i> View</button><button class="btn btn-sm btn-primary"><i class="fas fa-edit"></i> Edit</button></td></tr>
+          <tr><td>Monthly Test</td><td>Class 7</td><td><span class="badge badge-success">Completed</span></td><td class="actions-cell"><button class="btn btn-sm btn-secondary"><i class="fas fa-eye"></i> View</button><button class="btn btn-sm btn-primary"><i class="fas fa-edit"></i> Edit</button></td></tr>
+          <tr><td>Mid-Term Exam</td><td>Class 7</td><td><span class="badge badge-info">Published</span></td><td class="actions-cell"><button class="btn btn-sm btn-secondary"><i class="fas fa-eye"></i> View</button><button class="btn btn-sm btn-primary"><i class="fas fa-edit"></i> Edit</button></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="tab-pane" id="tab-results-grades">
+    <div class="inline-form" id="gradeForm">
+      <div class="inline-form-header" onclick="toggleForm(this)">
+        <span class="label">➕ Add Grade Scale</span>
+        <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+      </div>
+      <div class="inline-form-body">
+        <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
+          <div class="form-group" style="flex:1;min-width:120px;margin-bottom:0"><label>From %</label><input type="number" class="input" placeholder="80"></div>
+          <div class="form-group" style="flex:1;min-width:120px;margin-bottom:0"><label>To %</label><input type="number" class="input" placeholder="100"></div>
+          <div class="form-group" style="flex:1;min-width:100px;margin-bottom:0"><label>GPA</label><input type="number" class="input" step="0.01" placeholder="5.00"></div>
+          <div class="form-group" style="flex:1;min-width:100px;margin-bottom:0"><label>Grade Scale</label><input type="text" class="input" placeholder="A+"></div>
+          <div style="display:flex;gap:8px;flex:none">
+            <button class="btn btn-primary" onclick="showToast('success','Grade scale added!')"><i class="fas fa-save"></i> Add</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <table class="data-table">
+        <thead><tr><th>From %</th><th>To %</th><th>Grade</th><th>GPA</th><th>Actions</th></tr></thead>
+        <tbody>
+          <tr><td>80</td><td>100</td><td>A+</td><td>5.00</td><td class="actions-cell"><button class="btn btn-icon" title="Edit"><i class="fas fa-edit"></i></button><button class="btn btn-icon danger" onclick="showConfirm('Delete','Delete this grade scale?',function(){this.closest('tr').remove()})"><i class="fas fa-trash-alt"></i></button></td></tr>
+          <tr><td>70</td><td>79</td><td>A</td><td>4.00</td><td class="actions-cell"><button class="btn btn-icon"><i class="fas fa-edit"></i></button><button class="btn btn-icon danger" onclick="showConfirm('Delete','Delete this grade scale?',function(){this.closest('tr').remove()})"><i class="fas fa-trash-alt"></i></button></td></tr>
+          <tr><td>60</td><td>69</td><td>A-</td><td>3.50</td><td class="actions-cell"><button class="btn btn-icon"><i class="fas fa-edit"></i></button><button class="btn btn-icon danger" onclick="showConfirm('Delete','Delete this grade scale?',function(){this.closest('tr').remove()})"><i class="fas fa-trash-alt"></i></button></td></tr>
+          <tr><td>50</td><td>59</td><td>B</td><td>3.00</td><td class="actions-cell"><button class="btn btn-icon"><i class="fas fa-edit"></i></button><button class="btn btn-icon danger" onclick="showConfirm('Delete','Delete this grade scale?',function(){this.closest('tr').remove()})"><i class="fas fa-trash-alt"></i></button></td></tr>
+          <tr><td>40</td><td>49</td><td>C</td><td>2.00</td><td class="actions-cell"><button class="btn btn-icon"><i class="fas fa-edit"></i></button><button class="btn btn-icon danger" onclick="showConfirm('Delete','Delete this grade scale?',function(){this.closest('tr').remove()})"><i class="fas fa-trash-alt"></i></button></td></tr>
+          <tr><td>33</td><td>39</td><td>D</td><td>1.00</td><td class="actions-cell"><button class="btn btn-icon"><i class="fas fa-edit"></i></button><button class="btn btn-icon danger" onclick="showConfirm('Delete','Delete this grade scale?',function(){this.closest('tr').remove()})"><i class="fas fa-trash-alt"></i></button></td></tr>
+          <tr><td>0</td><td>32</td><td>F</td><td>0.00</td><td class="actions-cell"><button class="btn btn-icon"><i class="fas fa-edit"></i></button><button class="btn btn-icon danger" onclick="showConfirm('Delete','Delete this grade scale?',function(){this.closest('tr').remove()})"><i class="fas fa-trash-alt"></i></button></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="tab-pane" id="tab-results-marks">
+    <div class="card" style="padding:12px">
+      <div style="display:flex;gap:12px;align-items:flex-end">
+        <div class="form-group" style="flex:1;margin-bottom:0"><label>Select Exam</label><select class="select"><option>Mid-Term Exam — Class 6</option><option>Final Exam — Class 6</option></select></div>
+        <div class="form-group" style="flex:1;margin-bottom:0"><label>Select Class</label><select class="select"><option>Class 6</option><option>Class 7</option><option>Class 8</option></select></div>
+        <div class="form-group" style="flex:1;margin-bottom:0"><label>Select Shift</label><select class="select"><option>Morning</option><option>Evening</option></select></div>
+        <div class="form-group" style="flex:1;margin-bottom:0"><label>Select Section</label><select class="select"><option>A</option><option>B</option><option>C</option></select></div>
+        <button class="btn btn-primary" style="flex:none"><i class="fas fa-search"></i> Load</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><h2>Mid-Term Exam — Class 6</h2><span style="font-size:13px;color:var(--gray-400)">Marks Entry</span></div>
+      <div class="table-wrapper">
+        <table class="marks-grid">
+          <thead><tr><th>Roll</th><th>Name</th><th>Math (100)</th><th>Eng (100)</th><th>Sci (100)</th><th>ICT (50)</th><th>Total</th><th>%</th><th>Grade</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>Alice J.</td><td><input type="number" value="85"> <label style="font-size:11px;color:var(--gray-400)"><input type="checkbox"> Absent</label></td><td><input type="number" value="72"> <label style="font-size:11px;color:var(--gray-400)"><input type="checkbox"> Absent</label></td><td><input type="number" value="90"> <label style="font-size:11px;color:var(--gray-400)"><input type="checkbox"> Absent</label></td><td><input type="number" value="42"> <label style="font-size:11px;color:var(--gray-400)"><input type="checkbox"> Absent</label></td><td>289</td><td>82.5</td><td>A+</td></tr>
+            <tr><td>2</td><td>Bob S.</td><td><input type="number" value="65"> <label style="font-size:11px;color:var(--gray-400)"><input type="checkbox"> Absent</label></td><td><input type="number" value="58"> <label style="font-size:11px;color:var(--gray-400)"><input type="checkbox"> Absent</label></td><td><input type="number" value="70"> <label style="font-size:11px;color:var(--gray-400)"><input type="checkbox"> Absent</label></td><td><input type="number" value="35"> <label style="font-size:11px;color:var(--gray-400)"><input type="checkbox"> Absent</label></td><td>228</td><td>65.1</td><td>A-</td></tr>
+            <tr><td>3</td><td>Carol W.</td><td><input type="number" value="92"> <label style="font-size:11px;color:var(--gray-400)"><input type="checkbox"> Absent</label></td><td><input type="number" value="88"> <label style="font-size:11px;color:var(--gray-400)"><input type="checkbox"> Absent</label></td><td><input type="number" value="95"> <label style="font-size:11px;color:var(--gray-400)"><input type="checkbox"> Absent</label></td><td><input type="number" value="48"> <label style="font-size:11px;color:var(--gray-400)"><input type="checkbox"> Absent</label></td><td>323</td><td>92.3</td><td>A+</td></tr>
+            <tr><td>4</td><td>David B.</td><td><input type="number" value=""> <label style="font-size:11px;color:var(--gray-400)"><input type="checkbox" checked> Absent</label></td><td><input type="number" value="65"> <label style="font-size:11px;color:var(--gray-400)"><input type="checkbox"> Absent</label></td><td><input type="number" value="60"> <label style="font-size:11px;color:var(--gray-400)"><input type="checkbox"> Absent</label></td><td><input type="number" value="30"> <label style="font-size:11px;color:var(--gray-400)"><input type="checkbox"> Absent</label></td><td>155</td><td>44.3</td><td>C</td></tr>
+            <tr><td>5</td><td>Emma D.</td><td><input type="number" value="78"> <label style="font-size:11px;color:var(--gray-400)"><input type="checkbox"> Absent</label></td><td><input type="number" value="81"> <label style="font-size:11px;color:var(--gray-400)"><input type="checkbox"> Absent</label></td><td><input type="number" value="74"> <label style="font-size:11px;color:var(--gray-400)"><input type="checkbox"> Absent</label></td><td><input type="number" value="38"> <label style="font-size:11px;color:var(--gray-400)"><input type="checkbox"> Absent</label></td><td>271</td><td>77.4</td><td>A</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn btn-primary" onclick="showToast('success','Marks saved!')"><i class="fas fa-save"></i> Save Marks</button>
+        <button class="btn btn-success" onclick="showConfirm('Publish Results','Publish Mid-Term results for Class 6? SMS notifications will be sent to guardians.',function(){showToast('success','Results published! Notifications sent.')})"><i class="fas fa-upload"></i> Publish</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- NOTICES -->
+<!-- ============================================================ -->
+<section class="page-section" id="page-notices">
+  <div class="inline-form" id="noticeForm">
+    <div class="inline-form-header" onclick="toggleForm(this)">
+      <span class="label">➕ Create New Notice</span>
+      <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+    </div>
+    <div class="inline-form-body">
+      <div class="form-group"><label>Title <span class="required">*</span></label><input type="text" class="input" placeholder="Notice title"></div>
+      <div class="form-row">
+        <div class="form-group"><label>File (PDF or Image) <span class="required">*</span></label><input type="file" class="input" accept=".pdf,image/*"></div>
+        <div class="form-group"><label>Publish At</label><input type="datetime-local" class="input"></div>
+      </div>
+      <div class="form-actions"><button class="btn btn-primary" onclick="showToast('success','Notice created!');toggleForm(document.querySelector('#noticeForm .inline-form-header'))"><i class="fas fa-save"></i> Create</button><button class="btn btn-secondary" onclick="toggleForm(document.querySelector('#noticeForm .inline-form-header'))">✕ Cancel</button></div>
+    </div>
+  </div>
+
+  <div class="filter-bar">
+    <select class="select"><option>All Academic Years</option><option>2026</option><option>2027</option></select>
+    <select class="select"><option>All Status</option><option>Published</option><option>Scheduled</option><option>Archived</option></select>
+    <input type="text" class="input" style="max-width:200px" placeholder="Search title...">
+    <button class="btn btn-primary" onclick="loadNotices()"><i class="fas fa-search"></i> Search</button>
+  </div>
+
+  <div class="card">
+    <table class="data-table">
+      <thead><tr><th>Title</th><th>Type</th><th>Published At</th><th>Expires At</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody id="noticeBody">
+      </tbody>
+    </table>
+    <div style="text-align:center;padding:24px;color:var(--gray-400);font-size:14px" id="noticeEmpty">Apply filters and click Search to view notices.</div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SMS LOG -->
+<!-- ============================================================ -->
+<section class="page-section" id="page-smslog">
+  <div class="card" style="padding:16px">
+    <div class="card-header"><h2><i class="fas fa-paper-plane"></i> Send Custom SMS</h2></div>
+    <div style="display:flex;gap:12px;align-items:flex-end">
+      <div class="form-group" style="flex:1;margin-bottom:0"><label>Search Student</label><input type="text" class="input" id="smsSearchInput" placeholder="Type name or roll to search..."></div>
+      <button class="btn btn-primary" style="flex:none;height:38px" onclick="searchSmsStudent()"><i class="fas fa-search"></i> Search</button>
+    </div>
+
+    <div id="smsStudentInfo" style="display:none;margin-top:16px;padding:16px;background:var(--gray-50);border-radius:8px">
+      <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px">
+        <div class="cell-photo" style="width:48px;height:48px;font-size:18px">AJ</div>
+        <div><strong id="smsStudentName">Alice Johnson</strong><br><span style="font-size:13px;color:var(--gray-400)" id="smsStudentId">26000001</span></div>
+      </div>
+      <div class="form-row-3">
+        <div><label style="font-size:12px;color:var(--gray-400)">Class</label><p id="smsStudentClass">Class 6</p></div>
+        <div><label style="font-size:12px;color:var(--gray-400)">Shift</label><p id="smsStudentShift">Morning</p></div>
+        <div><label style="font-size:12px;color:var(--gray-400)">Roll</label><p id="smsStudentRoll">1</p></div>
+        <div><label style="font-size:12px;color:var(--gray-400)">Section</label><p id="smsStudentSection">A</p></div>
+        <div><label style="font-size:12px;color:var(--gray-400)">Father</label><p id="smsStudentFather">John Johnson</p></div>
+        <div><label style="font-size:12px;color:var(--gray-400)">Mother</label><p id="smsStudentMother">Sarah Johnson</p></div>
+      </div>
+    </div>
+
+    <div class="form-group" style="margin-top:12px"><label>Message <span class="required">*</span></label><textarea class="textarea" id="smsMessageInput" rows="3" placeholder="Type your custom message here..."></textarea></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+      <button class="btn btn-success" onclick="showConfirm('Send SMS','Send this SMS to the selected student\'s guardian? SMS will consume 1 credit.',function(){showToast('success','SMS sent successfully')})"><i class="fas fa-paper-plane"></i> Send SMS</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><h2><i class="fas fa-list"></i> SMS History</h2></div>
+    <div class="filter-bar" style="border:none;padding:0 0 12px 0">
+      <select class="select"><option>All Status</option><option>Sent</option><option>Failed</option><option>Pending</option></select>
+      <input type="date" class="input">
+      <input type="date" class="input">
+      <input type="text" class="input" style="max-width:200px" placeholder="Search student...">
+      <button class="btn btn-primary"><i class="fas fa-search"></i> Search</button>
+    </div>
+    <table class="data-table">
+      <thead><tr><th>Date</th><th>Student</th><th>Recipient</th><th>Message</th><th>Status</th><th>Retry</th><th>Actions</th></tr></thead>
+      <tbody>
+        <tr><td>Dec 10, 2026</td><td>Alice Johnson</td><td>+8801712345671</td><td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Your child Alice Johnson was absent on Dec 10.</td><td><span class="badge badge-success">Sent</span></td><td>0</td><td class="actions-cell">—</td></tr>
+        <tr><td>Dec 10, 2026</td><td>Bob Smith</td><td>+8801712345672</td><td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Your child Bob Smith was absent on Dec 10.</td><td><span class="badge badge-success">Sent</span></td><td>0</td><td class="actions-cell">—</td></tr>
+        <tr><td>Dec 9, 2026</td><td>David Brown</td><td>+8801712345673</td><td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Dear guardian, David Brown's results for Mid-Term Exam have been published.</td><td><span class="badge badge-danger">Failed</span></td><td>2</td><td class="actions-cell"><button class="btn btn-sm btn-primary" onclick="showConfirm('Retry SMS','Retry sending this SMS?',function(){showToast('success','SMS queued for retry')})">Retry</button></td></tr>
+        <tr><td>Dec 8, 2026</td><td>Emma Davis</td><td>+8801712345674</td><td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Custom message: School will remain closed on Dec 25.</td><td><span class="badge badge-warning">Pending</span></td><td>0</td><td class="actions-cell">—</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- REPORTS -->
+<!-- ============================================================ -->
+<section class="page-section" id="page-reports">
+  <div class="card" style="padding:16px">
+    <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
+      <div class="form-group" style="flex:1;min-width:200px;margin-bottom:0"><label>Registration Number <span class="required">*</span></label><input type="text" class="input" id="reportRegInput" placeholder="e.g. 26000001"></div>
+      <div class="form-group" style="flex:1;min-width:180px;margin-bottom:0"><label>Report Type <span class="required">*</span></label><select class="select" id="reportTypeSelect"><option>Progress Report</option><option>Transfer Certificate</option><option>Attendance Report</option><option>Result Report</option></select></div>
+      <button class="btn btn-primary" style="flex:none;height:38px" onclick="loadReport()"><i class="fas fa-search"></i> Load</button>
+    </div>
+  </div>
+
+  <div class="card" id="reportResultCard" style="display:none">
+    <div id="reportContent">
+      <!-- dynamically filled -->
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:20px;padding-top:16px;border-top:1px solid var(--gray-200)">
+      <button class="btn btn-primary" onclick="printReport()"><i class="fas fa-print"></i> Print</button>
+    </div>
+  </div>
+
+  <div class="card" id="reportEmptyCard">
+    <div style="text-align:center;padding:40px 20px;color:var(--gray-400)">
+      <i class="fas fa-file-alt" style="font-size:48px;margin-bottom:12px;display:block"></i>
+      <p style="font-size:15px">Enter a registration number and select a report type, then click <strong>Load</strong> to generate the report.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- USERS & PERMISSIONS -->
+<!-- ============================================================ -->
+<section class="page-section" id="page-users">
+
+  <div class="inline-form" id="managerForm">
+    <div class="inline-form-header" onclick="toggleForm(this)">
+      <span class="label">➕ Add New Manager</span>
+      <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+    </div>
+    <div class="inline-form-body">
+      <div class="form-row">
+        <div class="form-group"><label>Full Name <span class="required">*</span></label><input type="text" class="input" placeholder="Enter full name"></div>
+        <div class="form-group"><label>Email <span class="required">*</span></label><input type="email" class="input" placeholder="email@school.com"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Password <span class="required">*</span></label><input type="password" class="input"></div>
+        <div class="form-group"><label>Phone</label><input type="tel" class="input" placeholder="+8801XXXXXXXXX"></div>
+      </div>
+      <div class="form-actions"><button class="btn btn-primary" onclick="showToast('success','Manager created! Now assign permissions.');toggleForm(document.querySelector('#managerForm .inline-form-header'))"><i class="fas fa-save"></i> Create</button><button class="btn btn-secondary" onclick="toggleForm(document.querySelector('#managerForm .inline-form-header'))">✕ Cancel</button></div>
+    </div>
+  </div>
+
+    <div class="card" id="permissionSection" style="display:none">
+    <div class="card-header"><h2><i class="fas fa-lock"></i> Permissions for: <span id="permUserName">Jane Smith</span></h2><span style="font-size:12px;color:var(--gray-400)">Granted managers can View, Create, and Edit. Delete is Admin-only.</span></div>
+    <div class="table-wrapper">
+      <table class="perm-grid">
+        <thead><tr><th>Module</th><th style="text-align:center">Allow</th></tr></thead>
+        <tbody>
+          <tr><td>Student Management</td><td style="text-align:center"><input type="checkbox" checked></td></tr>
+          <tr><td>Attendance</td><td style="text-align:center"><input type="checkbox" checked></td></tr>
+          <tr><td>Results</td><td style="text-align:center"><input type="checkbox"></td></tr>
+          <tr><td>Notice Board</td><td style="text-align:center"><input type="checkbox" checked></td></tr>
+          <tr><td>Reports</td><td style="text-align:center"><input type="checkbox"></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-primary" onclick="showToast('success','Permissions saved!')"><i class="fas fa-save"></i> Save Permissions</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <table class="data-table">
+      <thead><tr><th>Name</th><th>Email</th><th>Permissions</th><th>Status</th><th>Last Login</th><th>Actions</th></tr></thead>
+      <tbody>
+        <tr><td>Jane Smith</td><td>jane@school.com</td><td><span class="badge badge-info" style="margin:1px">Students</span> <span class="badge badge-info" style="margin:1px">Attendance</span> <span class="badge badge-info" style="margin:1px">Notice Board</span></td><td><span class="badge badge-success">Active</span></td><td>Dec 10, 2026</td><td class="actions-cell"><button class="btn btn-icon" onclick="editManager(this)" title="Edit"><i class="fas fa-edit"></i></button><button class="btn btn-icon" onclick="showConfirm('Reset Password','Reset password for Jane Smith?',function(){showToast('success','Password reset email sent')})" title="Reset Password"><i class="fas fa-key"></i></button><button class="btn btn-icon danger" onclick="showConfirm('Deactivate Manager','Deactivate Jane Smith? They will lose access immediately.',function(){showToast('error','Manager deactivated')})" title="Deactivate"><i class="fas fa-ban"></i></button></td></tr>
+        <tr><td>Bob Wilson</td><td>bob@school.com</td><td><span class="badge badge-info" style="margin:1px">Students</span> <span class="badge badge-info" style="margin:1px">Notice Board</span></td><td><span class="badge badge-success">Active</span></td><td>Dec 9, 2026</td><td class="actions-cell"><button class="btn btn-icon"><i class="fas fa-edit"></i></button><button class="btn btn-icon"><i class="fas fa-key"></i></button><button class="btn btn-icon danger"><i class="fas fa-ban"></i></button></td></tr>
+        <tr><td>Sarah Lee</td><td>sarah@school.com</td><td><span class="badge badge-info" style="margin:1px">Attendance</span> <span class="badge badge-info" style="margin:1px">Results</span></td><td><span class="badge badge-danger">Inactive</span></td><td>Nov 28, 2026</td><td class="actions-cell"><button class="btn btn-icon"><i class="fas fa-edit"></i></button><button class="btn btn-icon"><i class="fas fa-key"></i></button><button class="btn btn-icon success" style="color:var(--green)"><i class="fas fa-check"></i></button></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- AUDIT LOGS -->
+<!-- ============================================================ -->
+<section class="page-section" id="page-audit">
+  <div class="filter-bar">
+    <select class="select"><option>All Modules</option><option>Student Management</option><option>Attendance</option><option>Results</option><option>Notices</option></select>
+    <select class="select"><option>All Actions</option><option>Created</option><option>Updated</option><option>Deleted</option><option>Published</option></select>
+    <input type="date" class="input">
+    <button class="btn btn-primary"><i class="fas fa-search"></i> Search</button>
+  </div>
+  <div class="card">
+    <table class="data-table">
+      <thead><tr><th>Timestamp</th><th>User</th><th>Module</th><th>Action</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td>Dec 10, 10:30 AM</td><td>John Doe</td><td>Student Mgmt</td><td><span class="badge badge-success">Created</span></td><td>Created student Alice Johnson (26000001)</td></tr>
+        <tr><td>Dec 10, 9:15 AM</td><td>Jane Smith</td><td>Attendance</td><td><span class="badge badge-secondary">Updated</span></td><td>Corrected attendance for Class 6A on Dec 9</td></tr>
+        <tr><td>Dec 9, 2:00 PM</td><td>John Doe</td><td>Results</td><td><span class="badge badge-info">Published</span></td><td>Published Mid-Term results for Class 6</td></tr>
+        <tr><td>Dec 9, 11:30 AM</td><td>Bob Wilson</td><td>Student Mgmt</td><td><span class="badge badge-danger">Deleted</span></td><td>Deleted application APP-2026-003</td></tr>
+        <tr><td>Dec 8, 4:45 PM</td><td>John Doe</td><td>User Mgmt</td><td><span class="badge badge-warning">Permission Changed</span></td><td>Updated permissions for Jane Smith</td></tr>
+        <tr><td>Dec 8, 10:00 AM</td><td>System</td><td>System</td><td><span class="badge badge-secondary">SMS Balance Changed</span></td><td>SMS balance adjusted: +200 (by Platform Admin)</td></tr>
+      </tbody>
+    </table>
+    <div class="pagination-wrapper"><span class="page-info">Showing 1-6 of 48</span><div class="pages"><button class="btn btn-icon disabled"><i class="fas fa-chevron-left"></i></button><button class="page active">1</button><button class="page">2</button><button class="page">3</button></div></div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SETTINGS -->
+<!-- ============================================================ -->
+<section class="page-section" id="page-settings">
+  <div class="tabs" id="settingsTabs">
+    <button class="tab active" data-tab="settings-school">School Info</button>
+    <button class="tab" data-tab="settings-classes">Classes</button>
+    <button class="tab" data-tab="settings-subjects">Subjects</button>
+    <button class="tab" data-tab="settings-academic">Academic Years</button>
+    <button class="tab" data-tab="settings-sms">SMS Templates</button>
+  </div>
+
+  <!-- School Info -->
+  <div class="tab-pane active" id="tab-settings-school">
+    <div class="card">
+      <div class="form-row">
+        <div class="form-group"><label>School Logo</label><input type="file" class="input" accept="image/*"></div>
+        <div class="form-group"><label>School Name</label><input type="text" class="input" value="Springfield School" readonly style="background:var(--gray-50);color:var(--gray-500)"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Address</label><textarea class="textarea" rows="2">123 School Street, Springfield</textarea></div>
+        <div class="form-group"><label>Phone</label><input type="tel" class="input" value="+8801712345678"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Email</label><input type="email" class="input" value="info@springfield.edu"></div>
+        <div class="form-group"><label>Website</label><input type="url" class="input" value="https://springfield.edu"></div>
+      </div>
+      <div class="form-actions"><button class="btn btn-primary" onclick="showToast('success','Settings saved!')"><i class="fas fa-save"></i> Save Changes</button></div>
+    </div>
+  </div>
+
+  <!-- Classes -->
+  <div class="tab-pane" id="tab-settings-classes">
+    <!-- Card 1: Classes -->
+    <div class="card">
+      <div class="card-header"><h2>Classes</h2></div>
+      <div style="display:flex;gap:12px;align-items:flex-end;padding-bottom:12px;border-bottom:1px solid var(--gray-200);margin-bottom:12px">
+        <div class="form-group" style="flex:1;margin-bottom:0"><label>Name</label><input type="text" class="input" placeholder="e.g. Class 6"></div>
+        <button class="btn btn-primary" style="flex:none" onclick="showToast('success','Class added!')">+ Add</button>
+      </div>
+      <table class="data-table">
+        <thead><tr><th>Name</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody>
+          <tr><td>Class 6</td><td><span class="badge badge-success">Active</span></td><td class="actions-cell"><button class="btn btn-icon"><i class="fas fa-edit"></i></button><button class="btn btn-icon danger"><i class="fas fa-ban"></i></button></td></tr>
+          <tr><td>Class 7</td><td><span class="badge badge-success">Active</span></td><td class="actions-cell"><button class="btn btn-icon"><i class="fas fa-edit"></i></button><button class="btn btn-icon danger"><i class="fas fa-ban"></i></button></td></tr>
+          <tr><td>Class 8</td><td><span class="badge badge-success">Active</span></td><td class="actions-cell"><button class="btn btn-icon"><i class="fas fa-edit"></i></button><button class="btn btn-icon danger"><i class="fas fa-ban"></i></button></td></tr>
+          <tr><td>Class 9</td><td><span class="badge badge-success">Active</span></td><td class="actions-cell"><button class="btn btn-icon"><i class="fas fa-edit"></i></button><button class="btn btn-icon danger"><i class="fas fa-ban"></i></button></td></tr>
+          <tr><td>Class 10</td><td><span class="badge badge-success">Active</span></td><td class="actions-cell"><button class="btn btn-icon"><i class="fas fa-edit"></i></button><button class="btn btn-icon danger"><i class="fas fa-ban"></i></button></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Card 2: Shifts for selected class -->
+    <div class="card">
+      <div class="card-header"><h2>Shifts</h2></div>
+      <div style="display:flex;gap:12px;align-items:flex-end;padding-bottom:12px;border-bottom:1px solid var(--gray-200);margin-bottom:12px">
+        <div class="form-group" style="flex:1;margin-bottom:0"><label>Class</label><select class="select"><option>Class 6</option><option>Class 7</option><option>Class 8</option><option>Class 9</option><option>Class 10</option></select></div>
+        <div class="form-group" style="flex:1;margin-bottom:0"><label>Shift Name</label><input type="text" class="input" placeholder="e.g. Morning"></div>
+        <button class="btn btn-primary" style="flex:none" onclick="showToast('success','Shift added!')">+ Add</button>
+      </div>
+      <table class="data-table">
+        <thead><tr><th>Name</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody>
+          <tr><td>Morning</td><td><span class="badge badge-success">Active</span></td><td class="actions-cell"><button class="btn btn-icon"><i class="fas fa-edit"></i></button><button class="btn btn-icon danger"><i class="fas fa-ban"></i></button></td></tr>
+          <tr><td>Evening</td><td><span class="badge badge-success">Active</span></td><td class="actions-cell"><button class="btn btn-icon"><i class="fas fa-edit"></i></button><button class="btn btn-icon danger"><i class="fas fa-ban"></i></button></td></tr>
+          <tr><td>Day</td><td><span class="badge badge-secondary">Inactive</span></td><td class="actions-cell"><button class="btn btn-icon"><i class="fas fa-edit"></i></button><button class="btn btn-icon" title="Enable"><i class="fas fa-check-circle"></i></button></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Card 3: Sections -->
+    <div class="card">
+      <div class="card-header"><h2>Sections</h2></div>
+      <div style="display:flex;gap:12px;align-items:flex-end;padding-bottom:12px;border-bottom:1px solid var(--gray-200);margin-bottom:12px">
+        <div class="form-group" style="flex:1;margin-bottom:0"><label>Class</label><select class="select"><option>Class 6</option><option>Class 7</option><option>Class 8</option><option>Class 9</option><option>Class 10</option></select></div>
+        <div class="form-group" style="flex:1;margin-bottom:0"><label>Shift</label><select class="select"><option>Morning</option><option>Evening</option><option>Day</option></select></div>
+        <div class="form-group" style="flex:1;margin-bottom:0"><label>Name</label><input type="text" class="input" placeholder="e.g. Section A"></div>
+        <button class="btn btn-primary" style="flex:none" onclick="showToast('success','Section added!')">+ Add</button>
+      </div>
+      <table class="data-table">
+        <thead><tr><th>Name</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody>
+          <tr><td>Section A</td><td><span class="badge badge-success">Active</span></td><td class="actions-cell"><button class="btn btn-icon"><i class="fas fa-edit"></i></button><button class="btn btn-icon" title="Disable"><i class="fas fa-ban"></i></button></td></tr>
+          <tr><td>Section B</td><td><span class="badge badge-success">Active</span></td><td class="actions-cell"><button class="btn btn-icon"><i class="fas fa-edit"></i></button><button class="btn btn-icon" title="Disable"><i class="fas fa-ban"></i></button></td></tr>
+          <tr><td>Section C</td><td><span class="badge badge-success">Active</span></td><td class="actions-cell"><button class="btn btn-icon"><i class="fas fa-edit"></i></button><button class="btn btn-icon" title="Disable"><i class="fas fa-ban"></i></button></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Subjects -->
+  <div class="tab-pane" id="tab-settings-subjects">
+    <div class="card">
+      <div style="display:flex;gap:12px;align-items:flex-end;padding-bottom:12px;border-bottom:1px solid var(--gray-200);margin-bottom:12px">
+        <div class="form-group" style="flex:1;margin-bottom:0"><label>Class</label><select class="select"><option>Class 6</option><option>Class 7</option><option>Class 8</option></select></div>
+        <div class="form-group" style="flex:1;margin-bottom:0"><label>Name</label><input type="text" class="input" placeholder="Mathematics"></div>
+        <div class="form-group" style="flex:1;margin-bottom:0"><label>Type</label><select class="select"><option>Mandatory</option><option>Optional</option></select></div>
+        <button class="btn btn-primary" style="flex:none">+ Add</button>
+      </div>
+      <table class="data-table">
+        <thead><tr><th>Name</th><th>Type</th><th>Actions</th></tr></thead>
+        <tbody>
+          <tr><td>Mathematics</td><td>Mandatory</td><td class="actions-cell"><button class="btn btn-icon"><i class="fas fa-edit"></i></button><button class="btn btn-icon" title="Disable"><i class="fas fa-ban"></i></button></td></tr>
+          <tr><td>English</td><td>Mandatory</td><td class="actions-cell"><button class="btn btn-icon"><i class="fas fa-edit"></i></button><button class="btn btn-icon" title="Disable"><i class="fas fa-ban"></i></button></td></tr>
+          <tr><td>Science</td><td>Mandatory</td><td class="actions-cell"><button class="btn btn-icon"><i class="fas fa-edit"></i></button><button class="btn btn-icon" title="Disable"><i class="fas fa-ban"></i></button></td></tr>
+          <tr><td>Information &amp; Communication Tech</td><td>Mandatory</td><td class="actions-cell"><button class="btn btn-icon"><i class="fas fa-edit"></i></button><button class="btn btn-icon" title="Disable"><i class="fas fa-ban"></i></button></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Academic Years -->
+  <div class="tab-pane" id="tab-settings-academic">
+    <div class="inline-form" id="ayForm">
+      <div class="inline-form-header" onclick="toggleForm(this)">
+        <span class="label">➕ Add Academic Year</span>
+        <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+      </div>
+      <div class="inline-form-body">
+        <div class="form-row">
+          <div class="form-group"><label>Name <span class="required">*</span></label><input type="text" class="input" placeholder="2027-2028"></div>
+          <div class="form-group"><label>Start Date <span class="required">*</span></label><input type="date" class="input"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>End Date <span class="required">*</span></label><input type="date" class="input"></div>
+          <div class="form-group" style="display:flex;align-items:flex-end;gap:8px;padding-bottom:4px">
+            <label class="checklist"><input type="checkbox"> Set as current year</label>
+          </div>
+        </div>
+        <div class="form-actions"><button class="btn btn-primary" onclick="showToast('success','Academic year created!');toggleForm(document.querySelector('#ayForm .inline-form-header'))"><i class="fas fa-save"></i> Create</button><button class="btn btn-secondary" onclick="toggleForm(document.querySelector('#ayForm .inline-form-header'))">✕ Cancel</button></div>
+      </div>
+    </div>
+    <div class="card">
+      <table class="data-table">
+        <thead><tr><th>Name</th><th>Start Date</th><th>End Date</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody>
+          <tr><td>2026-2027</td><td>Jan 1, 2026</td><td>Dec 31, 2026</td><td><span class="badge badge-success">Current</span></td><td class="actions-cell"><button class="btn btn-sm btn-secondary" onclick="showConfirm('Close Year','Close 2026-2027? All data will become read-only.',function(){showToast('success','Academic year closed')})">Close Year</button></td></tr>
+          <tr><td>2025-2026</td><td>Jan 1, 2025</td><td>Dec 31, 2025</td><td><span class="badge badge-secondary">Closed</span></td><td class="actions-cell"><button class="btn btn-sm btn-secondary" onclick="showConfirm('Re-open','Re-open 2025-2026?',function(){showToast('success','Academic year re-opened')})">Re-open</button></td></tr>
+          <tr><td>2027-2028</td><td>Jan 1, 2027</td><td>Dec 31, 2027</td><td><span class="badge badge-secondary">Upcoming</span></td><td class="actions-cell"><button class="btn btn-sm btn-primary" onclick="showConfirm('Set Current','Set 2027-2028 as current academic year?',function(){showToast('success','Current year changed to 2027-2028')})">Set Current</button></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- SMS Templates -->
+  <div class="tab-pane" id="tab-settings-sms">
+    <div class="card">
+      <div class="card-header"><h2>Attendance SMS Template</h2></div>
+      <div class="form-group"><label>Message</label><textarea class="textarea" rows="3">Your child {{student_name}} was absent on {{date}}. — {{school_name}}</textarea></div>
+      <div style="font-size:12px;color:var(--gray-400);margin-bottom:12px">Available variables: <code>{{student_name}}</code>, <code>{{date}}</code>, <code>{{class}}</code>, <code>{{shift}}</code>, <code>{{section}}</code>, <code>{{school_name}}</code></div>
+      <div class="form-actions"><button class="btn btn-primary" onclick="showToast('success','Attendance SMS template saved!')"><i class="fas fa-save"></i> Save</button></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><h2>Result SMS Template</h2></div>
+      <div class="form-group"><label>Message</label><textarea class="textarea" rows="3">Dear guardian, {{student_name}}'s results for {{exam_name}} have been published. Check the portal for details. — {{school_name}}</textarea></div>
+      <div style="font-size:12px;color:var(--gray-400);margin-bottom:12px">Available variables: <code>{{student_name}}</code>, <code>{{exam_name}}</code>, <code>{{class}}</code>, <code>{{school_name}}</code></div>
+      <div class="form-actions"><button class="btn btn-primary" onclick="showToast('success','Result SMS template saved!')"><i class="fas fa-save"></i> Save</button></div>
+    </div>
+  </div>
+</section>
+
+</main>
+</div>
+
+<!-- ===== MODAL ===== -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modalTitle">Confirm Action</h3>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody">
+      <p>Are you sure?</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" id="modalConfirmBtn" onclick="confirmModalAction()">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== TOAST ===== -->
+<div class="toast" id="toast">
+  <span id="toastMsg">Success!</span>
+  <button class="toast-close" onclick="hideToast()">✕</button>
+</div>
+
+<script>
+// ===== NAVIGATION =====
+let currentPage = 'dashboard';
+let confirmCallback = null;
+
+function showPage(page, sub) {
+  document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  currentPage = page;
+
+  const link = document.querySelector(`.sidebar-nav a[data-page="${page}"]`);
+  if (link) link.classList.add('active');
+  const group = link && link.closest('.nav-group');
+  if (group) group.classList.add('open');
+
+  document.getElementById('mainContent').scrollTop = 0;
+
+  if (sub) {
+    const tabsContainer = document.getElementById(page + 'Tabs');
+    if (tabsContainer) {
+      const tab = tabsContainer.querySelector(`[data-tab="${page}-${sub}"]`);
+      const subLink = document.querySelector(`.sub-nav a[data-page="${page}"][data-sub="${sub}"]`);
+      if (subLink) {
+        document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.remove('active'));
+        subLink.classList.add('active');
+        if (group) group.classList.add('open');
+      }
+      if (tab) tab.click();
+    } else {
+      const subLinks = document.querySelectorAll(`.sub-nav a[data-page="${page}"]`);
+      subLinks.forEach(a => a.classList.remove('active'));
+      if (subLink) subLink.classList.add('active');
+      const settingsSection = document.getElementById('page-' + page);
+      if (settingsSection) {
+        settingsSection.querySelectorAll('.settings-section').forEach(s => s.classList.remove('active'));
+        const target = settingsSection.querySelector('#settings-' + sub);
+        if (target) target.classList.add('active');
+        settingsSection.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('active'));
+        const tab = settingsSection.querySelector(`[data-settings="${sub}"]`);
+        if (tab) tab.classList.add('active');
+      }
+    }
+  }
+}
+
+document.querySelectorAll('.sidebar-nav a[data-page]').forEach(a => {
+  a.addEventListener('click', function(e) {
+    if (this.getAttribute('data-page') === 'login') return;
+    e.preventDefault();
+    const page = this.getAttribute('data-page');
+    const sub = this.getAttribute('data-sub');
+    showPage(page, sub);
+    document.getElementById('sidebar').classList.remove('open');
+  });
+});
+
+document.querySelectorAll('.nav-group > a').forEach(a => {
+  a.addEventListener('click', function(e) {
+    e.preventDefault();
+    const li = this.closest('.nav-group');
+    li.classList.toggle('open');
+  });
+});
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+}
+
+// ===== TABS =====
+document.querySelectorAll('.tabs').forEach(container => {
+  container.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', function() {
+      const containerId = container.id || container.parentElement.id;
+      container.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      this.classList.add('active');
+      const targetId = 'tab-' + this.getAttribute('data-tab');
+      const parent = container.closest('.page-section') || document;
+      parent.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+      const target = document.getElementById(targetId) || parent.querySelector('#' + targetId);
+      if (target) target.classList.add('active');
+    });
+  });
+});
+
+// ===== INLINE FORM TOGGLE =====
+function toggleForm(header) {
+  const form = header.closest('.inline-form');
+  form.classList.toggle('closed');
+  const icon = header.querySelector('.toggle-icon');
+  icon.innerHTML = form.classList.contains('closed') ? '<i class="fas fa-chevron-right"></i>' : '<i class="fas fa-chevron-down"></i>';
+}
+
+// ===== ATTENDANCE =====
+function setAtt(btn, status) {
+  const group = btn.closest('.att-status');
+  group.querySelectorAll('.att-btn').forEach(b => {
+    b.className = 'att-btn';
+  });
+  btn.classList.add('active-' + status);
+  updateAttSummary();
+}
+
+function updateAttSummary() {
+  const rows = document.querySelectorAll('#tab-attendance-take .data-table tbody tr');
+  let present = 0, absent = 0;
+  rows.forEach(row => {
+    const active = row.querySelector('.att-btn[class*="active-"]');
+    if (active) {
+      if (active.classList.contains('active-present')) present++;
+      else if (active.classList.contains('active-absent')) absent++;
+    }
+  });
+  document.getElementById('attPresent').textContent = present;
+  document.getElementById('attAbsent').textContent = absent;
+}
+
+// ===== ATTENDANCE REPORT =====
+function loadNotices() {
+  const body = document.getElementById('noticeBody');
+  const empty = document.getElementById('noticeEmpty');
+  const notices = [
+    {title:'Final Exam Routine',type:'PDF',pub:'Dec 1, 2026',exp:'Dec 20, 2026',cls:'badge-success',sts:'Published'},
+    {title:'Winter Break Notice',type:'PDF',pub:'Nov 28, 2026',exp:'Jan 5, 2027',cls:'badge-success',sts:'Published'},
+    {title:'Sports Day Schedule',type:'IMAGE',pub:'Nov 20, 2026',exp:'—',cls:'badge-success',sts:'Published'},
+    {title:'Admission Circular 2027',type:'PDF',pub:'—',exp:'Mar 31, 2027',cls:'badge-warning',sts:'Scheduled'}
+  ];
+  body.innerHTML = notices.map(n => '<tr><td>' + n.title + '</td><td><span class="badge badge-info">' + n.type + '</span></td><td>' + n.pub + '</td><td>' + n.exp + '</td><td><span class="badge ' + n.cls + '">' + n.sts + '</span></td><td class="actions-cell"><button class="btn btn-icon" title="View"><i class="fas fa-eye"></i></button><button class="btn btn-icon" onclick="showConfirm(\'Archive Notice\',\'Archive this notice?\',function(){showToast(\'success\',\'Notice archived\')})" title="Archive"><i class="fas fa-archive"></i></button><button class="btn btn-icon" onclick="showConfirm(\'Edit Notice\',\'Edit this notice? The original file will be replaced.\',function(){showToast(\'success\',\'Notice updated\')})" title="Edit"><i class="fas fa-edit"></i></button></td></tr>').join('');
+  empty.style.display = 'none';
+}
+function searchSmsStudent() {
+  const info = document.getElementById('smsStudentInfo');
+  info.style.display = info.style.display === 'none' ? 'block' : 'none';
+}
+function loadReport() {
+  const reg = document.getElementById('reportRegInput').value.trim();
+  const type = document.getElementById('reportTypeSelect').value;
+  if (!reg) { showMessage('error', 'Required', 'Enter a registration number.'); return; }
+
+  const resultCard = document.getElementById('reportResultCard');
+  const emptyCard = document.getElementById('reportEmptyCard');
+  const content = document.getElementById('reportContent');
+
+  const schoolName = 'Springfield School';
+  const address = '123 School Street, Springfield';
+
+  let html = '';
+  const student = { name: 'Alice Johnson', class: 'Class 6', shift: 'Morning', section: 'A', roll: 1, father: 'John Johnson', mother: 'Sarah Johnson', reg: '26000001' };
+
+  if (type === 'Progress Report') {
+    html = '<div class="report-header" style="text-align:center;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid var(--primary)"><h1 style="margin:0;font-size:20px">' + schoolName + '</h1><p style="margin:4px 0;font-size:13px;color:var(--gray-400)">' + address + '</p><h2 style="margin:12px 0 0;font-size:16px">Progress Report</h2></div>' +
+      '<div class="form-row-3" style="margin-bottom:20px"><div><strong>Name:</strong> ' + student.name + '</div><div><strong>Class:</strong> ' + student.class + '</div><div><strong>Roll:</strong> ' + student.roll + '</div><div><strong>Shift:</strong> ' + student.shift + '</div><div><strong>Section:</strong> ' + student.section + '</div><div><strong>Reg No:</strong> ' + student.reg + '</div></div>' +
+      '<table class="data-table"><thead><tr><th>Subject</th><th>Full Marks</th><th>Obtained</th><th>Grade</th><th>GPA</th></tr></thead><tbody>' +
+      '<tr><td>Mathematics</td><td>100</td><td>85</td><td>A+</td><td>5.00</td></tr><tr><td>English</td><td>100</td><td>72</td><td>A</td><td>4.00</td></tr><tr><td>Science</td><td>100</td><td>90</td><td>A+</td><td>5.00</td></tr><tr><td>Bangla</td><td>100</td><td>68</td><td>A-</td><td>3.50</td></tr>' +
+      '</tbody></table>' +
+      '<div style="display:flex;justify-content:space-between;margin-top:16px;padding-top:12px;border-top:1px solid var(--gray-200)"><strong>Total: 315 / 400</strong><strong>Percentage: 78.75%</strong><strong>GPA: 4.38</strong></div>';
+  } else if (type === 'Transfer Certificate') {
+    html = '<div class="report-header" style="text-align:center;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid var(--primary)"><h1 style="margin:0;font-size:20px">' + schoolName + '</h1><p style="margin:4px 0;font-size:13px;color:var(--gray-400)">' + address + '</p><h2 style="margin:12px 0 0;font-size:16px">Transfer Certificate</h2></div>' +
+      '<div class="form-row-3" style="margin-bottom:20px"><div><strong>Student Name:</strong> ' + student.name + '</div><div><strong>Father:</strong> ' + student.father + '</div><div><strong>Mother:</strong> ' + student.mother + '</div><div><strong>Class:</strong> ' + student.class + '</div><div><strong>Reg No:</strong> ' + student.reg + '</div><div><strong>Roll:</strong> ' + student.roll + '</div></div>' +
+      '<p>This is to certify that <strong>' + student.name + '</strong> was a student of this institution studying in <strong>' + student.class + '</strong> (' + student.shift + ', ' + student.section + '). Character and conduct have been satisfactory. He/She is hereby granted Transfer Certificate to pursue further studies elsewhere.</p>' +
+      '<div style="margin-top:40px;display:flex;justify-content:space-between"><div><strong>Date:</strong> December 15, 2026</div><div style="text-align:center"><br><br><strong>Principal</strong><br>' + schoolName + '</div></div>';
+  } else if (type === 'Attendance Report') {
+    html = '<div class="report-header" style="text-align:center;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid var(--primary)"><h1 style="margin:0;font-size:20px">' + schoolName + '</h1><p style="margin:4px 0;font-size:13px;color:var(--gray-400)">' + address + '</p><h2 style="margin:12px 0 0;font-size:16px">Attendance Report</h2></div>' +
+      '<div class="form-row-3" style="margin-bottom:20px"><div><strong>Name:</strong> ' + student.name + '</div><div><strong>Class:</strong> ' + student.class + '</div><div><strong>Roll:</strong> ' + student.roll + '</div><div><strong>Shift:</strong> ' + student.shift + '</div><div><strong>Section:</strong> ' + student.section + '</div><div><strong>Period:</strong> Dec 2026</div></div>' +
+      '<table class="data-table"><thead><tr><th>Total Days</th><th>Present</th><th>Absent</th><th>Percentage</th></tr></thead><tbody>' +
+      '<tr><td>25</td><td>23</td><td>2</td><td>92%</td></tr>' +
+      '</tbody></table>';
+  } else if (type === 'Result Report') {
+    html = '<div class="report-header" style="text-align:center;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid var(--primary)"><h1 style="margin:0;font-size:20px">' + schoolName + '</h1><p style="margin:4px 0;font-size:13px;color:var(--gray-400)">' + address + '</p><h2 style="margin:12px 0 0;font-size:16px">Result Report — Mid-Term Exam 2026</h2></div>' +
+      '<div class="form-row-3" style="margin-bottom:20px"><div><strong>Name:</strong> ' + student.name + '</div><div><strong>Class:</strong> ' + student.class + '</div><div><strong>Roll:</strong> ' + student.roll + '</div><div><strong>Shift:</strong> ' + student.shift + '</div><div><strong>Section:</strong> ' + student.section + '</div><div><strong>Reg No:</strong> ' + student.reg + '</div></div>' +
+      '<table class="data-table"><thead><tr><th>Subject</th><th>Full Marks</th><th>Obtained</th><th>Grade</th><th>GPA</th></tr></thead><tbody>' +
+      '<tr><td>Mathematics</td><td>100</td><td>85</td><td>A+</td><td>5.00</td></tr><tr><td>English</td><td>100</td><td>72</td><td>A</td><td>4.00</td></tr><tr><td>Science</td><td>100</td><td>90</td><td>A+</td><td>5.00</td></tr><tr><td>Bangla</td><td>100</td><td>68</td><td>A-</td><td>3.50</td></tr>' +
+      '</tbody></table>' +
+      '<div style="display:flex;justify-content:space-between;margin-top:16px;padding-top:12px;border-top:1px solid var(--gray-200)"><strong>Total: 315 / 400</strong><strong>Percentage: 78.75%</strong><strong>GPA: 4.38</strong></div>';
+  }
+
+  content.innerHTML = html;
+  resultCard.style.display = 'block';
+  emptyCard.style.display = 'none';
+}
+function printReport() {
+  const content = document.getElementById('reportContent').innerHTML;
+  const win = window.open('', '_blank');
+  win.document.write('<html><head><title>Report</title><style>' +
+    'body{font-family:Arial,sans-serif;padding:40px;color:#333;font-size:14px}' +
+    'table{width:100%;border-collapse:collapse;margin:16px 0}' +
+    'table th,table td{border:1px solid #ddd;padding:8px 12px;text-align:left}' +
+    'table th{background:#f5f5f5;font-weight:600}' +
+    '.form-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}' +
+    '.form-row-3 div{margin-bottom:4px}' +
+    '</style></head><body>' + content + '</body></html>');
+  win.document.close();
+  win.focus();
+  win.print();
+}
+function loadAttendanceReport(mode) {
+  const tab = document.getElementById('tab-attendance-report');
+  const selects = tab.querySelectorAll('.card:first-child .select');
+  const cls = selects[0].value;
+  const shift = selects[1].value;
+  const section = selects[2].value;
+  const monthInput = tab.querySelector('input[type="month"]').value;
+  const rollInput = tab.querySelector('input[type="number"]').value;
+
+  if (mode === 'individual' && !rollInput) {
+    showMessage('error', 'Roll Required', 'Enter a roll number for individual attendance view.');
+    return;
+  }
+
+  const month = monthInput ? new Date(monthInput + '-01') : new Date();
+  const year = month.getFullYear();
+  const mon = month.getMonth();
+  const daysInMonth = new Date(year, mon + 1, 0).getDate();
+
+  const students = [
+    { name: 'Alice Johnson', roll: 1, cls: 'Class 6', sec: 'A' },
+    { name: 'Bob Smith', roll: 2, cls: 'Class 6', sec: 'A' },
+    { name: 'Carol Williams', roll: 3, cls: 'Class 6', sec: 'A' },
+    { name: 'David Brown', roll: 4, cls: 'Class 6', sec: 'A' },
+    { name: 'Emma Davis', roll: 5, cls: 'Class 6', sec: 'A' },
+  ];
+  const totalStudents = students.length;
+
+  const filtered = mode === 'individual'
+    ? students.filter(s => s.roll === Number(rollInput))
+    : students;
+
+  if (filtered.length === 0) {
+    showMessage('error', 'No Data', 'No student found with roll ' + rollInput);
+    return;
+  }
+
+  let html = '';
+  filtered.forEach(s => {
+    let presentCount = 0;
+    let absentCount = 0;
+    let daysHtml = '';
+    for (let d = 1; d <= daysInMonth; d++) {
+      const present = Math.random() > 0.15;
+      if (present) presentCount++; else absentCount++;
+      daysHtml += '<td class="' + (present ? 'present' : 'absent') + '">' + (present ? '✓' : '✕') + '</td>';
+    }
+    const pct = ((presentCount / daysInMonth) * 100).toFixed(1);
+    html += '<tr>';
+    html += '<td class="fixed-roll">' + s.roll + '</td>';
+    html += '<td class="fixed-name">' + s.name + '</td>';
+    html += daysHtml;
+    html += '<td class="stat-absent">' + absentCount + '</td>';
+    html += '<td class="stat-present">' + presentCount + '</td>';
+    html += '<td class="stat-pct">' + pct + '%</td>';
+    html += '</tr>';
+  });
+
+  document.getElementById('attReportBody').innerHTML = html;
+  document.getElementById('attReportCard').style.display = 'block';
+  document.getElementById('attReportEmpty').style.display = 'none';
+
+  const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.querySelector('#attReportCard .card-header h2').innerHTML =
+    '<i class="fas fa-calendar-check"></i> Monthly Attendance — ' + monthNames[mon] + ' ' + year +
+    (mode === 'individual' ? ' (Roll ' + rollInput + ')' : ' (' + totalStudents + ' students)');
+}
+
+// ===== TOAST =====
+function showToast(type, msg) {
+  const toast = document.getElementById('toast');
+  toast.className = 'toast toast-' + type + ' show';
+  document.getElementById('toastMsg').textContent = msg;
+  setTimeout(() => toast.classList.remove('show'), 3000);
+}
+
+function hideToast() {
+  document.getElementById('toast').classList.remove('show');
+}
+
+// ===== NOTIFICATIONS =====
+function showNotifications() {
+  showMessage('info', 'Notifications', 
+    '<div style="text-align:left">' +
+    '<div style="padding:10px 0;border-bottom:1px solid var(--gray-100)"><strong>New Student Application</strong><br><span style="font-size:12px;color:var(--gray-400)">Iris Green applied for Class 6 — 5 min ago</span></div>' +
+    '<div style="padding:10px 0;border-bottom:1px solid var(--gray-100)"><strong>Attendance Alert</strong><br><span style="font-size:12px;color:var(--gray-400)">David Brown was marked absent today</span></div>' +
+    '<div style="padding:10px 0;border-bottom:1px solid var(--gray-100)"><strong>SMS Balance Low</strong><br><span style="font-size:12px;color:var(--gray-400)">80 SMS credits remaining — 1 hour ago</span></div>' +
+    '<div style="padding:10px 0"><strong>Exam Schedule Updated</strong><br><span style="font-size:12px;color:var(--gray-400)">Mid-Term dates confirmed — 3 hours ago</span></div>' +
+    '</div>');
+}
+
+// ===== MODAL =====
+let modalMode = 'confirm';
+
+function showConfirm(title, msg, callback) {
+  const header = document.getElementById('confirmModal').querySelector('.modal-header');
+  header.className = 'modal-header';
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modalBody').innerHTML = '<p>' + msg + '</p>';
+  document.querySelector('#confirmModal .modal-footer .btn-secondary').style.display = '';
+  document.getElementById('modalConfirmBtn').textContent = 'Confirm';
+  modalMode = 'confirm';
+  confirmCallback = callback;
+  document.getElementById('confirmModal').classList.add('open');
+}
+
+function showMessage(type, title, msg) {
+  const header = document.getElementById('confirmModal').querySelector('.modal-header');
+  header.className = 'modal-header' + (type === 'success' ? ' modal-header-success' : type === 'error' ? ' modal-header-error' : type === 'info' ? ' modal-header-info' : '');
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modalBody').innerHTML = '<p>' + msg + '</p>';
+  document.querySelector('#confirmModal .modal-footer .btn-secondary').style.display = 'none';
+  document.getElementById('modalConfirmBtn').textContent = 'OK';
+  modalMode = 'message';
+  confirmCallback = null;
+  document.getElementById('confirmModal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('confirmModal').classList.remove('open');
+  const footer = document.querySelector('#confirmModal .modal-footer');
+  footer.querySelector('.btn-secondary').style.display = '';
+  document.getElementById('modalConfirmBtn').textContent = 'Confirm';
+  confirmCallback = null;
+  modalMode = 'confirm';
+}
+
+function confirmModalAction() {
+  if (modalMode === 'message') {
+    closeModal();
+  } else if (confirmCallback) {
+    confirmCallback();
+    closeModal();
+  } else {
+    closeModal();
+  }
+}
+
+document.getElementById('confirmModal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+// ===== EDIT STUDENT =====
+function editStudent(btn) {
+  const row = btn.closest('tr');
+  const name = row.cells[2].textContent;
+  const reg = row.cells[1].textContent;
+  const cls = row.cells[3].textContent;
+  const shift = row.cells[4].textContent;
+  const section = row.cells[5].textContent;
+
+  const form = document.getElementById('studentForm');
+  form.classList.remove('closed');
+  form.querySelector('.inline-form-header .label').textContent = '<i class="fas fa-edit"></i> Edit Student — ' + name;
+  const body = form.querySelector('.inline-form-body');
+  body.querySelector('input[placeholder="Enter full name"]').value = name;
+  body.querySelectorAll('select')[1].value = (cls === 'Class 6' ? 'Class 6' : cls);
+  body.querySelectorAll('select')[2].value = shift;
+  body.querySelectorAll('select')[3].value = section;
+  form.scrollIntoView({ behavior: 'smooth' });
+}
+
+// ===== VIEW PROFILE =====
+function viewProfile(btn) {
+  const row = btn.closest('tr');
+  const reg = row.cells[1].textContent;
+  const name = row.cells[2].textContent;
+  const cls = row.cells[3].textContent;
+  const shift = row.cells[4].textContent;
+  const section = row.cells[5].textContent;
+  const roll = row.cells[6].textContent;
+  const status = row.cells[7].textContent;
+  const header = document.getElementById('confirmModal').querySelector('.modal-header');
+  header.className = 'modal-header';
+  document.getElementById('modalTitle').textContent = 'Student Details';
+  document.getElementById('modalBody').innerHTML =
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:14px">' +
+    '<div><strong>Reg No:</strong></div><div>' + reg + '</div>' +
+    '<div><strong>Name:</strong></div><div>' + name + '</div>' +
+    '<div><strong>Class:</strong></div><div>' + cls + '</div>' +
+    '<div><strong>Shift:</strong></div><div>' + shift + '</div>' +
+    '<div><strong>Section:</strong></div><div>' + section + '</div>' +
+    '<div><strong>Roll:</strong></div><div>' + roll + '</div>' +
+    '<div><strong>Status:</strong></div><div>' + status + '</div>' +
+    '</div>';
+  document.querySelector('#confirmModal .modal-footer .btn-secondary').style.display = 'none';
+  document.getElementById('modalConfirmBtn').textContent = 'Close';
+  modalMode = 'message';
+  confirmCallback = null;
+  document.getElementById('confirmModal').classList.add('open');
+}
+
+// ===== TOGGLE DISABLE STUDENT =====
+function toggleDisableStudent(btn) {
+  const icon = btn.querySelector('i');
+  const isActive = icon.classList.contains('fa-toggle-on');
+  const name = btn.closest('tr').cells[2].textContent;
+  const badge = btn.closest('tr').querySelector('.badge');
+
+  if (isActive) {
+    showConfirm('Deactivate Student', 'Deactivate ' + name + '? They will lose access.', function() {
+      icon.className = 'fas fa-toggle-off';
+      icon.style.color = 'var(--gray-400)';
+      badge.className = 'badge badge-danger';
+      badge.textContent = 'Inactive';
+    });
+  } else {
+    showConfirm('Activate Student', 'Activate ' + name + '?', function() {
+      icon.className = 'fas fa-toggle-on';
+      icon.style.color = 'var(--green)';
+      badge.className = 'badge badge-success';
+      badge.textContent = 'Active';
+    });
+  }
+}
+
+// ===== PROMOTION =====
+function toggleNewRoll(checkbox) {
+  const input = checkbox.closest('tr').querySelector('.new-roll-input');
+  input.disabled = !checkbox.checked;
+  if (checkbox.checked) {
+    input.focus();
+  } else {
+    input.value = '';
+  }
+}
+
+function promoteStudents() {
+  const rows = document.querySelectorAll('#tab-students-promo .data-table tbody tr');
+  const selected = [];
+  const newRolls = [];
+  const errors = [];
+
+  rows.forEach(row => {
+    const checkbox = row.querySelector('input[type="checkbox"]');
+    if (checkbox && checkbox.checked) {
+      const name = row.cells[2].textContent;
+      const rollInput = row.querySelector('.new-roll-input');
+      const rollVal = rollInput.value.trim();
+
+      if (!rollVal) {
+        errors.push(name + ' — no New Roll entered');
+      } else if (newRolls.includes(rollVal)) {
+        errors.push(name + ' — duplicate roll ' + rollVal);
+      } else {
+        newRolls.push(rollVal);
+        selected.push(name);
+      }
+    }
+  });
+
+  if (errors.length > 0) {
+    showMessage('error', 'Promotion Error', 'Fix these entries:<br>' + errors.join('<br>'));
+  } else if (selected.length === 0) {
+    showMessage('error', 'No Students Selected', 'Select at least one student to promote.');
+  } else {
+    showConfirm('Promote Students', 'Promote ' + selected.length + ' selected student(s)?', function() {
+      showMessage('success', 'Promotion Complete', selected.length + ' student(s) promoted successfully!');
+    });
+  }
+}
+
+// ===== EDIT MANAGER =====
+function editManager(btn) {
+  const row = btn.closest('tr');
+  const name = row.cells[0].textContent;
+  const email = row.cells[1].textContent;
+
+  const form = document.getElementById('managerForm');
+  form.classList.remove('closed');
+  form.querySelector('.inline-form-header .label').textContent = '<i class="fas fa-edit"></i> Edit Manager — ' + name;
+  form.querySelector('.inline-form-body').querySelector('input[type="text"]').value = name;
+  form.querySelector('.inline-form-body').querySelector('input[type="email"]').value = email;
+  form.scrollIntoView({ behavior: 'smooth' });
+
+  document.getElementById('permissionSection').style.display = 'block';
+  document.getElementById('permUserName').textContent = name;
+}
+</script>
+</body>
+</html>

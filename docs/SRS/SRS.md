@@ -93,7 +93,7 @@ Each requirement is uniquely ID'd, testable, and traced to a source (PRD § or D
 | **Tenant** | A single school/organization with fully isolated data |
 | **Platform Admin** | Super Admin managing all tenants (stored in `platform_admins` table) |
 | **School Admin** | Primary admin for a single tenant (stored in `users` table, role `SCHOOL_ADMIN`) |
-| **Manager** | Staff member with action-level permissions (stored in `users` table, role `MANAGER`) |
+| **Manager** | Staff member with module-level permissions (stored in `users` table, role `MANAGER`) |
 | **JWT** | JSON Web Token for API authentication |
 | **Access Token** | Short-lived JWT (15 min default) for endpoint authorization |
 | **SMS** | Short Message Service for guardian notifications |
@@ -174,9 +174,9 @@ Platform (SaaS Owner)
 | Tier | Assigner → Assignee | Granularity | Effect |
 |------|--------------------|-------------|--------|
 | **Tier 1** | Platform Admin → School Admin | Module-level | If a module is assigned, School Admin gets all actions on it |
-| **Tier 2** | School Admin → Manager | Action-level | School Admin picks View/Create/Edit/Delete/Print/Export per module |
+| **Tier 2** | School Admin → Manager | Module-level (single toggle) | School Admin grants module access via a single toggle per module. Manager gets predefined actions per PRD (V/C/E for most modules; V/C for SMS Log; View-only for Reports). Delete is always Admin-only. |
 
-**School Admin has full access** to all enabled modules — no explicit permission records are stored. **Managers** need explicit records in `manager_permissions` for each module + action.
+**School Admin has full access** to all enabled modules — no explicit permission records are stored. **Managers** need explicit records in `manager_permissions` — one record per granted module.
 
 ### 2.4 Tech Stack
 
@@ -1572,7 +1572,7 @@ Change own password (School Admin and Platform Admin only — Manager cannot cha
 
 **Explanation:**
 
-**FR-AUTH-09** returns the current authenticated user's profile, tenant information, and effective permissions via `GET /api/v1/auth/me`. Platform Admin sees platform-level data. School Admin sees their tenant info plus all enabled module permissions. Manager sees their tenant info plus their assigned action-level permissions.
+**FR-AUTH-09** returns the current authenticated user's profile, tenant information, and effective permissions via `GET /api/v1/auth/me`. Platform Admin sees platform-level data. School Admin sees their tenant info plus all enabled module permissions. Manager sees their tenant info plus their assigned module-level permissions.
 
 **FR-AUTH-09.1 User Profile & Permissions — Detailed Breakdown**
 
@@ -1588,7 +1588,7 @@ Instead of embedding all user/tenant/permission data in the login response (whic
 |------|-----------------|
 | **Platform Admin** | No module permissions — platform-level access is implicit. Response includes admin profile fields. |
 | **School Admin** | All modules assigned by Platform Admin (from `tenant_modules`) with implicit full action permissions (View/Create/Edit/Delete) across all modules. |
-| **Manager** | Only explicitly assigned action-level permissions (from `manager_permissions`). Modules/permissions not assigned are excluded. |
+| **Manager** | Only explicitly assigned module-level permissions (from `manager_permissions`). Modules not assigned are excluded. |
 
 **Response shape:**
 ```json
@@ -1607,10 +1607,7 @@ Instead of embedding all user/tenant/permission data in the login response (whic
     "is_active": true,
     "settings": { ... }
   },
-  "permissions": {
-    "STUDENT": { "view": true, "create": true, "edit": true, "delete": false },
-    "ATTENDANCE": { "view": true, "create": false, "edit": false, "delete": false }
-  }
+  "permissions": ["STUDENT_MANAGEMENT", "ATTENDANCE_MANAGEMENT"]
 }
 ```
 
@@ -1627,7 +1624,7 @@ Instead of embedding all user/tenant/permission data in the login response (whic
 
 Current user profile + permissions.
 
-**Response `200 OK`:**
+**Response `200 OK` (School Admin):**
 ```json
 {
   "id": "uuid",
@@ -1640,10 +1637,24 @@ Current user profile + permissions.
     "slug": "springfield",
     "is_active": true
   },
-  "permissions": {
-    "STUDENT_MANAGEMENT": ["view", "create", "edit", "delete", "export"],
-    "ATTENDANCE_MANAGEMENT": ["view", "take", "edit"]
-  }
+  "permissions": ["STUDENT_MANAGEMENT", "ATTENDANCE_MANAGEMENT", "RESULT_MANAGEMENT"]
+}
+```
+
+**Response `200 OK` (Manager):**
+```json
+{
+  "id": "uuid",
+  "email": "jane@school.com",
+  "full_name": "Jane Smith",
+  "role": "MANAGER",
+  "tenant": {
+    "id": "uuid",
+    "name": "Springfield School",
+    "slug": "springfield",
+    "is_active": true
+  },
+  "permissions": ["STUDENT_MANAGEMENT", "ATTENDANCE_MANAGEMENT"]
 }
 ```
 
@@ -2452,7 +2463,7 @@ Reopen a closed academic year.
 
 ### 3.5 User & Permission Management
 
-**Quick Summary:** School Admin creates Manager accounts and assigns action-level permissions per module. Managers can only be assigned modules that the School Admin has (from Platform Admin allocation). School Admin has implicit full access to all assigned modules. This module implements the Tier 2 permission model.
+**Quick Summary:** School Admin creates Manager accounts and assigns module-level permissions (single toggle per module). Managers can only be assigned modules that the School Admin has (from Platform Admin allocation). School Admin has implicit full access to all assigned modules. This module implements the Tier 2 permission model.
 
 > **Data Model:** Full schema in DB Dictionary §Table 6 (manager_permissions).
 
@@ -2464,7 +2475,7 @@ Reopen a closed academic year.
 | 1 | FR-UP-01 | Create Manager | School Admin shall create a Manager with name, email, password | P0 | Authenticated as School Admin | POST /api/v1/managers |
 | 2 | FR-UP-02 | Activate/Deactivate Manager | School Admin shall activate/deactivate a Manager | P0 | Manager exists | PATCH /api/v1/managers/{id} |
 | 3 | FR-UP-03 | List Managers | School Admin shall view list of all Managers with permission summary | P0 | Authenticated | GET /api/v1/managers |
-| 4 | FR-UP-04 | Assign Manager Permissions | School Admin shall assign action-level permissions to a Manager per module | P0 | Manager exists, module is enabled | PUT /api/v1/managers/{id}/permissions |
+| 4 | FR-UP-04 | Assign Manager Permissions | School Admin shall assign module-level permissions to a Manager (single toggle per module) | P0 | Manager exists, module is enabled | PUT /api/v1/managers/{id}/permissions |
 | 5 | FR-UP-05 | Available Modules for Permissions | School Admin shall only see modules assigned by Platform Admin in the permission UI | P0 | Authenticated | GET /api/v1/permissions/available-modules |
 | 6 | FR-UP-06 | Immediate Session Invalidation | System shall deactivate a Manager immediately — all sessions invalidated | P0 | Manager deactivated | Token version incremented |
 | 7 | FR-UP-07 | Reset Manager Password | School Admin shall reset a Manager's password without current password | P0 | Manager exists, School Admin is authenticated | PATCH /api/v1/managers/{id}/reset-password |
@@ -2609,9 +2620,7 @@ Activate/deactivate a Manager.
       "full_name": "Jane Smith",
       "email": "jane@school.com",
       "is_active": true,
-      "permissions": {
-        "STUDENT_MANAGEMENT": ["view", "create"]
-      },
+      "permissions": ["STUDENT_MANAGEMENT", "ATTENDANCE_MANAGEMENT"],
       "last_login_at": "2026-07-09T08:00:00Z"
     }
   ]
@@ -2631,14 +2640,27 @@ Activate/deactivate a Manager.
 | Property | Value |
 |----------|-------|
 | **ID** | FR-UP-04 |
-| **Description** | School Admin shall assign action-level permissions to a Manager per module |
+| **Description** | School Admin shall assign module-level permissions to a Manager (single toggle per module) |
 | **Priority** | P0 |
 | **Preconditions** | Manager exists, module is enabled |
 | **Trigger** | PUT /api/v1/managers/{id}/permissions |
 
 **Explanation:**
 
-**FR-UP-04** allows School Admin to assign fine-grained action-level permissions to a Manager via `PUT /api/v1/managers/{id}/permissions`. The School Admin specifies which modules the Manager can access and which actions (view, create, edit, delete, print, export) are allowed. Modules not listed are denied by default (BR-UP-05).
+**FR-UP-04** allows School Admin to assign module-level permissions to a Manager via `PUT /api/v1/managers/{id}/permissions`. Each module is a **single toggle** — granting a module gives the Manager a predefined set of actions as defined in the PRD:
+
+| Module | Actions Granted |
+|--------|----------------|
+| STUDENT_MANAGEMENT | View, Create, Edit (V/C/E) |
+| ATTENDANCE_MANAGEMENT | View, Create, Edit (V/C/E) |
+| RESULT_MANAGEMENT | View, Create, Edit (V/C/E) |
+| NOTICE_BOARD | View, Create, Edit (V/C/E) |
+| NOTIFICATIONS (SMS Log) | View, Create (V/C) |
+| REPORTS | View only |
+
+- **Delete** is always Admin-only — Managers never receive delete access.
+- **Print/Export** are Admin-only actions — not assignable to Managers.
+- Modules not listed in the request are denied by default (BR-UP-05).
 
 **API Endpoint(s):**
 
@@ -2647,26 +2669,7 @@ Activate/deactivate a Manager.
 **Request:**
 ```json
 {
-  "permissions": [
-    {
-      "module": "STUDENT_MANAGEMENT",
-      "can_view": true,
-      "can_create": true,
-      "can_edit": false,
-      "can_delete": false,
-      "can_print": false,
-      "can_export": false
-    },
-    {
-      "module": "ATTENDANCE_MANAGEMENT",
-      "can_view": true,
-      "can_create": true,
-      "can_edit": true,
-      "can_delete": false,
-      "can_print": false,
-      "can_export": false
-    }
-  ]
+  "permissions": ["STUDENT_MANAGEMENT", "ATTENDANCE_MANAGEMENT"]
 }
 ```
 
@@ -2674,9 +2677,7 @@ Activate/deactivate a Manager.
 ```json
 {
   "user_id": "uuid",
-  "permissions": [
-    { "module": "STUDENT_MANAGEMENT", "can_view": true, "can_create": true }
-  ]
+  "permissions": ["STUDENT_MANAGEMENT", "ATTENDANCE_MANAGEMENT"]
 }
 ```
 
@@ -2687,13 +2688,13 @@ Activate/deactivate a Manager.
 | BR-UP-02 | School Admin automatically has full access to all enabled modules |
 | BR-UP-03 | School Admin can only delegate modules that are in `tenant_modules` for their tenant |
 | BR-UP-04 | IF a module is disabled in `tenant_modules` THEN all related permissions become inactive |
-| BR-UP-05 | IF a permission flag is not explicitly set to true THEN it is denied |
+| BR-UP-05 | IF a module is not in the Manager's granted list THEN access to that module is denied |
 
 **Related Open Questions:**
 
 | # | Question |
 |---|----------|
-| Q-UP-02 | Is `can_print` separate from `can_export` in the UI, or are they combined? |
+| Q-UP-02 | Is `can_print` separate from `can_export` in the UI, or are they combined? — Closed: Print/Export are Admin-only actions. Managers use module-level toggle with predefined action sets. |
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -5715,7 +5716,7 @@ View audit logs across all tenants.
 | BR-UP-02 | School Admin automatically has full access to all enabled modules | Permissions |
 | BR-UP-03 | School Admin can only delegate modules that are in tenant_modules for their tenant | Permissions |
 | BR-UP-04 | IF a module is disabled in tenant_modules THEN all related permissions become inactive | Permissions |
-| BR-UP-05 | IF a permission flag is not explicitly set to true THEN it is denied | Permissions |
+| BR-UP-05 | IF a module is not in the Manager's granted list THEN access to that module is denied | Permissions |
 | BR-UP-06 | Deactivating a Manager increments token_version to invalidate all sessions | Permissions |
 | BR-MM-01 | Authentication and Settings modules cannot be disabled | Module Mgmt |
 | BR-MM-02 | School Admin cannot enable a module not assigned by Platform Admin | Module Mgmt |
@@ -5823,7 +5824,7 @@ View audit logs across all tenants.
 | Q-SET-01 | Settings | Where are notification templates stored? | Open |
 | Q-SET-02 | Settings | Password policy configurable or hardcoded? | Closed: Hardcoded in validation zod |
 | Q-UP-01 | Permissions | Can School Admin edit Manager email/password? | Closed: YES |
-| Q-UP-02 | Permissions | can_print separate from can_export in UI? | Closed: Same |
+| Q-UP-02 | Permissions | can_print separate from can_export in UI? | Closed: Print/Export are Admin-only actions. Managers use module-level toggle with predefined action sets (V/C/E). |
 | Q-STU-01 | Student | Admission form public or authenticated? | Closed: A public endpoint for public users |
 | Q-STU-02 | Student | Application number format? | Closed: As it is in PRD  |
 | Q-STU-03 | Student | CAPTCHA on public admission form? | Closed: NO captcha, We can use rate limitter |

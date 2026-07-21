@@ -161,13 +161,13 @@ Tenant (School)
 | Role | Scope | Creator | Access Model |
 |---|---|---|---|
 | **Platform Admin (Super Admin)** | All tenants | System seeded | Full platform control: create tenants, create School Admin accounts, assign modules at **module level**, set SMS quotas, platform config |
-| **School Admin** | Single tenant | Platform Admin | **Module-level** — gets full CRUD + Export on each assigned module. Can then assign **action-level** permissions to Managers within those modules |
+| **School Admin** | Single tenant | Platform Admin | **Module-level** — gets full CRUD + Export on each assigned module. Can then grant **module-level** access to Managers within those modules |
 | **Manager** | Single tenant | School Admin | **Action-level** — only assigned View / Create / Edit / Delete / Export on specific modules (from the pool available to School Admin) |
 
 ### Key Rules
 - There is exactly **one School Admin per tenant**.
 - Platform Admin creates the School Admin account and assigns modules at the **module level** (not action-level). If a module is assigned, School Admin gets all actions on it.
-- School Admin assigns permissions to Managers at the **action level** (e.g., View + Create only, no Delete).
+- School Admin grants Managers access at the **module level** (single toggle per module). A granted module gives View + Create + Edit. Delete is Admin-only.
 - School Admin cannot access or assign any module not granted by Platform Admin.
 - School Admin can create any number of Managers and assign them permissions from the available module pool.
 - **Platform Admin credentials are stored in a separate `platform_admins` table** (not the `users` table). Platform Admin logs in via `admin.sirius-skool.com`; school users log in via their tenant subdomain. This separation keeps the platform and tenant authentication systems independent.
@@ -233,7 +233,9 @@ Tenant
  │       │
  │       ├── Classes
  │       │      │
- │       │      ├── Sections
+ │       │      ├── Shifts (e.g. Morning, Evening, Day, Night)
+ │       │      │      │
+ │       │      │      └── Sections
  │       │      │
  │       │      └── Student Enrollments
  │       │               │
@@ -261,9 +263,9 @@ Tenant
 
 **Key relationships:**
 - A **Tenant** has many **Users**, **Students**, **Academic Years**, **Notices**, **Settings**, **Subjects**, **Exams**, and **Grade Scales**.
-- An **Academic Year** has many **Classes** (which have **Sections**) and **Student Enrollments**.
+- An **Academic Year** has many **Classes** (which have **Shifts**, and each **Shift** has **Sections**) and **Student Enrollments**.
 - A **Student** has many **Enrollments** across years, but only one active enrollment at a time.
-- An **Enrollment** links a **Student** to a **Class** + **Section** within an **Academic Year**, and holds **Attendance** records.
+- An **Enrollment** links a **Student** to a **Class** + **Shift** + **Section** within an **Academic Year**, and holds **Attendance** records.
 - **Result** data follows a separate chain: **Subjects** are assigned to **Classes** via `subjects.class_id`; **Exams** link to **Subjects** via **Exam Subjects** (which define full marks, pass marks, and display order); and **Marks** are recorded per student enrollment for each exam subject.
 - **Grade Scales** define how numeric percentages map to letter grades and GPA points.
 - **Applications** are pre-admission records that either convert into a **Student** (on acceptance) or expire.
@@ -279,8 +281,9 @@ Tenant
 **Features:**
 - Login with email/username + password
 - Logout (invalidate session)
-- Forgot Password (email-based reset link)
-- Change Password (authenticated user)
+- Change Password (authenticated user, School Admin and Platform Admin only)
+- Reset Manager Password (School Admin — no current password required)
+- Reset Tenant User Password (Platform Admin — any tenant user, no current password required)
 - JWT-based authentication with access + refresh tokens
 - Session management (single session per user optional)
 - Role-based redirect after login (School Admin → Admin Dashboard, Manager → Manager Dashboard)
@@ -289,9 +292,14 @@ Tenant
 **Business Rules:**
 - Platform Admin logs in via a separate URL (e.g., `admin.sirius-skool.com`) and authenticates against the `platform_admins` table.
 - School Admin and Managers log in via tenant URL (e.g., `schoolname.sirius-skool.com`) and authenticate against the `users` table.
-- Platform Admin credentials are managed independently from school user credentials — password resets, session timeouts, and 2FA (future) are configured separately for each domain.
+- Platform Admin credentials are managed independently from school user credentials — session timeouts and 2FA (future) are configured separately for each domain.
 - A user cannot be logged into multiple tenants simultaneously.
 - Inactive/deactivated users cannot log in.
+- There is no self-service forgot-password flow. Password resets are performed by authorized roles:
+  - **Platform Admin** can reset any tenant user's password (School Admin or Manager) via `PATCH /api/v1/admin/users/{id}/reset-password` (FR-PLT-11).
+  - **School Admin** can reset a Manager's password via `PATCH /api/v1/managers/{id}/reset-password` (FR-UP-07).
+  - **School Admin and Platform Admin** can change their own password via `POST /api/v1/auth/change-password` — requires current password (FR-AUTH-08).
+  - **Manager** cannot change or reset passwords — must contact School Admin for a reset.
 
 ---
 
@@ -405,20 +413,26 @@ At the end of each academic year, every student must be assigned one of the foll
 | **Auto-assign** | Sequential within section (1–35 for section A, 1–32 for section B) |
 | **Override** | School Admin can manually adjust individual roll numbers |
 
+**Shift:**
+- A shift is a time-based grouping within a class (e.g., Class 7 → Morning Shift, Evening Shift, Day Shift).
+- Shifts are created by School Admin in Settings.
+- A class can have multiple shifts, and each shift can have multiple sections.
+
 **Section:**
-- A section is a subgroup within a class (e.g., Class 7 → Sections A, B, C).
+- A section is a subgroup within a shift (e.g., Class 7 → Morning Shift → Sections A, B, C).
 - Sections are created by School Admin in Settings.
-- A student is enrolled in one class + one section per academic year.
-- A student can change section in a new academic year or on promotion.
+- A student is enrolled in one class + one shift + one section per academic year.
+- A student can change shift or section in a new academic year or on promotion.
 
 **Data Model (conceptual):**
 
 ```
 classes (id, name, tenant_id)
-sections (id, class_id, name, tenant_id)
+shifts (id, class_id, name, tenant_id)
+sections (id, shift_id, name, tenant_id)
 
 student_enrollments (
-  student_id, class_id, section_id,
+  student_id, class_id, shift_id, section_id,
   academic_year_id, roll_number,
   tenant_id
 )
@@ -426,7 +440,7 @@ student_enrollments (
 
 **Business Rules:**
 - Registration number is auto-generated, unique per tenant (enforced by `UNIQUE(tenant_id, registration_number)`), and never changes.
-- The class/section is NOT encoded in the registration number — students can be promoted without their permanent ID becoming inaccurate.
+- The class/shift/section is NOT encoded in the registration number — students can be promoted without their permanent ID becoming inaccurate.
 - Roll number is distinct from registration number and exists only on the enrollment record.
 - A student can have multiple enrollments across academic years, but only one active enrollment at a time.
 - Deleting a student requires confirmation and is soft-delete (data preserved for reports).
@@ -441,12 +455,15 @@ student_enrollments (
 **Features:**
 
 **Attendance UI Flow:**
-1. Manager/Admin selects **Class** → **Section** → **Date**
-2. System loads all enrolled students for that class + section, displaying **Name** and **Roll Number**
-3. All students are **checked as Present by default**
-4. Manager unchecks any student who is **Absent**
+1. Manager/Admin selects **Class** → **Shift** → **Section** → **Date**
+2. System loads all enrolled students, with the selected class/shift/section shown as a **heading** (e.g., "Class 6 — Morning — A")
+3. Each student row displays their **Roll**, **Name**, and **previous 3 days attendance** (P/A badges)
+4. All students are **defaulted to Present** — Manager only marks those who are **Absent**
 5. After marking, Manager clicks **"Save Attendance"**
 6. A separate **"Send SMS"** button appears — clicking it sends an absence notification SMS to the guardians of all students marked absent
+
+**Attendance Statuses:**
+- Only **Present (P)** and **Absent (A)** are supported. Late and Leave are removed to simplify the workflow.
 
 **Other Features:**
 - Edit attendance within a configurable window (e.g., same day only)
@@ -500,7 +517,7 @@ subjects → exam_subjects → marks
 ```
 
 ```
-subjects (id, name, code, class_id, tenant_id)
+subjects (id, name, class_id, tenant_id)
   -- Assigns a subject to a class via class_id; a class can have multiple subjects
 
 exams (id, name, type, academic_year_id, class_id, tenant_id)
@@ -511,7 +528,7 @@ exam_subjects (id, exam_id, subject_id, full_marks, pass_marks, display_order, t
 marks (id, exam_subject_id, student_enrollment_id, obtained_marks, is_absent, is_published, tenant_id)
   -- Records the actual score a student received for a specific exam subject
 
-grade_scales (id, tenant_id, name, min_marks, max_marks, grade_letter, grade_point, display_order)
+grade_scales (id, tenant_id, name, from_marks, to_marks, grade_letter, grade_point, display_order)
   -- Defines the mapping from numeric marks to letter grades and GPA
 ```
 
@@ -566,19 +583,21 @@ grade_scales (id, tenant_id, name, min_marks, max_marks, grade_letter, grade_poi
 - **SMS:**
   - Attendance notification (absent student)
   - Result notification (marks published)
-  - Custom SMS (ad-hoc, sent by School Admin or authorized Manager)
+  - Custom SMS (ad-hoc, sent to specific student from SMS Log page)
 - **Email:**
   - Attendance notification
   - Result notification
-  - Forgot Password / Reset Password (platform-level)
   - Custom email (ad-hoc)
-- Notification logs (view sent/failed status per notification with tenant context)
-- Retry failed notifications (configurable retry policy per tenant)
+- **SMS Log page** — dedicated page in sidebar for:
+  - Viewing SMS history with filters (status, date, student)
+  - Retrying failed SMS individually
+  - Sending custom SMS to a specific student (search student, view their info, write message, send)
+- Retry failed notifications (individually from SMS Log)
 
 **Notification Templates:**
 - Default templates are provided by the platform for each notification type.
-- School Admin can customize templates (edit the message body while preserving variables).
-- Template variables: `{student_name}`, `{class}`, `{section}`, `{date}`, `{school_name}`, `{percentage}` (results), `{subject}` (results)
+- School Admin can customize templates in **Settings → SMS Templates** with separate editors for Attendance and Result messages.
+- Template variables: `{{student_name}}`, `{{class}}`, `{{shift}}`, `{{section}}`, `{{date}}`, `{{school_name}}`, `{{exam_name}}`, `{{percentage}}` (results)
 - Customizations are per-tenant and do not affect other tenants.
 
 **Business Rules:**
@@ -594,33 +613,30 @@ grade_scales (id, tenant_id, name, min_marks, max_marks, grade_letter, grade_poi
 
 ### 6.8 Reports
 
-**Purpose:** Generate and export documents for students.
+**Purpose:** Generate and print student documents and academic reports.
 
 **Features:**
 
-*Student Reports:*
-- ID Card (with photo, name, class, roll number, school details)
-- Admission Form (filled admission details)
-- Student Profile (complete history)
+- **Unified report generation:**
+  - Enter a student's **Registration Number**
+  - Select **Report Type** from: Progress Report, Transfer Certificate, Attendance Report, Result Report
+  - Click **Load** to generate the report inline
+  - Report displays institution header (school name, address from Settings) followed by student details and report content
 
-*Certificates:*
-- Transfer Certificate (TC) — generated on student transfer
-- Testimonial / Character Certificate
+- **Report Types:**
+  - **Progress Report** — per-student subject-wise marks, grades, GPA, total, percentage
+  - **Transfer Certificate** — student details, certification statement, principal signature
+  - **Attendance Report** — monthly summary with total days, present, absent, percentage
+  - **Result Report** — per-exam subject-wise marks, grades, GPA, total, percentage
 
-*Academic Reports:*
-- Attendance Report (per student or per class)
-- Result Report (per exam or consolidated)
-
-*Export:*
-- PDF (all reports)
-- Excel (attendance/result data)
+- **Export:**
+  - **Print to PDF** — generates a print-ready view with school branding and triggers the browser's print dialog to save as PDF
 
 **Business Rules:**
-- All reports include school branding (logo, name, address from Settings)
-- Reports are generated for the current academic year by default, with option to select previous years
+- All reports include school branding (name, address from Settings)
+- Reports are generated for the current academic year by default
 - Data is read-only at report generation time (reports never modify data)
 - Reports include only data belonging to the current tenant
-- ID card and certificate templates are consistent across the tenant (same layout, auto-filled with school details)
 
 ---
 
@@ -637,11 +653,11 @@ grade_scales (id, tenant_id, name, min_marks, max_marks, grade_letter, grade_poi
 
 *Academic:*
 - Academic Year management (create, set active, close)
-- Class/Section setup (create classes, sections within classes)
+- Class/Shift/Section setup (create classes, shifts within classes, sections within shifts)
 - Subject setup (per class)
 
 *Notifications:*
-- Notification template customization (edit SMS and Email message bodies per notification type)
+- SMS Templates — separate editors for Attendance and Result messages with variable placeholders (`{{student_name}}`, `{{date}}`, `{{class}}`, etc.)
 - Enable/disable notification types (e.g., disable SMS attendance alerts, keep email)
 - Sender name/ID override (customize the "from" name shown to recipients)
 
@@ -671,68 +687,43 @@ These are not separate menu items but affect every module and feature in the sys
 
 ### 7.1 User & Permission Management
 
-**Purpose:** School Admin creates and manages Manager accounts with action-level permissions (limited to modules assigned by Platform Admin at module-level).
+**Purpose:** School Admin creates and manages Manager accounts with module-level permissions (limited to modules assigned by Platform Admin at module-level).
 
 **Access Model (Two-Tier):**
 
 | Level | Assigner → Assignee | Granularity |
-|---|---|---|
+|---|---|---|---|
 | **Tier 1** | Platform Admin → School Admin | **Module-level** — if assigned, School Admin gets full access (View, Create, Edit, Delete, Export). No action-level restriction |
-| **Tier 2** | School Admin → Manager | **Action-level** — School Admin picks which specific actions the Manager gets (e.g., View + Create only) |
+| **Tier 2** | School Admin → Manager | **Module-level (single toggle)** — granting a module gives View + Create + Edit. Delete is Admin-only |
 
 **Features:**
 - Create Manager (name, email, password)
 - Edit Manager details
 - Activate / Deactivate Manager
-- Assign **action-level** permissions to Manager (View, Create, Edit, Delete, Export per module)
+- Assign **module-level** permissions to Manager (single toggle per module — grants V/C/E; Delete is Admin-only)
 - Only modules assigned by Platform Admin appear in the list for School Admin to delegate
 - View list of all Managers with their permission summary
 
 **Permission Model (Tier 2 — School Admin → Manager):**
 
+Each module is a single toggle. If granted, the Manager can **View, Create, and Edit** in that module. **Delete is always Admin-only** — Managers never get delete access.
+
 ```
-Module: Student Management
-  ├── View
-  ├── Create
-  ├── Edit
-  ├── Delete
-  └── Export
-
-Module: Attendance
-  ├── View
-  ├── Take (Create)
-  └── Edit
-
-Module: Results
-  ├── View
-  ├── Enter Marks (Create)
-  ├── Edit Marks
-  └── Publish
-
-Module: Notice Board
-  ├── View
-  ├── Create
-  ├── Edit
-  ├── Delete
-  └── Schedule
-
-Module: Reports
-  ├── View
-  └── Export
-
-Module: Settings
-  └── (School Admin only — not assignable)
-
-Module: User Management
-  └── (School Admin only — not assignable)
+Module: Student Management (V/C/E — Delete is Admin-only)
+Module: Attendance (V/C/E — Delete is Admin-only)
+Module: Results (V/C/E, including Enter Marks and Publish — Delete is Admin-only)
+Module: Notice Board (V/C/E — Delete is Admin-only)
+Module: SMS Log (V/C — no Edit/Delete for Managers)
+Module: Reports (View only — no Create/Edit/Delete)
+Module: Settings — (School Admin only — not assignable)
+Module: User Management — (School Admin only — not assignable)
 ```
 
 **Business Rules:**
 - Platform Admin assigns modules at **module-level** — School Admin gets all actions on an assigned module
-- School Admin can only delegate modules that Platform Admin assigned — they cannot delegate what they don't have
-- School Admin assigns permissions to Managers at **action-level** — selecting which specific operations each Manager can perform
-- A Manager with no permissions cannot see any module or data
-- Permissions are additive — granting View + Create means the Manager can both see and create records
+- School Admin grants Managers access at **module-level** with a single toggle per module
+- A granted module gives the Manager View + Create + Edit permissions (no Delete)
+- A Manager with no modules granted cannot see any module or data
 - Deactivating a Manager immediately revokes access (active sessions are invalidated)
 
 ---
@@ -783,7 +774,7 @@ Module: User Management
 
 **Two-Tier Model:**
 - Tier 1 (Platform Admin → School Admin): **Module-level** — if a module is assigned, School Admin gets *all* actions on it. No action-level restriction.
-- Tier 2 (School Admin → Manager): **Action-level** — School Admin selects specific actions for each Manager.
+- Tier 2 (School Admin → Manager): **Module-level (single toggle)** — granting a module gives the Manager View + Create + Edit. Delete is Admin-only.
 
 | Module | Action | Platform Admin | School Admin | Manager |
 |---|---|---|---|---|
@@ -791,12 +782,12 @@ Module: User Management
 | | Logout | ✅ | ✅ | ✅ |
 | | Change Password | ✅ | ✅ | ✅ |
 | **Dashboard** | View | ✅ | ✅ | ✅ (permissions-dependent) |
-| **Student Mgmt** | All actions | ❌ | ✅ if module assigned* | As assigned by School Admin |
-| **Attendance** | All actions | ❌ | ✅ if module assigned* | As assigned by School Admin |
-| **Results** | All actions | ❌ | ✅ if module assigned* | As assigned by School Admin |
-| **Notice Board** | All actions | ❌ | ✅ if module assigned* | As assigned by School Admin |
-| **Notifications** | All actions | ❌ | ✅ if module assigned* | As assigned by School Admin |
-| **Reports** | All actions | ❌ | ✅ if module assigned* | As assigned by School Admin |
+| **Student Mgmt** | All actions | ❌ | ✅ if module assigned* | ✅ if granted (V/C/E only) |
+| **Attendance** | All actions | ❌ | ✅ if module assigned* | ✅ if granted (V/C/E only) |
+| **Results** | All actions | ❌ | ✅ if module assigned* | ✅ if granted (V/C/E only) |
+| **Notice Board** | All actions | ❌ | ✅ if module assigned* | ✅ if granted (V/C/E only) |
+| **SMS Log** | View + Send | ❌ | ✅ if module assigned* | ✅ if granted (V/C only) |
+| **Reports** | All actions | ❌ | ✅ if module assigned* | ✅ if granted (View only) |
 | **Settings** | All actions | ❌ | ✅ if module assigned* | ❌ |
 | **User Mgmt** | All | ❌ | ✅ (always) | ❌ |
 | **Module Mgmt** | All | ❌ | ✅ (always) | ❌ |
@@ -806,7 +797,7 @@ Module: User Management
 - **✅** = Always granted
 - **❌** = Never granted
 - **✅ if module assigned*** = School Admin gets this module (with all its actions) only if Platform Admin assigned it at module-level. If assigned, full CRUD + Export included.
-- **As assigned by School Admin** = Manager gets only the specific actions (View, Create, Edit, Delete, Export) the School Admin chooses to delegate within the available module pool.
+- **✅ if granted** = Manager is granted module-level access (single toggle). Includes View + Create + Edit only. Delete is always Admin-only.
 
 ---
 
@@ -826,7 +817,7 @@ Module: User Management
 
 ### Permission Rules (Two-Tier Model)
 9. **Tier 1 — Platform Admin → School Admin:** Platform Admin assigns modules at **module-level**. If a module is assigned, School Admin gets all actions (View, Create, Edit, Delete, Export) on that module. No action-level restriction.
-10. **Tier 2 — School Admin → Manager:** School Admin assigns permissions at **action-level** within the modules they received from Platform Admin. They can give a Manager View-only, Create-only, or any combination.
+10. **Tier 2 — School Admin → Manager:** School Admin grants modules at **module-level** (single toggle per module). A granted module gives View + Create + Edit. Delete is always Admin-only.
 11. School Admin can only delegate modules that Platform Admin granted — they cannot delegate what they don't have.
 12. A Manager with no assigned permissions cannot see any module or data.
 13. Permissions are additive — granting View + Create means the Manager can both see and create records.
