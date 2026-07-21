@@ -940,7 +940,7 @@ Reset any tenant user's password (Platform Admin only).
 
 ### 3.2 Authentication
 
-**Quick Summary:** All users authenticate through this module. Platform Admin uses a separate login page (`admin.sirius-skool.com`) and authenticates against the `platform_admins` table. School Admin and Managers log in via their tenant subdomain (`{tenant}.sirius-skool.com`) and authenticate against the `users` table. The system issues JWT access tokens (15 min) and refresh tokens (7 days) with rotation and reuse detection. Password management: School Admin and Platform Admin can change their own password (requires current password). Platform Admin can reset any tenant user's password. School Admin can reset Manager passwords. Manager cannot change or reset passwords.
+**Quick Summary:** All users authenticate through this module. Platform Admin uses a separate login page (`admin.sirius-skool.com`) and authenticates against the `platform_admins` table. School Admin and Managers log in via their tenant subdomain (`{tenant}.sirius-skool.com`) and authenticate against the `users` table. The system issues JWT access tokens (15 min) and refresh tokens (7 days) with rotation and reuse detection. Session management supports single-session-per-user enforcement (optional, configurable per tenant). Password management: School Admin and Platform Admin can change their own password (requires current password). Platform Admin can reset any tenant user's password. School Admin can reset Manager passwords. Manager cannot change or reset passwords.
 
 > **Data Model:** Full schema in DB Dictionary §Table 1 (platform_admins), §Table 5 (users), §Table 6 (refresh_tokens).
 
@@ -1852,7 +1852,7 @@ Login request → Resolve tenant from subdomain (FR-AUTH-03)
 
 | # | Question |
 |---|----------|
-| Q-AUTH-03 | Single session per user — enforced in MVP or optional? |
+| Q-AUTH-03 | Single session per user — enforced in MVP or optional? *(Closed: optional — token_version mechanism supports future enforcement)* |
 
 ---
 
@@ -5183,7 +5183,7 @@ Generate result report PDF.
 
 ### 3.13 Dashboard
 
-**Quick Summary:** Role-specific dashboards showing at-a-glance metrics. School Admin sees student count, today's attendance %, recent notices, SMS balance, and quick actions. Manager sees a subset based on their permissions.
+**Quick Summary:** Role-specific dashboards showing at-a-glance metrics. School Admin sees student count, today's attendance %, recent notices, upcoming exams/events, Manager activity summary, SMS balance/quota, and quick actions. Manager sees a subset based on their permissions.
 
 #### Functional Requirements
 
@@ -5212,7 +5212,7 @@ Generate result report PDF.
 
 **Explanation:**
 
-**FR-DSH-01** displays the School Admin dashboard at `GET /api/v1/dashboard/school-admin` with key metrics: total students, today's attendance percentage, whether today's attendance has been taken, recent notices, SMS balance/quota (with a warning banner when balance drops below 10% of the original quota), and quick action links. All metrics are scoped to the current academic year (BR-DSH-01).
+**FR-DSH-01** displays the School Admin dashboard at `GET /api/v1/dashboard/school-admin` with key metrics: total students, today's attendance percentage, whether today's attendance has been taken, recent notices, upcoming exams/events, Manager activity summary, SMS balance/quota (with a warning banner when balance drops below 10% of the original quota), and quick action links. All metrics are scoped to the current academic year (BR-DSH-01).
 
 **API Endpoint(s):**
 
@@ -5227,11 +5227,19 @@ Generate result report PDF.
   "recent_notices": [
     { "id": "uuid", "title": "Exam Routine", "published_at": "..." }
   ],
+  "upcoming_exams": [
+    { "id": "uuid", "name": "Midterm Exam", "exam_date": "2026-08-15" }
+  ],
+  "manager_activity_summary": {
+    "recent_actions": 12,
+    "pending_approvals": 3
+  },
   "sms_balance": 420,
   "sms_quota": 500,
   "quick_actions": [
     { "label": "Add Student", "path": "/students/add" },
-    { "label": "Take Attendance", "path": "/attendance" }
+    { "label": "Take Attendance", "path": "/attendance" },
+    { "label": "Create Notice", "path": "/notices/create" }
   ]
 }
 ```
@@ -5261,7 +5269,7 @@ Generate result report PDF.
 
 **Explanation:**
 
-**FR-DSH-02** displays the Manager dashboard at `GET /api/v1/dashboard/manager` with a subset of widgets based on the Manager's assigned permissions (BR-DSH-02). A Manager with only attendance access sees attendance widgets; a Manager with student management access sees student widgets.
+**FR-DSH-02** displays the Manager dashboard at `GET /api/v1/dashboard/manager` with a subset of widgets based on the Manager's assigned permissions (BR-DSH-02). If assigned Student Management, the dashboard shows student count. If assigned Attendance, it shows today's attendance percentage and pending attendance. If assigned Results, it shows recent result entries. Quick actions are shown only for assigned modules.
 
 **API Endpoint(s):**
 
@@ -5843,7 +5851,7 @@ View audit logs across all tenants.
 | Q-PLT-02 | Platform | What is the default module set for new tenants? | Closed: ALL checked marked while creating tanent |
 | Q-AUTH-01 | Auth | Access token expiry configurable? | Closed: Hardcoded 15 min for MVP |
 | Q-AUTH-02 | Auth | Refresh token storage — add refresh_tokens model to Prisma, or use signed JWTs without DB lookup? | Closed: Access and Refresh token workflow |
-| Q-AUTH-03 | Auth | Single session per user enforced in MVP? | Closed: Not enforced in MVP |
+| Q-AUTH-03 | Auth | Single session per user enforced in MVP? | Closed: Optional — token_version mechanism supports future enforcement, not active in MVP |
 | Q-ACA-01 | Academic | Close endpoint or just is_current toggle? | OPEN |
 | Q-ACA-02 | Academic | Verify no pending data before closing year? | Closed: Saved data as it is in current DB |
 | Q-SET-01 | Settings | Where are notification templates stored? | Open |
