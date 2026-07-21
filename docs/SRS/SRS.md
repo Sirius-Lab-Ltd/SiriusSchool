@@ -14,6 +14,7 @@
 | 0.1 | Jul 6 | — | Initial Auth module draft |
 | 0.2 | Jul 10 | — | Full rewrite: all MVP modules, API specs, data models, business rules |
 | 1.0 | Jul 18 | — | PRD-vs-SRS gap analysis — added FR-STU-14, FR-NTC-07, FR-RPT-06/07/08, FR-NOT-09, FR-ACA-09, missing API specs, BRs, updated RTM ranges, settings fields, dashboard warning |
+| 1.1 | Jul 21 | — | Student soft-delete (FR-STU-08), result sheet view (FR-RES-09), Manager profile edit (FR-UP-08), unified report load (FR-RPT-06), Platform Admin dashboard/analytics/settings (FR-DSH-04, FR-PLT-12/13) |
 
 ---
 
@@ -281,6 +282,8 @@ Tenant
 | 9 | FR-PLT-09 | Adjust SMS Balance | Platform Admin shall adjust SMS balance for a tenant | P0 | Tenant exists | PATCH /api/v1/admin/tenants/{id}/sms-balance |
 | 10 | FR-PLT-10 | View Cross-Tenant Notification Logs | Platform Admin shall view notification logs across all tenants | P1 | Platform Admin is authenticated | GET /api/v1/admin/notifications |
 | 11 | FR-PLT-11 | Reset Tenant User Password | Platform Admin shall reset any tenant user's password (School Admin or Manager) without current password | P0 | Platform Admin is authenticated, user exists | PATCH /api/v1/admin/users/{id}/reset-password |
+| 12 | FR-PLT-12 | Platform Analytics | Platform Admin shall view usage analytics across all tenants | P1 | Authenticated as Platform Admin | GET /api/v1/admin/analytics |
+| 13 | FR-PLT-13 | Platform Settings | Platform Admin shall update platform-wide settings | P1 | Authenticated as Platform Admin | PATCH /api/v1/admin/settings |
 
 ---
 
@@ -2461,7 +2464,7 @@ Reopen a closed academic year.
 
 **Explanation:**
 
-**FR-SET-02** allows School Admin to update school information and configuration via `PATCH /api/v1/settings`. Fields include logo URL, school code, address, phone, email, timezone, date/number format, sender name/ID overrides for notifications, per-trigger notification type toggles with customizable templates, and an attendance month closure toggle (if enabled, past month attendance is read-only). Only the School Admin role can modify settings (BR-SET-01).
+**FR-SET-02** allows School Admin to update school information and configuration via `PATCH /api/v1/settings`. Fields include logo URL, school code, address, phone, email, website URL, timezone, date/number format, language preference (for future i18n), sender name/ID overrides for notifications, per-trigger notification type toggles with customizable templates, and an attendance month closure toggle (if enabled, past month attendance is read-only). Only the School Admin role can modify settings (BR-SET-01).
 
 **API Endpoint(s):**
 
@@ -2540,6 +2543,7 @@ Reopen a closed academic year.
 | 5 | FR-UP-05 | Available Modules for Permissions | School Admin shall only see modules assigned by Platform Admin in the permission UI | P0 | Authenticated | GET /api/v1/permissions/available-modules |
 | 6 | FR-UP-06 | Immediate Session Invalidation | System shall deactivate a Manager immediately — all sessions invalidated | P0 | Manager deactivated | Token version incremented |
 | 7 | FR-UP-07 | Reset Manager Password | School Admin shall reset a Manager's password without current password | P0 | Manager exists, School Admin is authenticated | PATCH /api/v1/managers/{id}/reset-password |
+| 8 | FR-UP-08 | Update Manager Profile | School Admin shall update Manager's name, email, phone | P1 | Manager exists | PATCH /api/v1/managers/{id}/profile |
 
 ---
 
@@ -2880,7 +2884,57 @@ Reset a Manager's password (School Admin only).
 
 | # | Question |
 |---|----------|
-| Q-UP-01 | Should School Admin be able to edit a Manager's email and password? |
+| Q-UP-01 | Should School Admin be able to edit a Manager's email and password? *(Closed: Yes — name, email, phone via FR-UP-08; password reset via FR-UP-07)* |
+
+---
+
+#### **8.** FR-UP-08: Update Manager Profile
+
+| Property | Value |
+|----------|-------|
+| **ID** | FR-UP-08 |
+| **Description** | School Admin shall update Manager's name, email, phone |
+| **Priority** | P1 |
+| **Preconditions** | Manager exists |
+| **Trigger** | PATCH /api/v1/managers/{id}/profile |
+
+**Explanation:**
+
+**FR-UP-08** allows School Admin to update a Manager's profile information (name, email, phone) via `PATCH /api/v1/managers/{id}/profile`. Email uniqueness is enforced across the tenant.
+
+**API Endpoint(s):**
+
+##### PATCH /api/v1/managers/{id}/profile
+
+Update Manager's name, email, phone.
+
+**Request:**
+```json
+{
+  "name": "Updated Name",
+  "email": "newemail@school.com",
+  "phone": "+8801712345679"
+}
+```
+
+**Response `200 OK`:**
+```json
+{
+  "id": "uuid",
+  "name": "Updated Name",
+  "email": "newemail@school.com",
+  "phone": "+8801712345679"
+}
+```
+
+**Errors:**
+
+| Status | Code | Condition |
+|--------|------|-----------|
+| 404 | `MANAGER_NOT_FOUND` | Manager not found |
+| 409 | `EMAIL_EXISTS` | Email already in use by another user in the tenant |
+
+**No related business rules or open questions.**
 
 ---
 
@@ -3013,7 +3067,7 @@ Reset a Manager's password (School Admin only).
 
 ### 3.7 Student Management & Admission
 
-**Quick Summary:** Covers the complete student lifecycle: admission (public form → review → accept/reject), student CRUD, enrollment management, promotion, and bulk import/export. Registration numbers follow `YY + sequence` format. Roll numbers are per-section, per-year. Students have a permanent identity (`students` table) separate from their yearly enrollment (`student_enrollments`). Admission applications (`applications`) go through a PENDING → APPROVED/REJECTED workflow.
+**Quick Summary:** Covers the complete student lifecycle: admission (public form → review → accept/reject), student CRUD (with soft-delete), enrollment management, promotion, and bulk import/export. Registration numbers follow `YY + sequence` format. Roll numbers are per-section, per-year. Students have a permanent identity (`students` table) separate from their yearly enrollment (`student_enrollments`). Admission applications (`applications`) go through a PENDING → APPROVED/REJECTED workflow.
 
 > **Data Model:** Full schema in DB Dictionary §Table 12 (applications), §Table 13 (students), §Table 14 (student_enrollments).
 
@@ -3346,7 +3400,7 @@ List applications (filterable by status).
 
 **Explanation:**
 
-**FR-STU-08** provides full CRUD operations on student personal information via `/api/v1/students` endpoints. School Admin and authorized Managers can view, create, update, and search student records. This covers changes to name, address, guardian details, and other personal fields.
+**FR-STU-08** provides full CRUD operations on student personal information via `/api/v1/students` endpoints. School Admin and authorized Managers can view, create, update, soft-delete, and search student records. Deletion is soft-delete — the student's `deleted_at` timestamp is set and data is preserved for reports and audit. This covers changes to name, address, guardian details, and other personal fields.
 
 **API Endpoint(s):**
 
@@ -3356,8 +3410,9 @@ List applications (filterable by status).
 |--------|------|-------------|
 | GET | /api/v1/students | List/search students |
 | GET | /api/v1/students/{id} | Get student with enrollments |
-| PATCH | /api/v1/students/{id} | Update personal info |
 | POST | /api/v1/students | Create student directly (skip application) |
+| PATCH | /api/v1/students/{id} | Update personal info |
+| DELETE | /api/v1/students/{id} | Soft-delete a student (sets `deleted_at`, data preserved) |
 
 **GET /api/v1/students?search=alice&class_id=uuid&academic_year_id=uuid**
 
@@ -3390,6 +3445,7 @@ List applications (filterable by status).
 | BR-STU-05 | A student can have only one enrollment per academic year |
 | BR-STU-07 | Student statuses: `ACTIVE`, `DROPPED`, `TRANSFERRED`, `GRADUATED` (see Prisma `StudentStatus` enum) |
 | BR-STU-08 | Enrollment statuses: `ACTIVE`, `COMPLETED`, `PROMOTED`, `REPEATED` (see Prisma `EnrollmentStatus` enum) |
+| BR-STU-09 | Student deletion is soft-delete — `deleted_at` timestamp is set, data is preserved for reports and audit |
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -4045,6 +4101,7 @@ View attendance reports.
 | 6 | FR-RES-06 | Publish Results | School Admin shall publish exam results | P1 | All marks entered | POST /api/v1/exams/{id}/publish |
 | 7 | FR-RES-07 | Unpublish Results | School Admin shall unpublish results for editing | P1 | Results are published | POST /api/v1/exams/{id}/unpublish |
 | 8 | FR-RES-08 | Generate Rank List | School Admin shall generate rank list | P1 | Results published | GET /api/v1/exams/{id}/rank-list |
+| 9 | FR-RES-09 | View Result Sheet | School Admin/Manager shall view results in tabular format (student-wise or class-wise) | P1 | Exam exists, marks entered | GET /api/v1/exams/{id}/results |
 
 ---
 
@@ -4418,6 +4475,88 @@ Generate rank list for exam.
 | Status | Code | Condition |
 |--------|------|-----------|
 | 400 | `NOT_PUBLISHED` | Results not yet published |
+
+**No related business rules or open questions.**
+
+---
+
+#### **9.** FR-RES-09: View Result Sheet
+
+| Property | Value |
+|----------|-------|
+| **ID** | FR-RES-09 |
+| **Description** | School Admin/Manager shall view results in tabular format (student-wise or class-wise) |
+| **Priority** | P1 |
+| **Preconditions** | Exam exists, marks entered |
+| **Trigger** | GET /api/v1/exams/{id}/results |
+
+**Explanation:**
+
+**FR-RES-09** allows viewing a tabular result sheet for an exam via `GET /api/v1/exams/{id}/results`. The view can be toggled between student-wise (all subjects for one student) and class-wise (all students for one subject). Results are visible once marks are entered, regardless of publish status.
+
+**API Endpoint(s):**
+
+##### GET /api/v1/exams/{id}/results
+
+View result sheet in tabular format.
+
+**Query params:** `?view=student-wise|class-wise&student_id=uuid&exam_subject_id=uuid`
+
+**Response `200 OK` (student-wise):**
+```json
+{
+  "exam_id": "uuid",
+  "exam_name": "Midterm 2026",
+  "view": "student-wise",
+  "student": {
+    "id": "uuid",
+    "registration_no": "26000001",
+    "full_name": "Alice Johnson"
+  },
+  "subjects": [
+    {
+      "subject": "Mathematics",
+      "full_marks": 100,
+      "pass_marks": 33,
+      "obtained_marks": 85,
+      "grade": "A",
+      "gpa": 4.0,
+      "is_absent": false
+    }
+  ],
+  "total": 85,
+  "percentage": 85,
+  "grade": "A",
+  "gpa": 4.0
+}
+```
+
+**Response `200 OK` (class-wise):**
+```json
+{
+  "exam_id": "uuid",
+  "exam_name": "Midterm 2026",
+  "view": "class-wise",
+  "subject": "Mathematics",
+  "students": [
+    {
+      "student_id": "uuid",
+      "registration_no": "26000001",
+      "full_name": "Alice Johnson",
+      "obtained_marks": 85,
+      "grade": "A",
+      "gpa": 4.0,
+      "is_absent": false
+    }
+  ]
+}
+```
+
+**Errors:**
+
+| Status | Code | Condition |
+|--------|------|-----------|
+| 404 | `EXAM_NOT_FOUND` | Exam not found |
 
 **No related business rules or open questions.**
 
@@ -4991,7 +5130,7 @@ Settings are stored in `tenant_settings` and apply to all subsequently triggered
 
 ### 3.12 Reports
 
-**Quick Summary:** The Reports module generates Progress Reports, Transfer Certificates, Attendance Reports, and Result Reports as PDF. All reports include school branding from Settings. Data is read-only at generation time.
+**Quick Summary:** The Reports module provides unified report generation — enter a student's registration number, select a report type (Progress Report, Transfer Certificate, Attendance Report, Result Report), and load the report inline for viewing. Reports include school branding from Settings. Data is read-only at generation time. Reports can be exported to PDF via browser print.
 
 #### Functional Requirements
 
@@ -5003,6 +5142,7 @@ Settings are stored in `tenant_settings` and apply to all subsequently triggered
 | 3 | FR-RPT-03 | Generate Attendance Report | System shall generate attendance report PDF | P1 | Attendance records exist | GET /api/v1/reports/attendance |
 | 4 | FR-RPT-04 | Generate Result Report | System shall generate result report PDF (per exam) | P1 | Results published | GET /api/v1/reports/results |
 | 5 | FR-RPT-05 | Embed School Branding | System shall embed school logo and name from Settings in all reports | P1 | Settings configured | During generation |
+| 6 | FR-RPT-06 | Unified Report Load | System shall load report data by registration number + report type for inline viewing | P1 | Student exists, data exists | GET /api/v1/reports/load |
 
 ---
 
@@ -5163,27 +5303,66 @@ Generate result report PDF.
 |---|----------|
 | Q-RPT-01 | PDF generation library? (DomPDF, Puppeteer, jsPDF?) |
 | Q-RPT-03 | Are reports generated sync or async (queued)? |
+---
+
+#### **6.** FR-RPT-06: Unified Report Load
+
+| Property | Value |
+|----------|-------|
+| **ID** | FR-RPT-06 |
+| **Description** | System shall load report data by registration number + report type for inline viewing |
+| **Priority** | P1 |
+| **Preconditions** | Student exists, data exists |
+| **Trigger** | GET /api/v1/reports/load |
+
+**Explanation:**
+
+**FR-RPT-06** provides a unified report loading flow as defined in the PRD. The user enters a student's registration number, selects a report type, and the system loads the report data as JSON for inline display (not a PDF download). The PDF export is handled via browser print dialog from the rendered inline view. Existing direct PDF endpoints (FR-RPT-01 through FR-RPT-04) remain available for programmatic access.
+
+**API Endpoint(s):**
+
+##### GET /api/v1/reports/load
+
+Load report data for inline viewing.
+
+**Query params:** `?registration_no=26000001&type=progress|tc|attendance|result&academic_year_id=uuid`
+
+**Response `200 OK` (report data JSON):**
+```json
+{
+  "registration_no": "26000001",
+  "student_name": "Alice Johnson",
+  "class": "Class 6",
+  "shift": "Morning",
+  "section": "A",
+  "roll_number": 1,
+  "report_type": "progress",
+  "school_branding": {
+    "name": "Sunrise School",
+    "address": "123 Main St, Dhaka",
+    "logo_url": "https://..."
+  },
+  "data": {}
+}
+```
+
+The `data` field content varies by report type — subject-wise marks for progress/result reports, monthly attendance summary for attendance reports, student details and certification for transfer certificate.
+
+**Errors:**
+
+| Status | Code | Condition |
+|--------|------|-----------|
+| 404 | `STUDENT_NOT_FOUND` | No student found with given registration number |
+| 400 | `INVALID_REPORT_TYPE` | Unsupported report type |
+| 400 | `NO_DATA` | No data available for the selected report type |
+
+**No related business rules or open questions.**
 
 ---
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 ### 3.13 Dashboard
 
-**Quick Summary:** Role-specific dashboards showing at-a-glance metrics. School Admin sees student count, today's attendance %, recent notices, upcoming exams/events, Manager activity summary, SMS balance/quota, and quick actions. Manager sees a subset based on their permissions.
+**Quick Summary:** Role-specific dashboards showing at-a-glance metrics. Platform Admin sees cross-tenant overview — tenant count, active/inactive status, total SMS usage, and system health. School Admin sees student count, today's attendance %, recent notices, upcoming exams/events, Manager activity summary, SMS balance/quota, and quick actions. Manager sees a subset based on their permissions.
 
 #### Functional Requirements
 
@@ -5193,6 +5372,7 @@ Generate result report PDF.
 | 1 | FR-DSH-01 | School Admin Dashboard | System shall display School Admin dashboard with all metrics | P0 | Authenticated as School Admin | GET /api/v1/dashboard/school-admin |
 | 2 | FR-DSH-02 | Manager Dashboard | System shall display Manager dashboard (permissions-dependent) | P0 | Authenticated as Manager | GET /api/v1/dashboard/manager |
 | 3 | FR-DSH-03 | Current Year Scoping | Dashboard metrics shall be scoped to current academic year | P0 | Current academic year exists | During load |
+| 4 | FR-DSH-04 | Platform Admin Dashboard | System shall display Platform Admin dashboard with cross-tenant metrics | P1 | Authenticated as Platform Admin | GET /api/v1/admin/dashboard |
 
 ---
 
@@ -5312,6 +5492,45 @@ Generate result report PDF.
 | BR-DSH-01 | Dashboard data is scoped to the current academic year |
 
 ---
+#### **4.** FR-DSH-04: Platform Admin Dashboard
+
+| Property | Value |
+|----------|-------|
+| **ID** | FR-DSH-04 |
+| **Description** | System shall display Platform Admin dashboard with cross-tenant metrics |
+| **Priority** | P1 |
+| **Preconditions** | Authenticated as Platform Admin |
+| **Trigger** | GET /api/v1/admin/dashboard |
+
+**Explanation:**
+
+**FR-DSH-04** displays the Platform Admin dashboard at `GET /api/v1/admin/dashboard` with cross-tenant metrics: total tenant count, active/inactive tenant count, total SMS usage across all tenants, and system health indicators. This provides the platform-level overview referenced in FR-AUTH-05.
+
+**API Endpoint(s):**
+
+##### GET /api/v1/admin/dashboard
+
+**Response `200 OK`:**
+```json
+{
+  "total_tenants": 25,
+  "active_tenants": 22,
+  "inactive_tenants": 3,
+  "total_sms_used": 15420,
+  "total_sms_quota": 50000,
+  "system_health": {
+    "status": "healthy",
+    "uptime_hours": 720,
+    "active_sessions": 340
+  }
+}
+```
+
+**No related business rules or open questions.**
+
+---
+
+
 
 ---
 
@@ -5588,6 +5807,103 @@ View audit logs across all tenants.
 
 ---
 
+#### **12.** FR-PLT-12: Platform Analytics
+
+| Property | Value |
+|----------|-------|
+| **ID** | FR-PLT-12 |
+| **Description** | Platform Admin shall view usage analytics across all tenants |
+| **Priority** | P1 |
+| **Preconditions** | Authenticated as Platform Admin |
+| **Trigger** | GET /api/v1/admin/analytics |
+
+**Explanation:**
+
+**FR-PLT-12** provides the Platform Admin with cross-tenant usage analytics via `GET /api/v1/admin/analytics`. This includes aggregate metrics such as total active students, total Managers, attendance rates, and result publication counts across all tenants. This fulfills the "Platform Analytics" responsibility listed in the PRD.
+
+**API Endpoint(s):**
+
+##### GET /api/v1/admin/analytics
+
+**Query params:** `?from_date=2026-01-01&to_date=2026-12-31`
+
+**Response `200 OK`:**
+```json
+{
+  "total_students": 8750,
+  "active_students": 8200,
+  "total_managers": 180,
+  "average_attendance_rate": 94.5,
+  "total_exams_created": 420,
+  "total_results_published": 380,
+  "by_tenant": [
+    {
+      "tenant_id": "uuid",
+      "tenant_name": "Sunrise School",
+      "students": 350,
+      "attendance_rate": 95.2
+    }
+  ]
+}
+```
+
+**Errors:**
+
+| Status | Code | Condition |
+|--------|------|-----------|
+| 403 | `FORBIDDEN` | Only Platform Admin can access |
+
+**No related business rules or open questions.**
+
+---
+
+#### **13.** FR-PLT-13: Platform Settings
+
+| Property | Value |
+|----------|-------|
+| **ID** | FR-PLT-13 |
+| **Description** | Platform Admin shall update platform-wide settings |
+| **Priority** | P1 |
+| **Preconditions** | Authenticated as Platform Admin |
+| **Trigger** | PATCH /api/v1/admin/settings |
+
+**Explanation:**
+
+**FR-PLT-13** allows the Platform Admin to update platform-wide settings via `PATCH /api/v1/admin/settings`. Settings include centralized SMS/Email gateway credentials, platform branding (name, logo), default SMS quota for new tenants, and global feature flags. This fulfills the "Platform Settings" responsibility listed in the PRD. Platform settings are stored separately from tenant-level settings (FR-SET-02).
+
+**API Endpoint(s):**
+
+##### PATCH /api/v1/admin/settings
+
+**Request:**
+```json
+{
+  "platform_name": "SiriusSkool",
+  "logo_url": "https://...",
+  "default_sms_quota": 500,
+  "smtp_host": "smtp.example.com",
+  "smtp_port": 587,
+  "sms_provider_api_key": "encrypted-key"
+}
+```
+
+**Response `200 OK`:**
+```json
+{
+  "message": "Platform settings updated"
+}
+```
+
+**Errors:**
+
+| Status | Code | Condition |
+|--------|------|-----------|
+| 403 | `FORBIDDEN` | Only Platform Admin can modify platform settings |
+
+**No related business rules or open questions.**
+
+---
+
 ---
 
 ## 4. Non-Functional Requirements
@@ -5640,6 +5956,8 @@ View audit logs across all tenants.
 | PATCH | /api/v1/admin/tenants/{id}/sms-balance | Platform | FR-PLT-09 |
 | GET | /api/v1/admin/notifications | Platform | FR-PLT-10 |
 | PATCH | /api/v1/admin/users/{id}/reset-password | Platform | FR-PLT-11 |
+| GET | /api/v1/admin/analytics | Platform | FR-PLT-12 |
+| PATCH | /api/v1/admin/settings | Platform | FR-PLT-13 |
 | POST | /api/v1/admin/auth/login | Auth | FR-AUTH-01 |
 | POST | /api/v1/auth/login | Auth | FR-AUTH-02 |
 | POST | /api/v1/auth/logout | Auth | FR-AUTH-06 |
@@ -5662,6 +5980,7 @@ View audit logs across all tenants.
 | PUT | /api/v1/managers/{id}/permissions | Permissions | FR-UP-04 |
 | GET | /api/v1/permissions/available-modules | Permissions | FR-UP-05 |
 | PATCH | /api/v1/managers/{id}/reset-password | Permissions | FR-UP-07 |
+| PATCH | /api/v1/managers/{id}/profile | Permissions | FR-UP-08 |
 | GET | /api/v1/tenant-modules | Module Mgmt | FR-MM-01 |
 | PATCH | /api/v1/tenant-modules/{module} | Module Mgmt | FR-MM-02 |
 | POST | /api/v1/applications | Student | FR-STU-01 |
@@ -5672,6 +5991,7 @@ View audit logs across all tenants.
 | GET | /api/v1/students/{id} | Student | FR-STU-08 |
 | POST | /api/v1/students | Student | FR-STU-08 |
 | PATCH | /api/v1/students/{id} | Student | FR-STU-08 |
+| DELETE | /api/v1/students/{id} | Student | FR-STU-08 |
 | POST | /api/v1/students/promote | Student | FR-STU-10 |
 | POST | /api/v1/students/{id}/outcome | Student | FR-STU-11 |
 | POST | /api/v1/students/import | Student | FR-STU-12 |
@@ -5689,6 +6009,7 @@ View audit logs across all tenants.
 | POST | /api/v1/exams/{id}/publish | Results | FR-RES-06 |
 | POST | /api/v1/exams/{id}/unpublish | Results | FR-RES-07 |
 | GET | /api/v1/exams/{id}/rank-list | Results | FR-RES-08 |
+| GET | /api/v1/exams/{id}/results | Results | FR-RES-09 |
 | POST | /api/v1/grade-scales | Results | FR-RES-03 |
 | POST | /api/v1/notices | Notice Board | FR-NTC-01 |
 | GET | /api/v1/notices | Notice Board | FR-NTC-05 |
@@ -5699,8 +6020,10 @@ View audit logs across all tenants.
 | GET | /api/v1/reports/students/{id}/tc | Reports | FR-RPT-02 |
 | GET | /api/v1/reports/attendance | Reports | FR-RPT-03 |
 | GET | /api/v1/reports/results | Reports | FR-RPT-04 |
+| GET | /api/v1/reports/load | Reports | FR-RPT-06 |
 | GET | /api/v1/dashboard/school-admin | Dashboard | FR-DSH-01 |
 | GET | /api/v1/dashboard/manager | Dashboard | FR-DSH-02 |
+| GET | /api/v1/admin/dashboard | Dashboard | FR-DSH-04 |
 | GET | /api/v1/audit-logs | Audit | FR-AUD-07 |
 | GET | /api/v1/admin/audit-logs | Audit | FR-AUD-08 |
 | DELETE | /api/v1/notices/{id} | Notice Board | FR-NTC-07 |
@@ -5800,19 +6123,19 @@ View audit logs across all tenants.
 
 | Module | FR IDs | PRD § | DB Tables |
 |--------|--------|-------|-----------|
-| Platform & Multi-Tenant | FR-PLT-01 → FR-PLT-11 | §4, §5, §9 | tenants, tenant_settings, tenant_modules |
+| Platform & Multi-Tenant | FR-PLT-01 → FR-PLT-13 | §4, §5, §9 | tenants, tenant_settings, tenant_modules |
 | Authentication | FR-AUTH-01 → FR-AUTH-12 | §6.1, §10 | platform_admins, users |
 | Academic Structure | FR-ACA-01 → FR-ACA-10 | §6.9, §7.3 | academic_years, classes, shifts, sections, subjects |
 | Settings | FR-SET-01 → FR-SET-03 | §6.9 | tenant_settings |
-| User & Permission Mgmt | FR-UP-01 → FR-UP-07 | §7.1, §8 | users, manager_permissions |
+| User & Permission Mgmt | FR-UP-01 → FR-UP-08 | §7.1, §8 | users, manager_permissions |
 | Module Management | FR-MM-01 → FR-MM-03 | §7.2 | tenant_modules |
 | Student Management | FR-STU-01 → FR-STU-14 | §6.3, §9 | applications, students, student_enrollments |
 | Attendance | FR-ATT-01 → FR-ATT-07 | §6.4 | attendance_sessions, attendance_records |
-| Results | FR-RES-01 → FR-RES-08 | §6.5 | exams, exam_subjects, marks, grade_scales |
+| Results | FR-RES-01 → FR-RES-09 | §6.5 | exams, exam_subjects, marks, grade_scales |
 | Notice Board | FR-NTC-01 → FR-NTC-07 | §6.6 | notices |
 | Notifications | FR-NOT-01 → FR-NOT-02, FR-NOT-04 → FR-NOT-09 | §6.7 | notifications |
-| Reports | FR-RPT-01 → FR-RPT-05 | §6.8 | (read-only) |
-| Dashboard | FR-DSH-01 → FR-DSH-03 | §6.2 | (aggregated) |
+| Reports | FR-RPT-01 → FR-RPT-06 | §6.8 | (read-only) |
+| Dashboard | FR-DSH-01 → FR-DSH-04 | §6.2 | (aggregated) |
 | Audit Logging | FR-AUD-01 → FR-AUD-08 | §10 | audit_logs |
 
 ### D. Error Code Reference

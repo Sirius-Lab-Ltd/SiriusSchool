@@ -664,7 +664,6 @@ grade_scales (id, tenant_id, name, from_marks, to_marks, grade_letter, grade_poi
 
 *Security:*
 - Password policy (minimum length, complexity requirements)
-- Session timeout duration
 
 *General:*
 - Language preference (for future i18n)
