@@ -238,7 +238,7 @@ Platform (SaaS Owner)
 ```
 Tenant
  ├── Academic Years
- │    ├── Classes → Sections
+  │    ├── Classes → Shifts → Sections
  │    └── Student Enrollments
  │         ├── Attendance Sessions → Attendance Records
  │         └── Marks (via Exam Subjects)
@@ -389,7 +389,7 @@ The SMS credit system is a prepaid balance model that controls how many text mes
 | **Increment** | +1 after each successful student creation |
 | **Atomicity** | Read + increment uses `SELECT ... FOR UPDATE` to prevent race conditions (BR-STU-02) |
 | **Scope** | Per-tenant, resets at the start of each academic year |
-| **Reset trigger** | Setting a new academic year as current (FR-ACA-07) resets the counter to `starting_sequence` |
+| **Reset trigger** | Setting a new academic year as current (FR-ACA-08) resets the counter to `starting_sequence` |
 | **Permanence** | Registration numbers never change, even if a student leaves or graduates (BR-STU-03) |
 
 **Example lifecycle (starting_sequence = 1):**
@@ -1872,9 +1872,9 @@ Login request → Resolve tenant from subdomain (FR-AUTH-03)
 
 ### 3.3 Academic Structure
 
-**Quick Summary:** This module defines the academic hierarchy that every other module depends on. School Admin creates academic years (e.g., `2026-2027`), classes (e.g., `Class 6`), sections (e.g., `Section A`), and subjects (e.g., `Mathematics` per class). These entities are permanent and reused across academic years. Student enrollments link students to this structure per year.
+**Quick Summary:** This module defines the academic hierarchy that every other module depends on. School Admin creates academic years (e.g., `2026-2027`), classes (e.g., `Class 6`), shifts (e.g., `Morning`, `Day`, `Evening`), sections (e.g., `Section A`), and subjects (e.g., `Mathematics` per class). These entities are permanent and reused across academic years. Student enrollments link students to this structure per year.
 
-> **Data Model:** Full schema in DB Dictionary §Table 7 (academic_years), §Table 8 (classes), §Table 9 (sections), §Table 10 (subjects).
+> **Data Model:** Full schema in DB Dictionary §Table 7 (academic_years), §Table 8 (classes), §Table 9 (shifts), §Table 10 (sections), §Table 11 (subjects).
 
 #### Functional Requirements
 
@@ -1885,11 +1885,12 @@ Login request → Resolve tenant from subdomain (FR-AUTH-03)
 | 2 | FR-ACA-02 | Single Current Academic Year | System shall enforce exactly one active academic year per tenant | P0 | Academic years exist | Setting `is_current = true` |
 | 3 | FR-ACA-03 | Prevent Overlapping Date Ranges | System shall prevent overlapping academic year date ranges | P0 | Creating or updating | Validation |
 | 4 | FR-ACA-04 | Create Class | School Admin shall create classes with code, name, display_order | P0 | Authenticated | POST /api/v1/classes |
-| 5 | FR-ACA-05 | Create Section | School Admin shall create sections within a class | P0 | Class exists | POST /api/v1/classes/{id}/sections |
-| 6 | FR-ACA-06 | Create Subject | School Admin shall create subjects per class | P0 | Class exists | POST /api/v1/classes/{id}/subjects |
-| 7 | FR-ACA-07 | Set Current Academic Year | School Admin shall set one academic year as current | P0 | Academic year exists | PATCH /api/v1/academic-years/{id} |
-| 8 | FR-ACA-08 | List Academic Entities | System shall provide list endpoints for all academic entities (dropdowns) | P0 | Entity exists | GET endpoints |
-| 9 | FR-ACA-09 | Close/Reopen Academic Year | School Admin shall close an academic year (read-only) or reopen it | P0 | Academic year exists | POST /api/v1/academic-years/{id}/close |
+| 5 | FR-ACA-05 | Create Shift | School Admin shall create shifts within a class (e.g., Morning, Day, Evening) | P0 | Class exists | POST /api/v1/classes/{id}/shifts |
+| 6 | FR-ACA-06 | Create Section | School Admin shall create sections within a shift | P0 | Shift exists | POST /api/v1/shifts/{id}/sections |
+| 7 | FR-ACA-07 | Create Subject | School Admin shall create subjects per class | P0 | Class exists | POST /api/v1/classes/{id}/subjects |
+| 8 | FR-ACA-08 | Set Current Academic Year | School Admin shall set one academic year as current | P0 | Academic year exists | PATCH /api/v1/academic-years/{id} |
+| 9 | FR-ACA-09 | List Academic Entities | System shall provide list endpoints for all academic entities (dropdowns) | P0 | Entity exists | GET endpoints |
+| 10 | FR-ACA-10 | Close/Reopen Academic Year | School Admin shall close an academic year (read-only) or reopen it | P0 | Academic year exists | POST /api/v1/academic-years/{id}/close |
 
 ---
 
@@ -2061,7 +2062,7 @@ Login request → Resolve tenant from subdomain (FR-AUTH-03)
 
 | ID | Rule |
 |----|------|
-| BR-ACA-04 | Classes, sections, and subjects use `is_active` to disable (never delete) |
+| BR-ACA-04 | Classes, shifts, sections, and subjects use `is_active` to disable (never delete) |
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -2069,23 +2070,69 @@ Login request → Resolve tenant from subdomain (FR-AUTH-03)
 
 
 
-#### **5.** FR-ACA-05: Create Section
+#### **5.** FR-ACA-05: Create Shift
 
 | Property | Value |
 |----------|-------|
 | **ID** | FR-ACA-05 |
-| **Description** | School Admin shall create sections within a class |
+| **Description** | School Admin shall create shifts within a class (e.g., Morning, Day, Evening) |
 | **Priority** | P0 |
 | **Preconditions** | Class exists |
-| **Trigger** | POST /api/v1/classes/{id}/sections |
+| **Trigger** | POST /api/v1/classes/{id}/shifts |
 
 **Explanation:**
 
-**FR-ACA-05** allows School Admin to create sections within a class (e.g., "Section A", "Section B") via `POST /api/v1/classes/{classId}/sections`. Each section belongs to exactly one class (BR-ACA-05). Sections are where student enrollments and attendance are tracked.
+**FR-ACA-05** allows School Admin to create shifts within a class (e.g., "Morning Shift", "Day Shift", "Evening Shift") via `POST /api/v1/classes/{classId}/shifts`. A shift is a time-based grouping within a class — each shift can have multiple sections. Shifts are permanent entities reused across academic years; they are soft-disabled rather than deleted (BR-ACA-04).
 
 **API Endpoint(s):**
 
-##### POST /api/v1/classes/{classId}/sections
+##### POST /api/v1/classes/{classId}/shifts
+
+**Request:**
+```json
+{
+  "name": "Morning",
+  "display_order": 1
+}
+```
+
+**Response `201 Created`:**
+```json
+{
+  "id": "uuid",
+  "class_id": "uuid",
+  "name": "Morning",
+  "display_order": 1
+}
+```
+
+**Related Business Rules:**
+
+| ID | Rule |
+|----|------|
+| BR-ACA-11 | A shift belongs to exactly one class |
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+
+#### **6.** FR-ACA-06: Create Section
+
+| Property | Value |
+|----------|-------|
+| **ID** | FR-ACA-06 |
+| **Description** | School Admin shall create sections within a shift |
+| **Priority** | P0 |
+| **Preconditions** | Shift exists |
+| **Trigger** | POST /api/v1/shifts/{id}/sections |
+
+**Explanation:**
+
+**FR-ACA-06** allows School Admin to create sections within a shift (e.g., "Section A", "Section B") via `POST /api/v1/shifts/{shiftId}/sections`. Each section belongs to exactly one shift (BR-ACA-05). Sections are where student enrollments and attendance are tracked.
+
+**API Endpoint(s):**
+
+##### POST /api/v1/shifts/{shiftId}/sections
 
 **Request:**
 ```json
@@ -2100,7 +2147,7 @@ Login request → Resolve tenant from subdomain (FR-AUTH-03)
 ```json
 {
   "id": "uuid",
-  "class_id": "uuid",
+  "shift_id": "uuid",
   "code": "A",
   "name": "Section A"
 }
@@ -2110,7 +2157,7 @@ Login request → Resolve tenant from subdomain (FR-AUTH-03)
 
 | ID | Rule |
 |----|------|
-| BR-ACA-05 | A section belongs to exactly one class |
+| BR-ACA-05 | A section belongs to exactly one shift |
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -2118,11 +2165,11 @@ Login request → Resolve tenant from subdomain (FR-AUTH-03)
 
 
 
-#### **6.** FR-ACA-06: Create Subject
+#### **7.** FR-ACA-07: Create Subject
 
 | Property | Value |
 |----------|-------|
-| **ID** | FR-ACA-06 |
+| **ID** | FR-ACA-07 |
 | **Description** | School Admin shall create subjects per class |
 | **Priority** | P0 |
 | **Preconditions** | Class exists |
@@ -2130,7 +2177,7 @@ Login request → Resolve tenant from subdomain (FR-AUTH-03)
 
 **Explanation:**
 
-**FR-ACA-06** allows School Admin to create subjects under a class (e.g., "Mathematics" for Class 6) via `POST /api/v1/classes/{classId}/subjects`. Subject codes must be unique within a class (BR-ACA-07). Subject types include `MANDATORY` and `OPTIONAL`. These subjects are later referenced when configuring exams and marks.
+**FR-ACA-07** allows School Admin to create subjects under a class (e.g., "Mathematics" for Class 6) via `POST /api/v1/classes/{classId}/subjects`. Subject codes must be unique within a class (BR-ACA-08). Subject types include `MANDATORY` and `OPTIONAL`. These subjects are later referenced when configuring exams and marks.
 
 **API Endpoint(s):**
 
@@ -2170,11 +2217,11 @@ Login request → Resolve tenant from subdomain (FR-AUTH-03)
 
 
 
-#### **7.** FR-ACA-07: Set Current Academic Year
+#### **8.** FR-ACA-08: Set Current Academic Year
 
 | Property | Value |
 |----------|-------|
-| **ID** | FR-ACA-07 |
+| **ID** | FR-ACA-08 |
 | **Description** | School Admin shall set one academic year as current |
 | **Priority** | P0 |
 | **Preconditions** | Academic year exists |
@@ -2182,7 +2229,7 @@ Login request → Resolve tenant from subdomain (FR-AUTH-03)
 
 **Explanation:**
 
-**FR-ACA-07** allows School Admin to set an academic year as the current year via `PATCH /api/v1/academic-years/{id}` with `{ "is_current": true }`. The system automatically unmarks the previously current year, ensuring exactly one current year per tenant at all times. Additionally, setting a new current year resets the tenant's student registration counter (`current_student_sequence`) back to its `starting_sequence` value, ensuring registration numbers start fresh each academic year (see FR-PLT-01.3).
+**FR-ACA-08** allows School Admin to set an academic year as the current year via `PATCH /api/v1/academic-years/{id}` with `{ "is_current": true }`. The system automatically unmarks the previously current year, ensuring exactly one current year per tenant at all times. Additionally, setting a new current year resets the tenant's student registration counter (`current_student_sequence`) back to its `starting_sequence` value, ensuring registration numbers start fresh each academic year (see FR-PLT-01.3).
 
 **API Endpoint(s):**
 
@@ -2226,11 +2273,11 @@ Set an academic year as current.
 
 
 
-#### **8.** FR-ACA-08: List Academic Entities
+#### **9.** FR-ACA-09: List Academic Entities
 
 | Property | Value |
 |----------|-------|
-| **ID** | FR-ACA-08 |
+| **ID** | FR-ACA-09 |
 | **Description** | System shall provide list endpoints for all academic entities (dropdowns) |
 | **Priority** | P0 |
 | **Preconditions** | Entity exists |
@@ -2238,7 +2285,7 @@ Set an academic year as current.
 
 **Explanation:**
 
-**FR-ACA-08** provides GET list endpoints for all academic entities (academic years, classes, sections, subjects). These are used to populate dropdown selectors throughout the UI — e.g., selecting a class when taking attendance or creating an exam.
+**FR-ACA-09** provides GET list endpoints for all academic entities (academic years, classes, shifts, sections, subjects). These are used to populate dropdown selectors throughout the UI — e.g., selecting a class and shift when taking attendance or creating an exam.
 
 **API Endpoint(s):**
 
@@ -2264,6 +2311,20 @@ List academic years for the tenant.
 }
 ```
 
+##### GET /api/v1/classes/{classId}/shifts
+
+List shifts within a class.
+
+**Response `200 OK`:**
+```json
+{
+  "data": [
+    { "id": "uuid", "class_id": "uuid", "name": "Morning", "display_order": 1 },
+    { "id": "uuid", "class_id": "uuid", "name": "Day", "display_order": 2 }
+  ]
+}
+```
+
 **No related business rules or open questions.**
 
 ---
@@ -2271,11 +2332,11 @@ List academic years for the tenant.
 
 
 
-#### **9.** FR-ACA-09: Close/Reopen Academic Year
+#### **10.** FR-ACA-10: Close/Reopen Academic Year
 
 | Property | Value |
 |----------|-------|
-| **ID** | FR-ACA-09 |
+| **ID** | FR-ACA-10 |
 | **Description** | School Admin shall close an academic year (read-only) or reopen it |
 | **Priority** | P0 |
 | **Preconditions** | Academic year exists |
@@ -2283,7 +2344,7 @@ List academic years for the tenant.
 
 **Explanation:**
 
-**FR-ACA-09** allows School Admin to close an academic year via `POST /api/v1/academic-years/{id}/close`, making it read-only. Once closed, no attendance, results, or enrollment edits are permitted for that year — only report viewing is allowed (BR-ACA-09). All attendance and results must be finalized before closing (BR-ACA-10). A closed year can be reopened via `POST /api/v1/academic-years/{id}/reopen` if corrections are needed.
+**FR-ACA-10** allows School Admin to close an academic year via `POST /api/v1/academic-years/{id}/close`, making it read-only. Once closed, no attendance, results, or enrollment edits are permitted for that year — only report viewing is allowed (BR-ACA-09). All attendance and results must be finalized before closing (BR-ACA-10). A closed year can be reopened via `POST /api/v1/academic-years/{id}/reopen` if corrections are needed.
 
 **API Endpoint(s):**
 
@@ -3127,7 +3188,7 @@ List applications (filterable by status).
 
 **Explanation:**
 
-**FR-STU-04** approves a pending application via `POST /api/v1/applications/{id}/approve`, which creates a student record and an enrollment in a single atomic transaction (BR-STU-06). The Manager specifies the section to enroll the student in. On approval:
+**FR-STU-04** approves a pending application via `POST /api/v1/applications/{id}/approve`, which creates a student record and an enrollment in a single atomic transaction (BR-STU-06). The Manager specifies the shift and section to enroll the student in. On approval:
 1. `students` row created with auto-generated registration number
 2. `student_enrollments` row created for the specified section and academic year
 3. Application status updated to `APPROVED`
@@ -3143,6 +3204,7 @@ List applications (filterable by status).
 **Request:**
 ```json
 {
+  "shift_id": "uuid",
   "section_id": "uuid"
 }
 ```
@@ -3312,6 +3374,7 @@ List applications (filterable by status).
       "current_enrollment": {
         "academic_year": "2026-2027",
         "class": "Class 6",
+        "shift": "Morning",
         "section": "A",
         "roll_number": 1
       }
@@ -3368,7 +3431,7 @@ List applications (filterable by status).
 
 **Explanation:**
 
-**FR-STU-10** allows School Admin to promote students to the next class, either individually or in bulk via `POST /api/v1/students/promote`. The request specifies the from-class, to-class, section, and list of student IDs. New enrollments are created for the next academic year with fresh roll numbers. The operation is transactional — all-or-nothing.
+**FR-STU-10** allows School Admin to promote students to the next class, either individually or in bulk via `POST /api/v1/students/promote`. The request specifies the from-class, to-class, shift, section, and list of student IDs. New enrollments are created for the next academic year with fresh roll numbers. The operation is transactional — all-or-nothing.
 
 **API Endpoint(s):**
 
@@ -3382,6 +3445,7 @@ Bulk promote students to next class.
   "academic_year_id": "uuid",
   "from_class_id": "uuid",
   "to_class_id": "uuid",
+  "shift_id": "uuid",
   "section_id": "uuid",
   "student_ids": ["uuid1", "uuid2"],
   "outcome": "PROMOTED"
@@ -3440,6 +3504,7 @@ Set end-of-year outcome for a student.
   "outcome": "PROMOTED",
   "academic_year_id": "uuid",
   "next_class_id": "uuid",
+  "next_shift_id": "uuid",
   "next_section_id": "uuid"
 }
 ```
@@ -3530,7 +3595,7 @@ Import students from Excel file.
 
 Export student list.
 
-**Query params:** `?class_id=uuid&section_id=uuid&academic_year_id=uuid&format=excel|pdf`
+**Query params:** `?class_id=uuid&shift_id=uuid&section_id=uuid&academic_year_id=uuid&format=excel|pdf`
 
 **Response:** Binary file stream (Excel or PDF)
 
@@ -3569,7 +3634,8 @@ Export student list.
 |----------|----------|
 | Approve already-approved application | 409 ALREADY_REVIEWED |
 | Reject already-rejected application | 409 ALREADY_REVIEWED |
-| Approve with invalid section_id | 422 section does not belong to class |
+| Approve with invalid section_id | 422 section does not belong to shift |
+| Approve with invalid shift_id | 422 shift does not belong to class |
 | Bulk promote with mixed outcomes | Transaction fails — all or nothing |
 | Registration sequence race condition | Handled by `SELECT ... FOR UPDATE` in transaction |
 
@@ -3586,7 +3652,7 @@ Export student list.
 
 ### 3.8 Attendance Management
 
-**Quick Summary:** Manager selects class → section → date, sees all enrolled students (default Present), unchecks absentees, and saves. Attendance has a workflow (DRAFT → SUBMITTED) and supports corrections with audit logging. Absentee SMS can be sent after attendance is saved.
+**Quick Summary:** Manager selects class → shift → section → date, sees all enrolled students (default Present), unchecks absentees, and saves. Attendance has a workflow (DRAFT → SUBMITTED) and supports corrections with audit logging. Absentee SMS can be sent after attendance is saved.
 
 > **Data Model:** Full schema in DB Dictionary §Table 15 (attendance_sessions), §Table 16 (attendance_records).
 
@@ -3595,7 +3661,7 @@ Export student list.
 
 | # | ID | Name | Description | Priority | Preconditions | Trigger |
 |---|-----|------|-------------|----------|---------------|---------|
-| 1 | FR-ATT-01 | Load Enrolled Students | Manager shall select class → section → date and load enrolled students | P0 | Academic year active, enrollment exists | GET /api/v1/attendance/sessions/init |
+| 1 | FR-ATT-01 | Load Enrolled Students | Manager shall select class → shift → section → date and load enrolled students | P0 | Academic year active, enrollment exists | GET /api/v1/attendance/sessions/init |
 | 2 | FR-ATT-02 | Default to Present | System shall default all students to Present | P0 | Session initialized | Before save |
 | 3 | FR-ATT-03 | Save Attendance Session | Manager shall save attendance (all students marked) | P0 | Session in DRAFT | POST /api/v1/attendance/sessions |
 | 4 | FR-ATT-04 | Submit Attendance | Manager shall submit attendance (DRAFT → SUBMITTED) | P0 | Session saved | POST /api/v1/attendance/sessions/{id}/submit |
@@ -3614,14 +3680,14 @@ Export student list.
 | Property | Value |
 |----------|-------|
 | **ID** | FR-ATT-01 |
-| **Description** | Manager shall select class → section → date and load enrolled students |
+| **Description** | Manager shall select class → shift → section → date and load enrolled students |
 | **Priority** | P0 |
 | **Preconditions** | Academic year active, enrollment exists |
 | **Trigger** | GET /api/v1/attendance/sessions/init |
 
 **Explanation:**
 
-**FR-ATT-01** initializes an attendance session by loading enrolled students for a given class, section, and date via `GET /api/v1/attendance/sessions/init`. The response includes all students enrolled in that section for the current academic year, each defaulted to `PRESENT`. The user can then modify individual attendance statuses before saving.
+**FR-ATT-01** initializes an attendance session by loading enrolled students for a given class, shift, section, and date via `GET /api/v1/attendance/sessions/init`. The response includes all students enrolled in that section for the current academic year, each defaulted to `PRESENT`. The user can then modify individual attendance statuses before saving.
 
 **API Endpoint(s):**
 
@@ -3629,13 +3695,14 @@ Export student list.
 
 Load enrolled students for attendance marking.
 
-**Query params:** `?class_id=uuid&section_id=uuid&date=2026-07-10`
+**Query params:** `?class_id=uuid&shift_id=uuid&section_id=uuid&date=2026-07-10`
 
 **Response `200 OK`:**
 ```json
 {
   "session_id": "uuid",
   "class_id": "uuid",
+  "shift_id": "uuid",
   "section_id": "uuid",
   "date": "2026-07-10",
   "students": [
@@ -3671,7 +3738,7 @@ Load enrolled students for attendance marking.
 
 **Explanation:**
 
-**FR-ATT-02** defaults all students to `PRESENT` when initializing an attendance session. This follows the common-sense assumption that most students are present — the Manager only needs to mark exceptions (absent, late, leave).
+**FR-ATT-02** defaults all students to `PRESENT` when initializing an attendance session. This follows the common-sense assumption that most students are present — the Manager only needs to mark exceptions (absent).
 
 **Related Business Rules:**
 
@@ -3713,6 +3780,7 @@ Create (or update) an attendance session.
 {
   "academic_year_id": "uuid",
   "class_id": "uuid",
+  "shift_id": "uuid",
   "section_id": "uuid",
   "attendance_date": "2026-07-10",
   "records": [
@@ -3732,7 +3800,7 @@ Create (or update) an attendance session.
 }
 ```
 
-**ATTENDANCE_STATUS ENUM:** `PRESENT`, `ABSENT`, `LATE`, `LEAVE`
+**ATTENDANCE_STATUS ENUM:** `PRESENT`, `ABSENT`
 
 **Related Business Rules:**
 
@@ -3745,7 +3813,7 @@ Create (or update) an attendance session.
 
 | # | Question |
 |---|----------|
-| Q-ATT-01 | Should attendance status include more than PRESENT/ABSENT/LATE/LEAVE? |
+| Q-ATT-01 | Should attendance status include more than PRESENT/ABSENT? *(Closed: only Present and Absent supported per PRD §6.4)* |
 | Q-ATT-03 | Backdate limit — 7 days configurable? Or fixed? |
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -3904,7 +3972,7 @@ Edit attendance records after submission.
 
 **Explanation:**
 
-**FR-ATT-07** provides attendance reports for School Admin, filterable by class, student, and date range. The reports aggregate attendance data across sessions and can be used for monitoring student attendance patterns.
+**FR-ATT-07** provides attendance reports for School Admin, filterable by class, shift (optional), student, and date range. The reports aggregate attendance data across sessions and can be used for monitoring student attendance patterns.
 
 **API Endpoint(s):**
 
@@ -3933,7 +4001,7 @@ View attendance reports.
 
 | # | Question |
 |---|----------|
-| Q-ATT-01 | Should attendance status include more than PRESENT/ABSENT/LATE/LEAVE? |
+| Q-ATT-01 | Should attendance status include more than PRESENT/ABSENT? *(Closed: only Present and Absent supported per PRD §6.4)* |
 | Q-ATT-02 | Is "month closure" (making attendance read-only) in MVP scope? |
 | Q-ATT-03 | Backdate limit — 7 days configurable? Or fixed? |
 
@@ -4339,7 +4407,7 @@ Generate rank list for exam.
 
 ### 3.10 Notice Board
 
-**Quick Summary:** School Admin or authorized Manager uploads PDF/Image notices. Notices can be scheduled (future publish_at), expire automatically, and are visible to all authenticated users within the tenant. Published notices cannot be edited — must archive and recreate.
+**Quick Summary:** School Admin or authorized Manager creates notices with a title and body text, optionally attaching files (PDF or Image). Notices can be scheduled (future publish_at), expire automatically, and are visible to all authenticated users within the tenant. Published notices cannot be edited — must archive and recreate.
 
 > **Data Model:** Full schema in DB Dictionary §Table 21.
 
@@ -4348,7 +4416,7 @@ Generate rank list for exam.
 
 | # | ID | Name | Description | Priority | Preconditions | Trigger |
 |---|-----|------|-------------|----------|---------------|---------|
-| 1 | FR-NTC-01 | Upload Notice | Authorized user shall upload a notice (PDF or Image) with title | P1 | Authenticated | POST /api/v1/notices |
+| 1 | FR-NTC-01 | Create Notice | Authorized user shall create a notice with title, body text, and optional file attachments | P1 | Authenticated | POST /api/v1/notices |
 | 2 | FR-NTC-02 | Schedule Notice | System shall schedule notice for future publication | P1 | Notice created with future `publish_at` | During create |
 | 3 | FR-NTC-03 | Auto-Publish Scheduled Notice | System shall auto-publish scheduled notices when `publish_at` is reached | P1 | Scheduled notice exists | Cron/queue job |
 | 4 | FR-NTC-04 | Archive Notice | Authorized user shall archive a published notice | P1 | Notice is published | POST /api/v1/notices/{id}/archive |
@@ -4362,19 +4430,19 @@ Generate rank list for exam.
 
 
 
-#### **1.** FR-NTC-01: Upload Notice
+#### **1.** FR-NTC-01: Create Notice
 
 | Property | Value |
 |----------|-------|
 | **ID** | FR-NTC-01 |
-| **Description** | Authorized user shall upload a notice (PDF or Image) with title |
+| **Description** | Authorized user shall create a notice with title, body text, and optional file attachments |
 | **Priority** | P1 |
 | **Preconditions** | Authenticated |
 | **Trigger** | POST /api/v1/notices |
 
 **Explanation:**
 
-**FR-NTC-01** allows authorized users (School Admin or Manager with permission) to upload a notice as a PDF or image file via `POST /api/v1/notices`. The file is uploaded to Cloudinary and the notice record stores the file URL. Notices can be scheduled for future publication (FR-NTC-02).
+**FR-NTC-01** allows authorized users (School Admin or Manager with permission) to create a notice with a title and body text via `POST /api/v1/notices`, optionally attaching PDF or image files. Notices can be scheduled for future publication (FR-NTC-02).
 
 **API Endpoint(s):**
 
@@ -4382,10 +4450,11 @@ Generate rank list for exam.
 
 **Request (multipart/form-data):**
 ```
-title: "Final Exam Routine"
-file: (pdf or image upload)
-publish_at: "2026-12-01T08:00:00Z"  (optional, defaults to now)
-expires_at: "2026-12-20T00:00:00Z" (optional)
+title: "Final Exam Routine"              (required)
+body: "The final exam will start from..." (required)
+attachments: (pdf or image uploads, optional, multiple)
+publish_at: "2026-12-01T08:00:00Z"       (optional, defaults to now)
+expires_at: "2026-12-20T00:00:00Z"       (optional)
 ```
 
 **Response `201 Created`:**
@@ -4393,10 +4462,13 @@ expires_at: "2026-12-20T00:00:00Z" (optional)
 {
   "id": "uuid",
   "title": "Final Exam Routine",
-  "file_url": "https://res.cloudinary.com/.../notice.pdf",
-  "file_type": "PDF",
+  "body": "The final exam will start from...",
+  "attachments": [
+    { "id": "uuid", "file_url": "https://res.cloudinary.com/.../notice.pdf", "file_type": "PDF" }
+  ],
   "is_published": true,
-  "publish_at": "2026-12-01T08:00:00Z"
+  "publish_at": "2026-12-01T08:00:00Z",
+  "expires_at": "2026-12-20T00:00:00Z"
 }
 ```
 
@@ -4404,7 +4476,7 @@ expires_at: "2026-12-20T00:00:00Z" (optional)
 
 | ID | Rule |
 |----|------|
-| BR-NTC-02 | Only PDF and IMAGE file types are supported |
+| BR-NTC-02 | Only PDF and IMAGE file types are supported for notice attachments |
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -4528,8 +4600,10 @@ Archive a published notice.
     {
       "id": "uuid",
       "title": "Final Exam Routine",
-      "file_url": "...",
-      "file_type": "PDF",
+      "body": "The final exam will start from...",
+      "attachments": [
+        { "id": "uuid", "file_url": "...", "file_type": "PDF" }
+      ],
       "published_at": "2026-12-01T08:00:00Z"
     }
   ]
@@ -4878,7 +4952,7 @@ View notification logs.
 **FR-NOT-09** allows School Admin to configure notification preferences per tenant:
 - **Notification types:** Enable/disable SMS and Email independently for each notification trigger (absentee alerts, result publication, ad-hoc sends).
 - **Sender name:** Override the default sender name/ID for SMS and Email.
-- **Templates:** Customize default notification templates using variables such as `{student_name}`, `{class}`, `{section}`, `{date}`, `{school_name}`, `{percentage}`, `{subject}`.
+- **Templates:** Customize default notification templates using variables such as `{student_name}`, `{class}`, `{shift}`, `{section}`, `{date}`, `{school_name}`, `{percentage}`, `{subject}`.
 
 Settings are stored in `tenant_settings` and apply to all subsequently triggered notifications. Template changes apply to the next notification, not retroactively.
 
@@ -4897,21 +4971,18 @@ Settings are stored in `tenant_settings` and apply to all subsequently triggered
 
 ### 3.12 Reports
 
-**Quick Summary:** The Reports module generates PDF ID cards, admission forms, student profiles, Transfer Certificates, character certificates, attendance reports, and result reports. All reports include school branding from Settings. Data is read-only at generation time.
+**Quick Summary:** The Reports module generates Progress Reports, Transfer Certificates, Attendance Reports, and Result Reports as PDF. All reports include school branding from Settings. Data is read-only at generation time.
 
 #### Functional Requirements
 
 
 | # | ID | Name | Description | Priority | Preconditions | Trigger |
 |---|-----|------|-------------|----------|---------------|---------|
-| 1 | FR-RPT-01 | Generate ID Card PDF | System shall generate student ID card PDF with photo, name, registration no, class, section, roll, school details | P1 | Student exists, school branding configured | GET /api/v1/reports/students/{id}/id-card |
+| 1 | FR-RPT-01 | Generate Progress Report | System shall generate per-student Progress Report PDF with subject-wise marks, grades, GPA, total, percentage | P1 | Student exists, exam results published | GET /api/v1/reports/students/{id}/progress |
 | 2 | FR-RPT-02 | Generate Transfer Certificate | System shall generate Transfer Certificate PDF | P1 | Student status = TRANSFERRED | GET /api/v1/reports/students/{id}/tc |
-| 3 | FR-RPT-03 | Generate Attendance Report | System shall generate attendance report PDF/Excel | P1 | Attendance records exist | GET /api/v1/reports/attendance |
-| 4 | FR-RPT-04 | Generate Result Report | System shall generate result report PDF (per student or per exam) | P1 | Results published | GET /api/v1/reports/results |
+| 3 | FR-RPT-03 | Generate Attendance Report | System shall generate attendance report PDF | P1 | Attendance records exist | GET /api/v1/reports/attendance |
+| 4 | FR-RPT-04 | Generate Result Report | System shall generate result report PDF (per exam) | P1 | Results published | GET /api/v1/reports/results |
 | 5 | FR-RPT-05 | Embed School Branding | System shall embed school logo and name from Settings in all reports | P1 | Settings configured | During generation |
-| 6 | FR-RPT-06 | Generate Admission Form Report | System shall generate admission form PDF with applicant details | P1 | Student exists | GET /api/v1/reports/students/{id}/admission-form |
-| 7 | FR-RPT-07 | Generate Student Profile Report | System shall generate student profile PDF with complete history | P1 | Student exists | GET /api/v1/reports/students/{id}/profile |
-| 8 | FR-RPT-08 | Generate Character Certificate | System shall generate character certificate PDF | P1 | Student exists | GET /api/v1/reports/students/{id}/character-certificate |
 
 ---
 
@@ -4919,25 +4990,27 @@ Settings are stored in `tenant_settings` and apply to all subsequently triggered
 
 
 
-#### **1.** FR-RPT-01: Generate ID Card PDF
+#### **1.** FR-RPT-01: Generate Progress Report
 
 | Property | Value |
 |----------|-------|
 | **ID** | FR-RPT-01 |
-| **Description** | System shall generate student ID card PDF with photo, name, registration no, class, section, roll, school details |
+| **Description** | System shall generate per-student Progress Report PDF with subject-wise marks, grades, GPA, total, percentage |
 | **Priority** | P1 |
-| **Preconditions** | Student exists, school branding configured |
-| **Trigger** | GET /api/v1/reports/students/{id}/id-card |
+| **Preconditions** | Student exists, exam results published |
+| **Trigger** | GET /api/v1/reports/students/{id}/progress |
 
 **Explanation:**
 
-**FR-RPT-01** generates a printable student ID card PDF via `GET /api/v1/reports/students/{id}/id-card`. The card includes the student's photo, name, registration number, class, section, roll number, and school branding (logo + name from Settings). The PDF is streamed as a binary response.
+**FR-RPT-01** generates a per-student Progress Report PDF via `GET /api/v1/reports/students/{id}/progress`. The report includes the student's name, class, shift, section, roll number, and subject-wise marks with grades, GPA, total, and percentage for the selected academic year. School branding is embedded from Settings.
 
 **API Endpoint(s):**
 
-##### GET /api/v1/reports/students/{id}/id-card
+##### GET /api/v1/reports/students/{id}/progress
 
-**Response:** Binary PDF stream (Content-Type: application/pdf)
+**Query params:** `?academic_year_id=uuid`
+
+**Response:** Binary PDF stream
 
 **No related business rules or open questions.**
 
@@ -4984,22 +5057,22 @@ Generate Transfer Certificate PDF.
 | Property | Value |
 |----------|-------|
 | **ID** | FR-RPT-03 |
-| **Description** | System shall generate attendance report PDF/Excel |
+| **Description** | System shall generate attendance report PDF |
 | **Priority** | P1 |
 | **Preconditions** | Attendance records exist |
 | **Trigger** | GET /api/v1/reports/attendance |
 
 **Explanation:**
 
-**FR-RPT-03** generates attendance reports in PDF or Excel format, filterable by class and academic year. Reports include attendance summaries (total days, present, absent, percentage) per student.
+**FR-RPT-03** generates attendance reports in PDF format, filterable by class, shift (optional), and academic year. Reports include attendance summaries (total days, present, absent, percentage) per student.
 
 **API Endpoint(s):**
 
 ##### GET /api/v1/reports/attendance
 
-**Query params:** `?class_id=uuid&academic_year_id=uuid&format=excel`
+**Query params:** `?class_id=uuid&shift_id=uuid&academic_year_id=uuid`
 
-**Response:** Binary Excel stream or PDF
+**Response:** Binary PDF stream
 
 **No related business rules or open questions.**
 
@@ -5014,14 +5087,14 @@ Generate Transfer Certificate PDF.
 | Property | Value |
 |----------|-------|
 | **ID** | FR-RPT-04 |
-| **Description** | System shall generate result report PDF (per student or per exam) |
+| **Description** | System shall generate result report PDF (per exam) |
 | **Priority** | P1 |
 | **Preconditions** | Results published |
 | **Trigger** | GET /api/v1/reports/results |
 
 **Explanation:**
 
-**FR-RPT-04** generates result report PDFs (per student or per exam). Per-student reports show all subjects and grades. Per-exam reports show all students' marks for a specific exam. Reports are generated only for published results.
+**FR-RPT-04** generates result report PDFs per exam, showing all students' marks for a specific exam. Reports are generated only for published results.
 
 **API Endpoint(s):**
 
@@ -5069,7 +5142,6 @@ Generate result report PDF.
 | # | Question |
 |---|----------|
 | Q-RPT-01 | PDF generation library? (DomPDF, Puppeteer, jsPDF?) |
-| Q-RPT-02 | Excel export library? (PhpSpreadsheet, xlsx?) |
 | Q-RPT-03 | Are reports generated sync or async (queued)? |
 
 ---
@@ -5077,87 +5149,17 @@ Generate result report PDF.
 
 
 
-#### **6.** FR-RPT-06: Generate Admission Form Report
-
-| Property | Value |
-|----------|-------|
-| **ID** | FR-RPT-06 |
-| **Description** | System shall generate admission form PDF with applicant details |
-| **Priority** | P1 |
-| **Preconditions** | Student exists |
-| **Trigger** | GET /api/v1/reports/students/{id}/admission-form |
-
-**Explanation:**
-
-**FR-RPT-06** generates an admission form PDF with the student's original application details via `GET /api/v1/reports/students/{id}/admission-form`. The form includes the applicant's name, guardian details, address, date of birth, and admission date as recorded during application approval.
-
-**API Endpoint(s):**
-
-##### GET /api/v1/reports/students/{id}/admission-form
-
-**Response:** Binary PDF stream
-
-**No related business rules or open questions.**
-
----
 
 
 
 
-#### **7.** FR-RPT-07: Generate Student Profile Report
-
-| Property | Value |
-|----------|-------|
-| **ID** | FR-RPT-07 |
-| **Description** | System shall generate student profile PDF with complete history |
-| **Priority** | P1 |
-| **Preconditions** | Student exists |
-| **Trigger** | GET /api/v1/reports/students/{id}/profile |
-
-**Explanation:**
-
-**FR-RPT-07** generates a comprehensive student profile PDF via `GET /api/v1/reports/students/{id}/profile`. The profile includes personal details, enrollment history across academic years, attendance records, exam results, and status changes.
-
-**API Endpoint(s):**
-
-##### GET /api/v1/reports/students/{id}/profile
-
-**Query params:** `?academic_year_id=uuid`
-
-**Response:** Binary PDF stream
-
-**No related business rules or open questions.**
-
----
 
 
 
 
-#### **8.** FR-RPT-08: Generate Character Certificate
 
-| Property | Value |
-|----------|-------|
-| **ID** | FR-RPT-08 |
-| **Description** | System shall generate character certificate PDF |
-| **Priority** | P1 |
-| **Preconditions** | Student exists |
-| **Trigger** | GET /api/v1/reports/students/{id}/character-certificate |
 
-**Explanation:**
 
-**FR-RPT-08** generates a Character Certificate PDF via `GET /api/v1/reports/students/{id}/character-certificate`. The certificate attests to the student's conduct and character during their time at the school. It includes the student's name, period of study, and the school's official seal and branding.
-
-**API Endpoint(s):**
-
-##### GET /api/v1/reports/students/{id}/character-certificate
-
-**Response:** Binary PDF stream
-
-**No related business rules or open questions.**
-
----
-
----
 
 ### 3.13 Dashboard
 
@@ -5617,11 +5619,13 @@ View audit logs across all tenants.
 | POST | /api/v1/auth/change-password | Auth | FR-AUTH-08 |
 | GET | /api/v1/auth/me | Auth | FR-AUTH-09 |
 | POST | /api/v1/academic-years | Academic | FR-ACA-01 |
-| GET | /api/v1/academic-years | Academic | FR-ACA-08 |
-| PATCH | /api/v1/academic-years/{id} | Academic | FR-ACA-07 |
+| GET | /api/v1/academic-years | Academic | FR-ACA-09 |
+| PATCH | /api/v1/academic-years/{id} | Academic | FR-ACA-08 |
 | POST | /api/v1/classes | Academic | FR-ACA-04 |
-| POST | /api/v1/classes/{classId}/sections | Academic | FR-ACA-05 |
-| POST | /api/v1/classes/{classId}/subjects | Academic | FR-ACA-06 |
+| POST | /api/v1/classes/{classId}/shifts | Academic | FR-ACA-05 |
+| GET | /api/v1/classes/{classId}/shifts | Academic | FR-ACA-09 |
+| POST | /api/v1/shifts/{shiftId}/sections | Academic | FR-ACA-06 |
+| POST | /api/v1/classes/{classId}/subjects | Academic | FR-ACA-07 |
 | GET | /api/v1/settings | Settings | FR-SET-01 |
 | PATCH | /api/v1/settings | Settings | FR-SET-02 |
 | POST | /api/v1/managers | Permissions | FR-UP-01 |
@@ -5662,7 +5666,7 @@ View audit logs across all tenants.
 | POST | /api/v1/notices/{id}/archive | Notice Board | FR-NTC-04 |
 | POST | /api/v1/notifications/send | Notifications | FR-NOT-04 |
 | GET | /api/v1/notifications | Notifications | FR-NOT-07 |
-| GET | /api/v1/reports/students/{id}/id-card | Reports | FR-RPT-01 |
+| GET | /api/v1/reports/students/{id}/progress | Reports | FR-RPT-01 |
 | GET | /api/v1/reports/students/{id}/tc | Reports | FR-RPT-02 |
 | GET | /api/v1/reports/attendance | Reports | FR-RPT-03 |
 | GET | /api/v1/reports/results | Reports | FR-RPT-04 |
@@ -5671,12 +5675,10 @@ View audit logs across all tenants.
 | GET | /api/v1/audit-logs | Audit | FR-AUD-07 |
 | GET | /api/v1/admin/audit-logs | Audit | FR-AUD-08 |
 | DELETE | /api/v1/notices/{id} | Notice Board | FR-NTC-07 |
-| GET | /api/v1/reports/students/{id}/admission-form | Reports | FR-RPT-06 |
-| GET | /api/v1/reports/students/{id}/profile | Reports | FR-RPT-07 |
-| GET | /api/v1/reports/students/{id}/character-certificate | Reports | FR-RPT-08 |
+
 | PATCH | /api/v1/settings/notifications | Settings | FR-NOT-09 |
-| POST | /api/v1/academic-years/{id}/close | Academic | FR-ACA-09 |
-| POST | /api/v1/academic-years/{id}/reopen | Academic | FR-ACA-09 |
+| POST | /api/v1/academic-years/{id}/close | Academic | FR-ACA-10 |
+| POST | /api/v1/academic-years/{id}/reopen | Academic | FR-ACA-10 |
 ### B. Complete Business Rules
 
 | ID | Rule | Module |
@@ -5703,13 +5705,14 @@ View audit logs across all tenants.
 | BR-ACA-01 | A tenant can have only one current academic year at a time | Academic |
 | BR-ACA-02 | Academic year names must be unique per tenant | Academic |
 | BR-ACA-03 | Academic year date ranges must not overlap | Academic |
-| BR-ACA-04 | Classes, sections, and subjects use is_active to disable (never delete) | Academic |
-| BR-ACA-05 | A section belongs to exactly one class | Academic |
+| BR-ACA-04 | Classes, shifts, sections, and subjects use is_active to disable (never delete) | Academic |
+| BR-ACA-05 | A section belongs to exactly one shift | Academic |
 | BR-ACA-06 | A subject belongs to exactly one class | Academic |
 | BR-ACA-07 | Subject codes must be unique within a class | Academic |
 | BR-ACA-08 | Setting a new current academic year resets `current_student_sequence` to `starting_sequence` | Academic |
 | BR-ACA-09 | A closed academic year is read-only — no data edits allowed, only reports viewing | Academic |
 | BR-ACA-10 | Closing an academic year requires all attendance and results for that year to be finalized | Academic |
+| BR-ACA-11 | A shift belongs to exactly one class | Academic |
 | BR-SET-01 | Only School Admin can modify settings | Settings |
 | BR-SET-02 | Every tenant has exactly one settings record | Settings |
 | BR-UP-01 | Only users with role MANAGER can have permission records | Permissions |
@@ -5743,7 +5746,7 @@ View audit logs across all tenants.
 | BR-RES-05 | Grades/GPA are calculated at runtime — never stored in marks table | Results |
 | BR-RES-06 | IF is_absent = true THEN obtained_marks must be null | Results |
 | BR-NTC-01 | Published notices cannot be edited (must archive and recreate) | Notice Board |
-| BR-NTC-02 | Only PDF and IMAGE file types are supported | Notice Board |
+| BR-NTC-02 | Only PDF and IMAGE file types are supported for notice attachments | Notice Board |
 | BR-NTC-03 | All authenticated users in the tenant can view published notices | Notice Board |
 | BR-NTC-04 | IF expires_at is set and the date has passed THEN notice is hidden | Notice Board |
 | BR-NOT-01 | Notification failures must NOT roll back the source transaction | Notifications |
@@ -5769,7 +5772,7 @@ View audit logs across all tenants.
 |--------|--------|-------|-----------|
 | Platform & Multi-Tenant | FR-PLT-01 → FR-PLT-11 | §4, §5, §9 | tenants, tenant_settings, tenant_modules |
 | Authentication | FR-AUTH-01 → FR-AUTH-12 | §6.1, §10 | platform_admins, users |
-| Academic Structure | FR-ACA-01 → FR-ACA-09 | §6.9, §7.3 | academic_years, classes, sections, subjects |
+| Academic Structure | FR-ACA-01 → FR-ACA-10 | §6.9, §7.3 | academic_years, classes, shifts, sections, subjects |
 | Settings | FR-SET-01 → FR-SET-03 | §6.9 | tenant_settings |
 | User & Permission Mgmt | FR-UP-01 → FR-UP-07 | §7.1, §8 | users, manager_permissions |
 | Module Management | FR-MM-01 → FR-MM-03 | §7.2 | tenant_modules |
@@ -5778,7 +5781,7 @@ View audit logs across all tenants.
 | Results | FR-RES-01 → FR-RES-08 | §6.5 | exams, exam_subjects, marks, grade_scales |
 | Notice Board | FR-NTC-01 → FR-NTC-07 | §6.6 | notices |
 | Notifications | FR-NOT-01 → FR-NOT-02, FR-NOT-04 → FR-NOT-09 | §6.7 | notifications |
-| Reports | FR-RPT-01 → FR-RPT-08 | §6.8 | (read-only) |
+| Reports | FR-RPT-01 → FR-RPT-05 | §6.8 | (read-only) |
 | Dashboard | FR-DSH-01 → FR-DSH-03 | §6.2 | (aggregated) |
 | Audit Logging | FR-AUD-01 → FR-AUD-08 | §10 | audit_logs |
 
@@ -5838,7 +5841,6 @@ View audit logs across all tenants.
 | Q-NOT-01 | Notifications | SMS/Email provider in MVP? | OPEN |
 | Q-NOT-02 | Notifications | Customizable notification templates? | Closed: Yes, from the setting of notification templates |
 | Q-RPT-01 | Reports | PDF generation library? | OPEN |
-| Q-RPT-02 | Reports | Excel export library? | Open |
 | Q-RPT-03 | Reports | Sync or async report generation? | Open |
 
 ---
