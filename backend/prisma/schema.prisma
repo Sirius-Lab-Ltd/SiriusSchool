@@ -1,0 +1,733 @@
+// ─────────────────────────────────────────────────────────────
+// Sirius Skool — Database Schema (Prisma + PostgreSQL)
+// Based on DB-Dictionary.md (v1.0)
+// ─────────────────────────────────────────────────────────────
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ═════════════════════════════════════════════════════════════
+// ENUMS
+// ═════════════════════════════════════════════════════════════
+
+enum UserRole {
+  SCHOOL_ADMIN
+  MANAGER
+}
+
+enum ModuleEnum {
+  STUDENT_MANAGEMENT
+  ATTENDANCE_MANAGEMENT
+  RESULT_MANAGEMENT
+  NOTICE_BOARD
+  REPORTS
+  NOTIFICATIONS
+}
+
+enum SubjectType {
+  MANDATORY
+  OPTIONAL
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum ApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum StudentStatus {
+  ACTIVE
+  DROPPED
+  TRANSFERRED
+  GRADUATED
+}
+
+enum EnrollmentStatus {
+  ACTIVE
+  COMPLETED
+  PROMOTED
+  REPEATED
+}
+
+enum AttendanceSessionStatus {
+  DRAFT
+  SUBMITTED
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  LEAVE
+}
+
+enum ExamStatus {
+  DRAFT
+  PUBLISHED
+  COMPLETED
+}
+
+enum NoticeFileType {
+  PDF
+  IMAGE
+}
+
+enum NotificationChannel {
+  SMS
+  EMAIL
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+enum NotificationTrigger {
+  MANUAL
+  ATTENDANCE
+  RESULT
+  SYSTEM
+}
+
+enum AuditModule {
+  STUDENT_MANAGEMENT
+  ATTENDANCE_MANAGEMENT
+  RESULT_MANAGEMENT
+  NOTICE_BOARD
+  NOTIFICATIONS
+  USER_MANAGEMENT
+  TENANT_MANAGEMENT
+  SYSTEM
+}
+
+enum AuditAction {
+  CREATED
+  UPDATED
+  DELETED
+  PUBLISHED
+  UNPUBLISHED
+  APPROVED
+  REJECTED
+  PERMISSION_CHANGED
+  SMS_BALANCE_CHANGED
+  TENANT_STATUS_CHANGED
+  USER_STATUS_CHANGED
+  LOGIN
+  LOGOUT
+}
+
+// ═════════════════════════════════════════════════════════════
+// 1 — PLATFORM
+// ═════════════════════════════════════════════════════════════
+
+model PlatformAdmin {
+  id            String          @id @default(uuid()) @db.Uuid
+  email         String          @unique @db.VarChar(255)
+  password_hash String
+  created_at    DateTime        @default(now()) @db.Timestamptz
+  updated_at    DateTime        @updatedAt @db.Timestamptz
+
+  refresh_tokens RefreshToken[] @relation("PlatformAdminRefreshTokens")
+
+  @@map("platform_admins")
+}
+
+// ═════════════════════════════════════════════════════════════
+// 2 — CORE & MULTI-TENANT
+// ═════════════════════════════════════════════════════════════
+
+model Tenant {
+  id                       String   @id @default(uuid()) @db.Uuid
+  name                     String   @db.VarChar(255)
+  subdomain                String   @unique @db.VarChar(100)
+  is_active                Boolean  @default(true)
+  sms_balance              Int      @default(0)
+  current_student_sequence Int      @default(0)
+  created_at               DateTime @default(now()) @db.Timestamptz
+  updated_at               DateTime @updatedAt @db.Timestamptz
+
+  settings            TenantSetting?
+  modules             TenantModule[]
+  users               User[]
+  academic_years      AcademicYear[]
+  classes             Class[]
+  sections            Section[]
+  subjects            Subject[]
+  applications        Application[]
+  students            Student[]
+  student_enrollments StudentEnrollment[]
+  attendance_sessions AttendanceSession[]
+  exams               Exam[]
+  grade_scales        GradeScale[]
+  notices             Notice[]
+  notifications       Notification[]
+  audit_logs          AuditLog[]
+
+  @@index([is_active])
+  @@map("tenants")
+}
+
+model TenantSetting {
+  id         String   @id @default(uuid()) @db.Uuid
+  tenant_id  String   @unique @db.Uuid
+  tenant     Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  logo_url   String?
+  address    String?
+  phone      String?  @db.VarChar(20)
+  email      String?  @db.VarChar(255)
+  created_at DateTime @default(now()) @db.Timestamptz
+  updated_at DateTime @updatedAt @db.Timestamptz
+
+  @@map("tenant_settings")
+}
+
+model TenantModule {
+  id         String     @id @default(uuid()) @db.Uuid
+  tenant_id  String     @db.Uuid
+  tenant     Tenant     @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  module     ModuleEnum
+  is_enabled Boolean    @default(true)
+  created_at DateTime   @default(now()) @db.Timestamptz
+  updated_at DateTime   @updatedAt @db.Timestamptz
+
+  manager_permissions ManagerPermission[]
+
+  @@unique([tenant_id, module])
+  @@index([tenant_id])
+  @@map("tenant_modules")
+}
+
+// ═════════════════════════════════════════════════════════════
+// 3 — AUTHENTICATION & AUTHORIZATION
+// ═════════════════════════════════════════════════════════════
+
+model User {
+  id            String    @id @default(uuid()) @db.Uuid
+  tenant_id     String    @db.Uuid
+  tenant        Tenant    @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  full_name     String    @db.VarChar(255)
+  email         String    @unique @db.VarChar(255)
+  phone         String?   @db.VarChar(20)
+  password_hash String
+  role          UserRole
+  is_active     Boolean   @default(true)
+  last_login_at DateTime? @db.Timestamptz
+  created_at    DateTime  @default(now()) @db.Timestamptz
+  updated_at    DateTime  @updatedAt @db.Timestamptz
+
+  manager_permissions   ManagerPermission[]
+  reviewed_applications Application[]       @relation("Reviewer")
+  taken_sessions        AttendanceSession[] @relation("TakenBy")
+  modified_sessions     AttendanceSession[] @relation("LastModifiedBy")
+  created_exams         Exam[]              @relation("ExamCreator")
+  entered_marks         Mark[]              @relation("MarkEnterer")
+  uploaded_notices      Notice[]            @relation("NoticeUploader")
+  sent_notifications    Notification[]      @relation("NotificationSender")
+  audit_logs            AuditLog[]
+  refresh_tokens        RefreshToken[]      @relation("UserRefreshTokens")
+
+  @@index([tenant_id])
+  @@index([role])
+  @@index([is_active])
+  @@map("users")
+}
+
+model ManagerPermission {
+  id               String       @id @default(uuid()) @db.Uuid
+  user_id          String       @db.Uuid
+  user             User         @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  tenant_module_id String       @db.Uuid
+  tenant_module    TenantModule @relation(fields: [tenant_module_id], references: [id], onDelete: Cascade)
+  can_view         Boolean      @default(false)
+  can_create       Boolean      @default(false)
+  can_edit         Boolean      @default(false)
+  can_delete       Boolean      @default(false)
+  can_print        Boolean      @default(false)
+  can_export       Boolean      @default(false)
+  created_at       DateTime     @default(now()) @db.Timestamptz
+  updated_at       DateTime     @updatedAt @db.Timestamptz
+
+  @@unique([user_id, tenant_module_id])
+  @@index([user_id])
+  @@index([tenant_module_id])
+  @@map("manager_permissions")
+}
+
+model RefreshToken {
+  id                String         @id @default(uuid()) @db.Uuid
+  token             String         @unique @db.Uuid
+  user_id           String?        @db.Uuid
+  user              User?          @relation("UserRefreshTokens", fields: [user_id], references: [id], onDelete: Cascade)
+  platform_admin_id String?        @db.Uuid
+  platform_admin    PlatformAdmin? @relation("PlatformAdminRefreshTokens", fields: [platform_admin_id], references: [id], onDelete: Cascade)
+  expires_at        DateTime       @db.Timestamptz
+  revoked_at        DateTime?      @db.Timestamptz
+  created_at        DateTime       @default(now()) @db.Timestamptz
+
+  @@index([user_id])
+  @@index([platform_admin_id])
+  @@index([token])
+  @@map("refresh_tokens")
+}
+
+// ═════════════════════════════════════════════════════════════
+// 4 — ACADEMIC STRUCTURE
+// ═════════════════════════════════════════════════════════════
+
+model AcademicYear {
+  id         String   @id @default(uuid()) @db.Uuid
+  tenant_id  String   @db.Uuid
+  tenant     Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  name       String   @db.VarChar(50)
+  start_date DateTime @db.Date
+  end_date   DateTime @db.Date
+  is_current Boolean  @default(false)
+  created_at DateTime @default(now()) @db.Timestamptz
+  updated_at DateTime @updatedAt @db.Timestamptz
+
+  student_enrollments StudentEnrollment[]
+  attendance_sessions AttendanceSession[]
+  exams               Exam[]
+  notices             Notice[]
+  applications        Application[]
+
+  @@unique([tenant_id, name])
+  @@index([tenant_id])
+  @@index([is_current])
+  @@map("academic_years")
+}
+
+model Class {
+  id            String   @id @default(uuid()) @db.Uuid
+  tenant_id     String   @db.Uuid
+  tenant        Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  code          String   @db.VarChar(20)
+  name          String   @db.VarChar(100)
+  display_order Int
+  is_active     Boolean  @default(true)
+  created_at    DateTime @default(now()) @db.Timestamptz
+  updated_at    DateTime @updatedAt @db.Timestamptz
+
+  sections            Section[]
+  subjects            Subject[]
+  student_enrollments StudentEnrollment[]
+  attendance_sessions AttendanceSession[]
+  exams               Exam[]
+  applications        Application[]       @relation("ApplyingClass")
+
+  @@unique([tenant_id, code])
+  @@unique([tenant_id, name])
+  @@index([tenant_id])
+  @@index([is_active])
+  @@index([display_order])
+  @@map("classes")
+}
+
+model Section {
+  id            String   @id @default(uuid()) @db.Uuid
+  tenant_id     String   @db.Uuid
+  tenant        Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  class_id      String   @db.Uuid
+  class         Class    @relation(fields: [class_id], references: [id], onDelete: Cascade)
+  code          String   @db.VarChar(20)
+  name          String   @db.VarChar(100)
+  display_order Int
+  is_active     Boolean  @default(true)
+  created_at    DateTime @default(now()) @db.Timestamptz
+  updated_at    DateTime @updatedAt @db.Timestamptz
+
+  student_enrollments StudentEnrollment[]
+  attendance_sessions AttendanceSession[]
+
+  @@unique([class_id, code])
+  @@unique([class_id, name])
+  @@index([tenant_id])
+  @@index([class_id])
+  @@index([is_active])
+  @@index([display_order])
+  @@map("sections")
+}
+
+model Subject {
+  id            String      @id @default(uuid()) @db.Uuid
+  tenant_id     String      @db.Uuid
+  tenant        Tenant      @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  class_id      String      @db.Uuid
+  class         Class       @relation(fields: [class_id], references: [id], onDelete: Cascade)
+  code          String      @db.VarChar(30)
+  name          String      @db.VarChar(100)
+  subject_type  SubjectType @default(MANDATORY)
+  display_order Int
+  is_active     Boolean     @default(true)
+  created_at    DateTime    @default(now()) @db.Timestamptz
+  updated_at    DateTime    @updatedAt @db.Timestamptz
+
+  exam_subjects ExamSubject[]
+
+  @@unique([class_id, code])
+  @@unique([class_id, name])
+  @@index([tenant_id])
+  @@index([class_id])
+  @@index([subject_type])
+  @@index([is_active])
+  @@index([display_order])
+  @@map("subjects")
+}
+
+// ═════════════════════════════════════════════════════════════
+// 5 — STUDENT MANAGEMENT
+// ═════════════════════════════════════════════════════════════
+
+model Application {
+  id                String            @id @default(uuid()) @db.Uuid
+  tenant_id         String            @db.Uuid
+  tenant            Tenant            @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  application_no    String            @db.VarChar(30)
+  academic_year_id  String            @db.Uuid
+  academic_year     AcademicYear      @relation(fields: [academic_year_id], references: [id])
+  applying_class_id String            @db.Uuid
+  applying_class    Class             @relation("ApplyingClass", fields: [applying_class_id], references: [id])
+  full_name         String            @db.VarChar(255)
+  gender            Gender
+  date_of_birth     DateTime          @db.Date
+  guardian_name     String            @db.VarChar(150)
+  guardian_phone    String            @db.VarChar(20)
+  address           String
+  status            ApplicationStatus @default(PENDING)
+  reviewed_by       String?           @db.Uuid
+  reviewer          User?             @relation("Reviewer", fields: [reviewed_by], references: [id])
+  reviewed_at       DateTime?         @db.Timestamptz
+  rejection_reason  String?
+  created_at        DateTime          @default(now()) @db.Timestamptz
+  updated_at        DateTime          @updatedAt @db.Timestamptz
+
+  @@unique([tenant_id, application_no])
+  @@index([tenant_id])
+  @@index([academic_year_id])
+  @@index([applying_class_id])
+  @@index([status])
+  @@index([created_at])
+  @@map("applications")
+}
+
+model Student {
+  id              String        @id @default(uuid()) @db.Uuid
+  tenant_id       String        @db.Uuid
+  tenant          Tenant        @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  registration_no String        @db.VarChar(20)
+  full_name       String        @db.VarChar(255)
+  gender          Gender
+  date_of_birth   DateTime      @db.Date
+  guardian_name   String        @db.VarChar(150)
+  guardian_phone  String        @db.VarChar(20)
+  address         String
+  admission_date  DateTime      @db.Date
+  status          StudentStatus @default(ACTIVE)
+  created_at      DateTime      @default(now()) @db.Timestamptz
+  updated_at      DateTime      @updatedAt @db.Timestamptz
+
+  enrollments StudentEnrollment[]
+
+  @@unique([tenant_id, registration_no])
+  @@index([tenant_id])
+  @@index([registration_no])
+  @@index([status])
+  @@map("students")
+}
+
+model StudentEnrollment {
+  id                     String              @id @default(uuid()) @db.Uuid
+  tenant_id              String              @db.Uuid
+  tenant                 Tenant              @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  student_id             String              @db.Uuid
+  student                Student             @relation(fields: [student_id], references: [id], onDelete: Cascade)
+  academic_year_id       String              @db.Uuid
+  academic_year          AcademicYear        @relation(fields: [academic_year_id], references: [id])
+  class_id               String              @db.Uuid
+  class                  Class               @relation(fields: [class_id], references: [id])
+  section_id             String              @db.Uuid
+  section                Section             @relation(fields: [section_id], references: [id])
+  roll_number            Int
+  enrollment_date        DateTime            @db.Date
+  status                 EnrollmentStatus    @default(ACTIVE)
+  previous_enrollment_id String?             @db.Uuid
+  previous_enrollment    StudentEnrollment?  @relation("EnrollmentHistory", fields: [previous_enrollment_id], references: [id])
+  next_enrollments       StudentEnrollment[] @relation("EnrollmentHistory")
+  created_at             DateTime            @default(now()) @db.Timestamptz
+  updated_at             DateTime            @updatedAt @db.Timestamptz
+
+  attendance_records AttendanceRecord[]
+  marks              Mark[]
+
+  @@unique([student_id, academic_year_id])
+  @@unique([academic_year_id, section_id, roll_number])
+  @@index([tenant_id])
+  @@index([student_id])
+  @@index([academic_year_id])
+  @@index([class_id])
+  @@index([section_id])
+  @@index([status])
+  @@index([previous_enrollment_id])
+  @@map("student_enrollments")
+}
+
+// ═════════════════════════════════════════════════════════════
+// 6 — ATTENDANCE
+// ═════════════════════════════════════════════════════════════
+
+model AttendanceSession {
+  id               String                  @id @default(uuid()) @db.Uuid
+  tenant_id        String                  @db.Uuid
+  tenant           Tenant                  @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  academic_year_id String                  @db.Uuid
+  academic_year    AcademicYear            @relation(fields: [academic_year_id], references: [id])
+  class_id         String                  @db.Uuid
+  class            Class                   @relation(fields: [class_id], references: [id])
+  section_id       String                  @db.Uuid
+  section          Section                 @relation(fields: [section_id], references: [id])
+  attendance_date  DateTime                @db.Date
+  taken_by         String                  @db.Uuid
+  taker            User                    @relation("TakenBy", fields: [taken_by], references: [id])
+  status           AttendanceSessionStatus @default(DRAFT)
+  submitted_at     DateTime?               @db.Timestamptz
+  sms_sent_at      DateTime?               @db.Timestamptz
+  last_modified_by String?                 @db.Uuid
+  last_modifier    User?                   @relation("LastModifiedBy", fields: [last_modified_by], references: [id])
+  created_at       DateTime                @default(now()) @db.Timestamptz
+  updated_at       DateTime                @updatedAt @db.Timestamptz
+
+  records AttendanceRecord[]
+
+  @@unique([academic_year_id, section_id, attendance_date])
+  @@index([tenant_id])
+  @@index([academic_year_id])
+  @@index([class_id])
+  @@index([section_id])
+  @@index([attendance_date])
+  @@index([status])
+  @@index([taken_by])
+  @@map("attendance_sessions")
+}
+
+model AttendanceRecord {
+  id                    String            @id @default(uuid()) @db.Uuid
+  attendance_session_id String            @db.Uuid
+  attendance_session    AttendanceSession @relation(fields: [attendance_session_id], references: [id], onDelete: Cascade)
+  student_enrollment_id String            @db.Uuid
+  student_enrollment    StudentEnrollment @relation(fields: [student_enrollment_id], references: [id])
+  attendance_status     AttendanceStatus  @default(PRESENT)
+  remarks               String?
+  created_at            DateTime          @default(now()) @db.Timestamptz
+  updated_at            DateTime          @updatedAt @db.Timestamptz
+
+  @@unique([attendance_session_id, student_enrollment_id])
+  @@index([attendance_session_id])
+  @@index([student_enrollment_id])
+  @@index([attendance_status])
+  @@map("attendance_records")
+}
+
+// ═════════════════════════════════════════════════════════════
+// 7 — EXAMINATION & RESULTS
+// ═════════════════════════════════════════════════════════════
+
+model Exam {
+  id                  String       @id @default(uuid()) @db.Uuid
+  tenant_id           String       @db.Uuid
+  tenant              Tenant       @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  academic_year_id    String       @db.Uuid
+  academic_year       AcademicYear @relation(fields: [academic_year_id], references: [id])
+  class_id            String       @db.Uuid
+  class               Class        @relation(fields: [class_id], references: [id])
+  name                String       @db.VarChar(100)
+  start_date          DateTime     @db.Date
+  end_date            DateTime     @db.Date
+  status              ExamStatus   @default(DRAFT)
+  created_by          String       @db.Uuid
+  creator             User         @relation("ExamCreator", fields: [created_by], references: [id])
+  result_published_at DateTime?    @db.Timestamptz
+  created_at          DateTime     @default(now()) @db.Timestamptz
+  updated_at          DateTime     @updatedAt @db.Timestamptz
+
+  subjects ExamSubject[]
+
+  @@unique([academic_year_id, class_id, name])
+  @@index([tenant_id])
+  @@index([academic_year_id])
+  @@index([class_id])
+  @@index([status])
+  @@index([start_date])
+  @@index([end_date])
+  @@map("exams")
+}
+
+model ExamSubject {
+  id              String   @id @default(uuid()) @db.Uuid
+  exam_id         String   @db.Uuid
+  exam            Exam     @relation(fields: [exam_id], references: [id], onDelete: Cascade)
+  subject_id      String   @db.Uuid
+  subject         Subject  @relation(fields: [subject_id], references: [id])
+  full_marks      Decimal  @db.Decimal(5, 2)
+  pass_marks      Decimal  @db.Decimal(5, 2)
+  theory_marks    Decimal? @db.Decimal(5, 2)
+  practical_marks Decimal? @db.Decimal(5, 2)
+  display_order   Int
+  created_at      DateTime @default(now()) @db.Timestamptz
+  updated_at      DateTime @updatedAt @db.Timestamptz
+
+  marks Mark[]
+
+  @@unique([exam_id, subject_id])
+  @@index([exam_id])
+  @@index([subject_id])
+  @@index([display_order])
+  @@map("exam_subjects")
+}
+
+model Mark {
+  id                    String            @id @default(uuid()) @db.Uuid
+  exam_subject_id       String            @db.Uuid
+  exam_subject          ExamSubject       @relation(fields: [exam_subject_id], references: [id], onDelete: Cascade)
+  student_enrollment_id String            @db.Uuid
+  student_enrollment    StudentEnrollment @relation(fields: [student_enrollment_id], references: [id])
+  obtained_marks        Decimal?          @db.Decimal(5, 2)
+  is_absent             Boolean           @default(false)
+  is_published          Boolean           @default(false)
+  remarks               String?
+  entered_by            String            @db.Uuid
+  enterer               User              @relation("MarkEnterer", fields: [entered_by], references: [id])
+  entered_at            DateTime          @default(now()) @db.Timestamptz
+  created_at            DateTime          @default(now()) @db.Timestamptz
+  updated_at            DateTime          @updatedAt @db.Timestamptz
+
+  @@unique([exam_subject_id, student_enrollment_id])
+  @@index([exam_subject_id])
+  @@index([student_enrollment_id])
+  @@index([is_published])
+  @@index([is_absent])
+  @@index([entered_by])
+  @@map("marks")
+}
+
+model GradeScale {
+  id            String   @id @default(uuid()) @db.Uuid
+  tenant_id     String   @db.Uuid
+  tenant        Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  name          String   @db.VarChar(100)
+  min_marks     Decimal  @db.Decimal(5, 2)
+  max_marks     Decimal  @db.Decimal(5, 2)
+  grade_letter  String   @db.VarChar(20)
+  grade_point   Decimal  @db.Decimal(3, 2)
+  remarks       String?  @db.VarChar(100)
+  display_order Int
+  created_at    DateTime @default(now()) @db.Timestamptz
+  updated_at    DateTime @updatedAt @db.Timestamptz
+
+  @@unique([tenant_id, name, grade_letter])
+  @@index([tenant_id])
+  @@index([display_order])
+  @@index([min_marks])
+  @@index([max_marks])
+  @@map("grade_scales")
+}
+
+// ═════════════════════════════════════════════════════════════
+// 8 — COMMUNICATION
+// ═════════════════════════════════════════════════════════════
+
+model Notice {
+  id               String         @id @default(uuid()) @db.Uuid
+  tenant_id        String         @db.Uuid
+  tenant           Tenant         @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  academic_year_id String?        @db.Uuid
+  academic_year    AcademicYear?  @relation(fields: [academic_year_id], references: [id])
+  title            String         @db.VarChar(255)
+  file_url         String
+  file_type        NoticeFileType
+  publish_at       DateTime       @default(now()) @db.Timestamptz
+  expires_at       DateTime?      @db.Timestamptz
+  is_published     Boolean        @default(true)
+  uploaded_by      String         @db.Uuid
+  uploader         User           @relation("NoticeUploader", fields: [uploaded_by], references: [id])
+  created_at       DateTime       @default(now()) @db.Timestamptz
+  updated_at       DateTime       @updatedAt @db.Timestamptz
+
+  @@index([tenant_id])
+  @@index([is_published])
+  @@index([publish_at])
+  @@index([expires_at])
+  @@index([file_type])
+  @@map("notices")
+}
+
+model Notification {
+  id                String              @id @default(uuid()) @db.Uuid
+  tenant_id         String              @db.Uuid
+  tenant            Tenant              @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  channel           NotificationChannel
+  recipient         String              @db.VarChar(255)
+  subject           String?             @db.VarChar(255)
+  message           String
+  status            NotificationStatus  @default(PENDING)
+  retry_count       Int                 @default(0)
+  provider_response String?
+  trigger_type      NotificationTrigger @default(MANUAL)
+  reference_id      String?             @db.Uuid
+  sent_by           String?             @db.Uuid
+  sender            User?               @relation("NotificationSender", fields: [sent_by], references: [id])
+  sent_at           DateTime?           @db.Timestamptz
+  created_at        DateTime            @default(now()) @db.Timestamptz
+  updated_at        DateTime            @updatedAt @db.Timestamptz
+
+  @@index([tenant_id])
+  @@index([channel])
+  @@index([status])
+  @@index([trigger_type])
+  @@index([sent_at])
+  @@index([created_at])
+  @@map("notifications")
+}
+
+// ═════════════════════════════════════════════════════════════
+// 9 — SYSTEM
+// ═════════════════════════════════════════════════════════════
+
+model AuditLog {
+  id          String      @id @default(uuid()) @db.Uuid
+  tenant_id   String?     @db.Uuid
+  tenant      Tenant?     @relation(fields: [tenant_id], references: [id])
+  user_id     String?     @db.Uuid
+  user        User?       @relation(fields: [user_id], references: [id])
+  module      AuditModule
+  action      AuditAction
+  entity_type String      @db.VarChar(100)
+  entity_id   String?     @db.Uuid
+  description String?
+  old_values  Json?       @db.JsonB
+  new_values  Json?       @db.JsonB
+  ip_address  String?     @db.VarChar(45)
+  user_agent  String?
+  created_at  DateTime    @default(now()) @db.Timestamptz
+
+  @@index([tenant_id])
+  @@index([user_id])
+  @@index([module])
+  @@index([action])
+  @@index([entity_type])
+  @@index([entity_id])
+  @@index([created_at])
+  @@map("audit_logs")
+}
