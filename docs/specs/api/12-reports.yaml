@@ -1,0 +1,123 @@
+openapi: 3.1.0
+info:
+  title: SiriusSchool — Reports
+  version: 1.0.0
+  x-sirius-module: reports
+  x-sirius-build-order: 12
+  x-sirius-depends-on: [student, result, attendance]
+paths:
+  /api/v1/reports/students/{id}/progress:
+    get:
+      tags: [Reports]
+      summary: Generate student progress report
+      operationId: reportGetProgress
+      x-sirius-fr-ref: [FR-RPT-01]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '../common/parameters.yaml#/IdPathParam'
+        - $ref: '../common/parameters.yaml#/AcademicYearIdParam'
+      responses:
+        '200':
+          description: Progress report data (JSON) or PDF file
+        '404':
+          $ref: '../common/responses.yaml#/NotFound'
+
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'
+  /api/v1/reports/students/{id}/tc:
+    get:
+      tags: [Reports]
+      summary: Generate transfer certificate
+      operationId: reportGetTc
+      x-sirius-fr-ref: [FR-RPT-02]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '../common/parameters.yaml#/IdPathParam'
+      responses:
+        '200':
+          description: Transfer certificate data (JSON) or PDF file
+        '404':
+          $ref: '../common/responses.yaml#/NotFound'
+
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'
+  /api/v1/reports/attendance:
+    get:
+      tags: [Reports]
+      summary: Generate attendance report
+      operationId: reportGetAttendance
+      x-sirius-fr-ref: [FR-RPT-03]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '../common/parameters.yaml#/SectionIdParam'
+        - $ref: '../common/parameters.yaml#/AcademicYearIdParam'
+        - name: startDate
+          in: query
+          schema:
+            $ref: '../common/schemas.yaml#/DateString'
+        - name: endDate
+          in: query
+          schema:
+            $ref: '../common/schemas.yaml#/DateString'
+        - name: studentId
+          in: query
+          schema:
+            $ref: '../common/schemas.yaml#/UUID'
+      responses:
+        '200':
+          description: Attendance report data (JSON) or PDF file
+
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'
+  /api/v1/reports/results:
+    get:
+      tags: [Reports]
+      summary: Generate result report
+      operationId: reportGetResults
+      x-sirius-fr-ref: [FR-RPT-04]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: examId
+          in: query
+          schema:
+            $ref: '../common/schemas.yaml#/UUID'
+        - $ref: '../common/parameters.yaml#/ClassIdParam'
+        - $ref: '../common/parameters.yaml#/SectionIdParam'
+        - $ref: '../common/parameters.yaml#/AcademicYearIdParam'
+      responses:
+        '200':
+          description: Result report data (JSON) or PDF file
+
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'
+  /api/v1/reports/load:
+    get:
+      tags: [Reports]
+      summary: Unified report — load all data for a student
+      operationId: reportLoad
+      x-sirius-fr-ref: [FR-RPT-06]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: registrationNo
+          in: query
+          schema:
+            type: string
+          description: Student registration number
+        - name: studentId
+          in: query
+          schema:
+            $ref: '../common/schemas.yaml#/UUID'
+        - $ref: '../common/parameters.yaml#/AcademicYearIdParam'
+      responses:
+        '200':
+          description: Unified report data (progress, attendance, results, TC)
+        '404':
+          $ref: '../common/responses.yaml#/NotFound'
+
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'

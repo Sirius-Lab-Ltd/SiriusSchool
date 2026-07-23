@@ -1,0 +1,52 @@
+openapi: 3.1.0
+info:
+  title: SiriusSchool — Module Management
+  version: 1.0.0
+  x-sirius-module: module-management
+  x-sirius-build-order: 6
+  x-sirius-depends-on: [platform, auth]
+paths:
+  /api/v1/tenant-modules:
+    get:
+      tags: [ModuleManagement]
+      summary: Get enabled/disabled state of all modules for current tenant
+      operationId: moduleListTenantModules
+      x-sirius-fr-ref: [FR-MM-01]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          $ref: '../common/responses.yaml#/Success'
+
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'
+  /api/v1/tenant-modules/{module}:
+    patch:
+      tags: [ModuleManagement]
+      summary: Toggle a module on/off for current tenant
+      operationId: moduleUpdateTenantModule
+      x-sirius-fr-ref: [FR-MM-02]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '../common/parameters.yaml#/ModulePathParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [isEnabled]
+              properties:
+                isEnabled:
+                  type: boolean
+      responses:
+        '200':
+          $ref: '../common/responses.yaml#/Success'
+        '403':
+          $ref: '../common/responses.yaml#/Forbidden'
+        '404':
+          $ref: '../common/responses.yaml#/NotFound'
+
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'

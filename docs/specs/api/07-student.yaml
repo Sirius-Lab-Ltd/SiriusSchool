@@ -1,0 +1,379 @@
+openapi: 3.1.0
+info:
+  title: SiriusSchool — Student Management & Admission
+  version: 1.0.0
+  x-sirius-module: student
+  x-sirius-build-order: 7
+  x-sirius-depends-on: [academic, settings]
+paths:
+  /api/v1/applications:
+    post:
+      tags: [Applications]
+      summary: Submit an admission application (public)
+      operationId: studentCreateApplication
+      x-sirius-fr-ref: [FR-STU-01]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [applicantName, dateOfBirth, gender, classId, guardianName, guardianPhone]
+              properties:
+                applicantName:
+                  type: string
+                dateOfBirth:
+                  $ref: '../common/schemas.yaml#/DateString'
+                gender:
+                  type: string
+                  enum: [MALE, FEMALE, OTHER]
+                classId:
+                  $ref: '../common/schemas.yaml#/UUID'
+                guardianName:
+                  type: string
+                guardianPhone:
+                  $ref: '../common/schemas.yaml#/PhoneString'
+                guardianEmail:
+                  $ref: '../common/schemas.yaml#/EmailString'
+                address:
+                  type: string
+                previousSchool:
+                  type: string
+                documents:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '201':
+          $ref: '../common/responses.yaml#/Created'
+        '422':
+          $ref: '../common/responses.yaml#/UnprocessableEntity'
+    get:
+      tags: [Applications]
+      summary: List applications
+      operationId: studentListApplications
+      x-sirius-fr-ref: [FR-STU-03]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '../common/parameters.yaml#/PageParam'
+        - $ref: '../common/parameters.yaml#/LimitParam'
+        - $ref: '../common/parameters.yaml#/SearchParam'
+        - name: status
+          in: query
+          schema:
+            $ref: '../common/schemas.yaml#/ApplicationStatusEnum'
+      responses:
+        '200':
+          $ref: '../common/responses.yaml#/Success'
+
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'
+  /api/v1/applications/{id}/approve:
+    post:
+      tags: [Applications]
+      summary: Approve an application (creates student + enrollment)
+      operationId: studentApproveApplication
+      x-sirius-fr-ref: [FR-STU-04]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '../common/parameters.yaml#/IdPathParam'
+      responses:
+        '200':
+          $ref: '../common/responses.yaml#/Success'
+        '409':
+          $ref: '../common/responses.yaml#/Conflict'
+        '404':
+          $ref: '../common/responses.yaml#/NotFound'
+
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'
+  /api/v1/applications/{id}/reject:
+    post:
+      tags: [Applications]
+      summary: Reject an application
+      operationId: studentRejectApplication
+      x-sirius-fr-ref: [FR-STU-05]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '../common/parameters.yaml#/IdPathParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+      responses:
+        '200':
+          $ref: '../common/responses.yaml#/Success'
+        '409':
+          $ref: '../common/responses.yaml#/Conflict'
+        '404':
+          $ref: '../common/responses.yaml#/NotFound'
+
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'
+  /api/v1/students:
+    post:
+      tags: [Students]
+      summary: Create a student (direct admission)
+      operationId: studentCreateStudent
+      x-sirius-fr-ref: [FR-STU-08]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [fullName, dateOfBirth, gender, sectionId]
+              properties:
+                fullName:
+                  type: string
+                dateOfBirth:
+                  $ref: '../common/schemas.yaml#/DateString'
+                gender:
+                  type: string
+                  enum: [MALE, FEMALE, OTHER]
+                sectionId:
+                  $ref: '../common/schemas.yaml#/UUID'
+                guardianName:
+                  type: string
+                guardianPhone:
+                  $ref: '../common/schemas.yaml#/PhoneString'
+                guardianEmail:
+                  $ref: '../common/schemas.yaml#/EmailString'
+                address:
+                  type: string
+                photo:
+                  type: string
+                  format: uri
+                  description: Cloudinary URL
+                previousSchool:
+                  type: string
+      responses:
+        '201':
+          $ref: '../common/responses.yaml#/Created'
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'
+        '422':
+          $ref: '../common/responses.yaml#/UnprocessableEntity'
+    get:
+      tags: [Students]
+      summary: List students
+      operationId: studentListStudents
+      x-sirius-fr-ref: [FR-STU-08, FR-STU-09]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '../common/parameters.yaml#/PageParam'
+        - $ref: '../common/parameters.yaml#/LimitParam'
+        - $ref: '../common/parameters.yaml#/SearchParam'
+        - $ref: '../common/parameters.yaml#/AcademicYearIdParam'
+        - $ref: '../common/parameters.yaml#/ClassIdParam'
+        - $ref: '../common/parameters.yaml#/SectionIdParam'
+        - name: status
+          in: query
+          schema:
+            $ref: '../common/schemas.yaml#/StudentStatusEnum'
+      responses:
+        '200':
+          $ref: '../common/responses.yaml#/Success'
+
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'
+  /api/v1/students/{id}:
+    get:
+      tags: [Students]
+      summary: Get student details
+      operationId: studentGetStudent
+      x-sirius-fr-ref: [FR-STU-08]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '../common/parameters.yaml#/IdPathParam'
+      responses:
+        '200':
+          $ref: '../common/responses.yaml#/Success'
+        '404':
+          $ref: '../common/responses.yaml#/NotFound'
+    patch:
+      tags: [Students]
+      summary: Update student details
+      operationId: studentUpdateStudent
+      x-sirius-fr-ref: [FR-STU-08]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '../common/parameters.yaml#/IdPathParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fullName:
+                  type: string
+                guardianName:
+                  type: string
+                guardianPhone:
+                  $ref: '../common/schemas.yaml#/PhoneString'
+                guardianEmail:
+                  $ref: '../common/schemas.yaml#/EmailString'
+                address:
+                  type: string
+                photo:
+                  type: string
+                status:
+                  $ref: '../common/schemas.yaml#/StudentStatusEnum'
+      responses:
+        '200':
+          $ref: '../common/responses.yaml#/Success'
+        '404':
+          $ref: '../common/responses.yaml#/NotFound'
+    delete:
+      tags: [Students]
+      summary: Soft-delete a student
+      operationId: studentDeleteStudent
+      x-sirius-fr-ref: [FR-STU-08]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '../common/parameters.yaml#/IdPathParam'
+      responses:
+        '204':
+          $ref: '../common/responses.yaml#/NoContent'
+        '404':
+          $ref: '../common/responses.yaml#/NotFound'
+
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'
+  /api/v1/students/promote:
+    post:
+      tags: [Students]
+      summary: Promote students to next class/section
+      operationId: studentPromoteStudents
+      x-sirius-fr-ref: [FR-STU-10]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [studentIds, targetSectionId]
+              properties:
+                studentIds:
+                  type: array
+                  items:
+                    $ref: '../common/schemas.yaml#/UUID'
+                targetSectionId:
+                  $ref: '../common/schemas.yaml#/UUID'
+                academicYearId:
+                  $ref: '../common/schemas.yaml#/UUID'
+      responses:
+        '200':
+          $ref: '../common/responses.yaml#/Success'
+        '422':
+          $ref: '../common/responses.yaml#/UnprocessableEntity'
+
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'
+  /api/v1/students/{id}/outcome:
+    post:
+      tags: [Students]
+      summary: Set end-of-year outcome for a student
+      operationId: studentSetOutcome
+      x-sirius-fr-ref: [FR-STU-11]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '../common/parameters.yaml#/IdPathParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [outcome]
+              properties:
+                outcome:
+                  type: string
+                  enum: [PROMOTED, REPEATED, GRADUATED, DROPPED]
+      responses:
+        '200':
+          $ref: '../common/responses.yaml#/Success'
+        '404':
+          $ref: '../common/responses.yaml#/NotFound'
+
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'
+  /api/v1/students/import:
+    post:
+      tags: [Students]
+      summary: Bulk import students from CSV/Excel
+      operationId: studentImportStudents
+      x-sirius-fr-ref: [FR-STU-12]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                sectionId:
+                  $ref: '../common/schemas.yaml#/UUID'
+      responses:
+        '200':
+          $ref: '../common/responses.yaml#/Success'
+        '422':
+          $ref: '../common/responses.yaml#/UnprocessableEntity'
+
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'
+  /api/v1/students/import/template:
+    get:
+      tags: [Students]
+      summary: Download import template
+      operationId: studentDownloadImportTemplate
+      x-sirius-fr-ref: [FR-STU-12]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: CSV template file
+
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'
+  /api/v1/students/export:
+    get:
+      tags: [Students]
+      summary: Export students as CSV/Excel
+      operationId: studentExportStudents
+      x-sirius-fr-ref: [FR-STU-13]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '../common/parameters.yaml#/AcademicYearIdParam'
+        - $ref: '../common/parameters.yaml#/ClassIdParam'
+        - $ref: '../common/parameters.yaml#/SectionIdParam'
+      responses:
+        '200':
+          description: Exported file
+
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'

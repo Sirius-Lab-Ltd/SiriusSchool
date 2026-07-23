@@ -1,0 +1,80 @@
+openapi: 3.1.0
+info:
+  title: SiriusSchool — Notification System
+  version: 1.0.0
+  x-sirius-module: notification
+  x-sirius-build-order: 11
+  x-sirius-depends-on: [auth]
+paths:
+  /api/v1/notifications/send:
+    post:
+      tags: [Notifications]
+      summary: Send a notification (SMS/Email)
+      operationId: notificationSend
+      x-sirius-fr-ref: [FR-NOT-04]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [recipients, type, message]
+              properties:
+                recipients:
+                  type: array
+                  items:
+                    type: object
+                    required: [to]
+                    properties:
+                      to:
+                        type: string
+                        description: Phone number or email address
+                      name:
+                        type: string
+                type:
+                  type: string
+                  enum: [SMS, EMAIL]
+                message:
+                  type: string
+                templateId:
+                  type: string
+                  description: Optional template ID for pre-formatted messages
+      responses:
+        '200':
+          $ref: '../common/responses.yaml#/Success'
+        '402':
+          $ref: '../common/responses.yaml#/PaymentRequired'
+        '422':
+          $ref: '../common/responses.yaml#/UnprocessableEntity'
+
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'
+  /api/v1/notifications:
+    get:
+      tags: [Notifications]
+      summary: List notification logs
+      operationId: notificationListLogs
+      x-sirius-fr-ref: [FR-NOT-07]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '../common/parameters.yaml#/PageParam'
+        - $ref: '../common/parameters.yaml#/LimitParam'
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [SMS, EMAIL]
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [SENT, FAILED, PENDING]
+      responses:
+        '200':
+          $ref: '../common/responses.yaml#/Success'
+
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'

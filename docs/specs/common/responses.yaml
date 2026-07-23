@@ -1,0 +1,258 @@
+Success:
+  description: Successful response
+  content:
+    application/json:
+      schema:
+        $ref: '../common/schemas.yaml#/ApiResponse'
+
+Created:
+  description: Resource created successfully
+  content:
+    application/json:
+      schema:
+        $ref: '../common/schemas.yaml#/ApiResponse'
+
+NoContent:
+  description: No content
+
+BadRequest:
+  description: Bad request
+  content:
+    application/json:
+      schema:
+        allOf:
+          - $ref: '../common/schemas.yaml#/ApiResponse'
+          - type: object
+            properties:
+              data:
+                type: 'null'
+              meta:
+                type: 'null'
+              error:
+                type: object
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - INCORRECT_CURRENT_PASSWORD
+                      - SAME_PASSWORD
+                      - CURRENT_YEAR_EXISTS
+                      - INSUFFICIENT_BALANCE
+                      - MARKS_INCOMPLETE
+                  message:
+                    type: string
+                  details:
+                    type:
+                      - object
+                      - 'null'
+
+Unauthorized:
+  description: Authentication failed
+  content:
+    application/json:
+      schema:
+        allOf:
+          - $ref: '../common/schemas.yaml#/ApiResponse'
+          - type: object
+            properties:
+              data:
+                type: 'null'
+              meta:
+                type: 'null'
+              error:
+                type: object
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - INVALID_CREDENTIALS
+                      - INVALID_REFRESH_TOKEN
+                      - TOKEN_EXPIRED
+                      - TOKEN_REUSE_DETECTED
+                  message:
+                    type: string
+                  details:
+                    type: 'null'
+
+PaymentRequired:
+  description: Payment required (SMS quota exceeded)
+  content:
+    application/json:
+      schema:
+        allOf:
+          - $ref: '../common/schemas.yaml#/ApiResponse'
+          - type: object
+            properties:
+              data:
+                type: 'null'
+              meta:
+                type: 'null'
+              error:
+                type: object
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - SMS_QUOTA_EXCEEDED
+                  message:
+                    type: string
+                  details:
+                    type: 'null'
+
+Forbidden:
+  description: Access denied
+  content:
+    application/json:
+      schema:
+        allOf:
+          - $ref: '../common/schemas.yaml#/ApiResponse'
+          - type: object
+            properties:
+              data:
+                type: 'null'
+              meta:
+                type: 'null'
+              error:
+                type: object
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - ACCOUNT_INACTIVE
+                      - TENANT_INACTIVE
+                      - MANAGER_CANNOT_CHANGE_PASSWORD
+                  message:
+                    type: string
+                  details:
+                    type: 'null'
+
+NotFound:
+  description: Resource not found
+  content:
+    application/json:
+      schema:
+        allOf:
+          - $ref: '../common/schemas.yaml#/ApiResponse'
+          - type: object
+            properties:
+              data:
+                type: 'null'
+              meta:
+                type: 'null'
+              error:
+                type: object
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - USER_NOT_FOUND
+                      - MANAGER_NOT_FOUND
+                  message:
+                    type: string
+                  details:
+                    type: 'null'
+
+Conflict:
+  description: Resource conflict
+  content:
+    application/json:
+      schema:
+        allOf:
+          - $ref: '../common/schemas.yaml#/ApiResponse'
+          - type: object
+            properties:
+              data:
+                type: 'null'
+              meta:
+                type: 'null'
+              error:
+                type: object
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - SUBDOMAIN_TAKEN
+                      - ALREADY_REVIEWED
+                      - DUPLICATE_NAME
+                      - OVERLAPPING_DATES
+                      - EMAIL_EXISTS
+                      - ALREADY_SUBMITTED
+                  message:
+                    type: string
+                  details:
+                    type: 'null'
+
+UnprocessableEntity:
+  description: Validation failed
+  content:
+    application/json:
+      schema:
+        allOf:
+          - $ref: '../common/schemas.yaml#/ApiResponse'
+          - type: object
+            properties:
+              data:
+                type: 'null'
+              meta:
+                type: 'null'
+              error:
+                type: object
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - VALIDATION_ERROR
+                  message:
+                    type: string
+                  details:
+                    type: object
+                    description: Field-level validation errors
+
+TooManyRequests:
+  description: Rate limit exceeded
+  content:
+    application/json:
+      schema:
+        allOf:
+          - $ref: '../common/schemas.yaml#/ApiResponse'
+          - type: object
+            properties:
+              data:
+                type: 'null'
+              meta:
+                type: 'null'
+              error:
+                type: object
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - RATE_LIMIT_EXCEEDED
+                  message:
+                    type: string
+                  details:
+                    type: 'null'
+
+InternalError:
+  description: Internal server error
+  content:
+    application/json:
+      schema:
+        allOf:
+          - $ref: '../common/schemas.yaml#/ApiResponse'
+          - type: object
+            properties:
+              data:
+                type: 'null'
+              meta:
+                type: 'null'
+              error:
+                type: object
+                properties:
+                  code:
+                    type: string
+                    example: INTERNAL_ERROR
+                  message:
+                    type: string
+                  details:
+                    type: 'null'

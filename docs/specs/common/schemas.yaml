@@ -1,0 +1,159 @@
+ApiResponse:
+  description: Standard API response envelope
+  type: object
+  properties:
+    data:
+      oneOf:
+        - type: object
+        - type: array
+        - type: 'null'
+    meta:
+      type:
+        - object
+        - 'null'
+      properties:
+        page:
+          type: integer
+          description: Current page number
+        limit:
+          type: integer
+          description: Items per page
+        total:
+          type: integer
+          description: Total item count
+        timestamp:
+          type: string
+          format: date-time
+          description: ISO 8601 response timestamp
+    error:
+      type:
+        - object
+        - 'null'
+      properties:
+        code:
+          type: string
+          description: Machine-readable error code
+          example: SUBDOMAIN_TAKEN
+        message:
+          type: string
+          description: Human-readable error message
+        details:
+          type:
+            - object
+            - 'null'
+          description: Additional error context (e.g. validation errors)
+  required:
+    - data
+    - meta
+    - error
+
+PaginatedResponse:
+  description: Paginated list response
+  allOf:
+    - $ref: '#/ApiResponse'
+    - type: object
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+        meta:
+          type: object
+          properties:
+            page:
+              type: integer
+            limit:
+              type: integer
+            total:
+              type: integer
+            timestamp:
+              type: string
+              format: date-time
+
+UUID:
+  type: string
+  format: uuid
+  example: 550e8400-e29b-41d4-a716-446655440000
+
+DateString:
+  type: string
+  format: date
+  example: '2026-07-24'
+
+DateTimeString:
+  type: string
+  format: date-time
+  example: '2026-07-24T10:30:00Z'
+
+EmailString:
+  type: string
+  format: email
+  example: admin@school.com
+
+PhoneString:
+  type: string
+  pattern: '^\+?[1-9]\d{1,14}$'
+  example: '+8801712345678'
+
+PasswordString:
+  type: string
+  minLength: 8
+  description: Min 8 chars, must include uppercase, lowercase, and digit
+  example: Password1
+
+YearString:
+  type: string
+  pattern: '^\d{4}-\d{4}$'
+  example: '2026-2027'
+
+ModuleEnum:
+  type: string
+  enum:
+    - STUDENT_MANAGEMENT
+    - ATTENDANCE_MANAGEMENT
+    - RESULT_MANAGEMENT
+    - NOTICE_BOARD
+    - REPORTS
+    - NOTIFICATIONS
+  description: Togglable module keys
+
+StudentStatusEnum:
+  type: string
+  enum:
+    - ACTIVE
+    - DROPPED
+    - TRANSFERRED
+    - GRADUATED
+
+EnrollmentStatusEnum:
+  type: string
+  enum:
+    - ACTIVE
+    - COMPLETED
+    - PROMOTED
+    - REPEATED
+
+ApplicationStatusEnum:
+  type: string
+  enum:
+    - PENDING
+    - APPROVED
+    - REJECTED
+
+AttendanceStatusEnum:
+  type: string
+  enum:
+    - PRESENT
+    - ABSENT
+
+AttendanceSessionStatusEnum:
+  type: string
+  enum:
+    - DRAFT
+    - SUBMITTED
+
+UserRoleEnum:
+  type: string
+  enum:
+    - SCHOOL_ADMIN
+    - MANAGER

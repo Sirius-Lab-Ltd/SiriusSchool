@@ -1,0 +1,109 @@
+openapi: 3.1.0
+info:
+  title: SiriusSchool — Notice Board
+  version: 1.0.0
+  x-sirius-module: notice
+  x-sirius-build-order: 10
+  x-sirius-depends-on: [auth]
+paths:
+  /api/v1/notices:
+    post:
+      tags: [Notices]
+      summary: Create a notice
+      operationId: noticeCreateNotice
+      x-sirius-fr-ref: [FR-NTC-01]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [title]
+              properties:
+                title:
+                  type: string
+                  maxLength: 200
+                content:
+                  type: string
+                file:
+                  type: string
+                  format: binary
+                  description: PDF or image file
+                publishAt:
+                  $ref: '../common/schemas.yaml#/DateTimeString'
+                  description: Schedule publish date
+                expiresAt:
+                  $ref: '../common/schemas.yaml#/DateTimeString'
+                  description: Auto-hide after this date
+                targetRoles:
+                  type: array
+                  items:
+                    $ref: '../common/schemas.yaml#/UserRoleEnum'
+      responses:
+        '201':
+          $ref: '../common/responses.yaml#/Created'
+        '422':
+          $ref: '../common/responses.yaml#/UnprocessableEntity'
+    get:
+      tags: [Notices]
+      summary: List notices
+      operationId: noticeListNotices
+      x-sirius-fr-ref: [FR-NTC-05]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '../common/parameters.yaml#/PageParam'
+        - $ref: '../common/parameters.yaml#/LimitParam'
+        - $ref: '../common/parameters.yaml#/SearchParam'
+        - name: isPublished
+          in: query
+          schema:
+            type: boolean
+        - name: isArchived
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          $ref: '../common/responses.yaml#/Success'
+
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'
+  /api/v1/notices/{id}:
+    delete:
+      tags: [Notices]
+      summary: Soft-delete a notice
+      operationId: noticeDeleteNotice
+      x-sirius-fr-ref: [FR-NTC-07]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '../common/parameters.yaml#/IdPathParam'
+      responses:
+        '204':
+          $ref: '../common/responses.yaml#/NoContent'
+        '404':
+          $ref: '../common/responses.yaml#/NotFound'
+
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'
+  /api/v1/notices/{id}/archive:
+    post:
+      tags: [Notices]
+      summary: Archive a notice
+      operationId: noticeArchiveNotice
+      x-sirius-fr-ref: [FR-NTC-04]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '../common/parameters.yaml#/IdPathParam'
+      responses:
+        '200':
+          $ref: '../common/responses.yaml#/Success'
+        '404':
+          $ref: '../common/responses.yaml#/NotFound'
+
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'

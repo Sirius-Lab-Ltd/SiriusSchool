@@ -1,0 +1,251 @@
+openapi: 3.1.0
+info:
+  title: SiriusSchool — Result Management
+  version: 1.0.0
+  x-sirius-module: result
+  x-sirius-build-order: 9
+  x-sirius-depends-on: [academic, student]
+paths:
+  /api/v1/exams:
+    post:
+      tags: [Exams]
+      summary: Create an exam
+      operationId: resultCreateExam
+      x-sirius-fr-ref: [FR-RES-01]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, classId, academicYearId]
+              properties:
+                name:
+                  type: string
+                  example: Half Yearly Examination
+                classId:
+                  $ref: '../common/schemas.yaml#/UUID'
+                academicYearId:
+                  $ref: '../common/schemas.yaml#/UUID'
+                description:
+                  type: string
+                examDate:
+                  $ref: '../common/schemas.yaml#/DateString'
+      responses:
+        '201':
+          $ref: '../common/responses.yaml#/Created'
+        '409':
+          $ref: '../common/responses.yaml#/Conflict'
+
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'
+  /api/v1/exams/{id}/subjects:
+    post:
+      tags: [Exams]
+      summary: Add subjects to an exam with full/pass marks
+      operationId: resultCreateExamSubjects
+      x-sirius-fr-ref: [FR-RES-02]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '../common/parameters.yaml#/IdPathParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [subjects]
+              properties:
+                subjects:
+                  type: array
+                  items:
+                    type: object
+                    required: [subjectId, fullMarks, passMarks]
+                    properties:
+                      subjectId:
+                        $ref: '../common/schemas.yaml#/UUID'
+                      fullMarks:
+                        type: number
+                        minimum: 1
+                      passMarks:
+                        type: number
+                        minimum: 0
+      responses:
+        '201':
+          $ref: '../common/responses.yaml#/Created'
+        '404':
+          $ref: '../common/responses.yaml#/NotFound'
+
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'
+  /api/v1/exams/{id}/marks:
+    put:
+      tags: [Exams]
+      summary: Enter or update marks for an exam
+      operationId: resultUpdateMarks
+      x-sirius-fr-ref: [FR-RES-04]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '../common/parameters.yaml#/IdPathParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [marks]
+              properties:
+                marks:
+                  type: array
+                  items:
+                    type: object
+                    required: [studentId, subjectId, obtainedMarks]
+                    properties:
+                      studentId:
+                        $ref: '../common/schemas.yaml#/UUID'
+                      subjectId:
+                        $ref: '../common/schemas.yaml#/UUID'
+                      obtainedMarks:
+                        type:
+                          - number
+                          - 'null'
+                        minimum: 0
+                      isAbsent:
+                        type: boolean
+                        default: false
+      responses:
+        '200':
+          $ref: '../common/responses.yaml#/Success'
+        '400':
+          $ref: '../common/responses.yaml#/BadRequest'
+
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'
+  /api/v1/exams/{id}/publish:
+    post:
+      tags: [Exams]
+      summary: Publish exam results
+      operationId: resultPublishExam
+      x-sirius-fr-ref: [FR-RES-06]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '../common/parameters.yaml#/IdPathParam'
+      responses:
+        '200':
+          $ref: '../common/responses.yaml#/Success'
+        '400':
+          $ref: '../common/responses.yaml#/BadRequest'
+        '404':
+          $ref: '../common/responses.yaml#/NotFound'
+
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'
+  /api/v1/exams/{id}/unpublish:
+    post:
+      tags: [Exams]
+      summary: Unpublish exam results
+      operationId: resultUnpublishExam
+      x-sirius-fr-ref: [FR-RES-07]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '../common/parameters.yaml#/IdPathParam'
+      responses:
+        '200':
+          $ref: '../common/responses.yaml#/Success'
+        '404':
+          $ref: '../common/responses.yaml#/NotFound'
+
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'
+  /api/v1/exams/{id}/rank-list:
+    get:
+      tags: [Exams]
+      summary: Get rank list for an exam
+      operationId: resultGetRankList
+      x-sirius-fr-ref: [FR-RES-08]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '../common/parameters.yaml#/IdPathParam'
+      responses:
+        '200':
+          $ref: '../common/responses.yaml#/Success'
+        '404':
+          $ref: '../common/responses.yaml#/NotFound'
+
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'
+  /api/v1/exams/{id}/results:
+    get:
+      tags: [Exams]
+      summary: Get result sheet for an exam
+      operationId: resultGetResults
+      x-sirius-fr-ref: [FR-RES-09]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '../common/parameters.yaml#/IdPathParam'
+        - name: studentId
+          in: query
+          required: false
+          schema:
+            $ref: '../common/schemas.yaml#/UUID'
+      responses:
+        '200':
+          $ref: '../common/responses.yaml#/Success'
+        '404':
+          $ref: '../common/responses.yaml#/NotFound'
+
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'
+  /api/v1/grade-scales:
+    post:
+      tags: [GradeScales]
+      summary: Create or update grade scale
+      operationId: resultCreateGradeScale
+      x-sirius-fr-ref: [FR-RES-03]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, grades]
+              properties:
+                name:
+                  type: string
+                  example: Main Scale
+                grades:
+                  type: array
+                  items:
+                    type: object
+                    required: [letterGrade, minPercentage, maxPercentage, gpa]
+                    properties:
+                      letterGrade:
+                        type: string
+                        example: A+
+                      minPercentage:
+                        type: number
+                        minimum: 0
+                        maximum: 100
+                      maxPercentage:
+                        type: number
+                        minimum: 0
+                        maximum: 100
+                      gpa:
+                        type: number
+                        example: 5.0
+      responses:
+        '201':
+          $ref: '../common/responses.yaml#/Created'
+
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'

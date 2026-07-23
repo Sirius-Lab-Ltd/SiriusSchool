@@ -1,0 +1,114 @@
+openapi: 3.1.0
+info:
+  title: SiriusSchool — Dashboard
+  version: 1.0.0
+  x-sirius-module: dashboard
+  x-sirius-build-order: 13
+  x-sirius-depends-on: [platform, auth, academic, student, attendance, result, notice]
+paths:
+  /api/v1/dashboard/school-admin:
+    get:
+      tags: [Dashboard]
+      summary: Get School Admin dashboard data
+      operationId: dashboardGetSchoolAdmin
+      x-sirius-fr-ref: [FR-DSH-01]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Dashboard widget data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalStudents:
+                    type: integer
+                  totalManagers:
+                    type: integer
+                  todayAttendance:
+                    type: object
+                    properties:
+                      present:
+                        type: integer
+                      absent:
+                        type: integer
+                      total:
+                        type: integer
+                  smsBalance:
+                    type: integer
+                  recentNotices:
+                    type: array
+                    items:
+                      type: object
+                  pendingApplications:
+                    type: integer
+                  upcomingExams:
+                    type: array
+                    items:
+                      type: object
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'
+
+  /api/v1/dashboard/manager:
+    get:
+      tags: [Dashboard]
+      summary: Get Manager dashboard data
+      operationId: dashboardGetManager
+      x-sirius-fr-ref: [FR-DSH-02]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Manager dashboard widgets (scoped to permitted modules)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalStudents:
+                    type: integer
+                  todayAttendance:
+                    type: object
+                    properties:
+                      present:
+                        type: integer
+                      absent:
+                        type: integer
+                      total:
+                        type: integer
+                  recentNotices:
+                    type: array
+                    items:
+                      type: object
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'
+        '403':
+          $ref: '../common/responses.yaml#/Forbidden'
+
+  /api/v1/admin/dashboard:
+    get:
+      tags: [Dashboard]
+      summary: Get Platform Admin dashboard data
+      operationId: dashboardGetAdmin
+      x-sirius-fr-ref: [FR-DSH-04]
+      security:
+        - PlatformAdminAuth: []
+      responses:
+        '200':
+          description: Platform Admin analytics dashboard
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalTenants:
+                    type: integer
+                  activeTenants:
+                    type: integer
+                  totalStudents:
+                    type: integer
+                  totalSmsSent:
+                    type: integer
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'

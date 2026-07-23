@@ -1,0 +1,189 @@
+openapi: 3.1.0
+info:
+  title: SiriusSchool — User & Permission Management
+  version: 1.0.0
+  x-sirius-module: user-permission
+  x-sirius-build-order: 5
+  x-sirius-depends-on: [auth, academic]
+paths:
+  /api/v1/managers:
+    post:
+      tags: [Managers]
+      summary: Create a manager
+      operationId: userCreateManager
+      x-sirius-fr-ref: [FR-UP-01]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [fullName, email, password]
+              properties:
+                fullName:
+                  type: string
+                  minLength: 1
+                email:
+                  $ref: '../common/schemas.yaml#/EmailString'
+                password:
+                  $ref: '../common/schemas.yaml#/PasswordString'
+                isActive:
+                  type: boolean
+                  default: true
+      responses:
+        '201':
+          $ref: '../common/responses.yaml#/Created'
+        '409':
+          $ref: '../common/responses.yaml#/Conflict'
+    get:
+      tags: [Managers]
+      summary: List managers
+      operationId: userListManagers
+      x-sirius-fr-ref: [FR-UP-03]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '../common/parameters.yaml#/PageParam'
+        - $ref: '../common/parameters.yaml#/LimitParam'
+        - $ref: '../common/parameters.yaml#/SearchParam'
+        - $ref: '../common/parameters.yaml#/StatusFilterParam'
+      responses:
+        '200':
+          $ref: '../common/responses.yaml#/Success'
+
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'
+  /api/v1/managers/{id}:
+    patch:
+      tags: [Managers]
+      summary: Update manager details
+      operationId: userUpdateManager
+      x-sirius-fr-ref: [FR-UP-02]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '../common/parameters.yaml#/IdPathParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fullName:
+                  type: string
+                email:
+                  $ref: '../common/schemas.yaml#/EmailString'
+                isActive:
+                  type: boolean
+      responses:
+        '200':
+          $ref: '../common/responses.yaml#/Success'
+        '404':
+          $ref: '../common/responses.yaml#/NotFound'
+
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'
+  /api/v1/managers/{id}/permissions:
+    put:
+      tags: [Managers]
+      summary: Set manager module permissions
+      operationId: userUpdateManagerPermissions
+      x-sirius-fr-ref: [FR-UP-04]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '../common/parameters.yaml#/IdPathParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [modules]
+              properties:
+                modules:
+                  type: array
+                  items:
+                    $ref: '../common/schemas.yaml#/ModuleEnum'
+      responses:
+        '200':
+          $ref: '../common/responses.yaml#/Success'
+        '404':
+          $ref: '../common/responses.yaml#/NotFound'
+
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'
+  /api/v1/permissions/available-modules:
+    get:
+      tags: [Managers]
+      summary: Get available modules for tenant
+      operationId: userListAvailableModules
+      x-sirius-fr-ref: [FR-UP-05]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          $ref: '../common/responses.yaml#/Success'
+
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'
+  /api/v1/managers/{id}/reset-password:
+    patch:
+      tags: [Managers]
+      summary: Reset manager password (School Admin only)
+      operationId: userResetManagerPassword
+      x-sirius-fr-ref: [FR-UP-07]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '../common/parameters.yaml#/IdPathParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [newPassword]
+              properties:
+                newPassword:
+                  $ref: '../common/schemas.yaml#/PasswordString'
+      responses:
+        '200':
+          $ref: '../common/responses.yaml#/Success'
+        '404':
+          $ref: '../common/responses.yaml#/NotFound'
+
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'
+  /api/v1/managers/{id}/profile:
+    patch:
+      tags: [Managers]
+      summary: Update own manager profile
+      operationId: userUpdateManagerProfile
+      x-sirius-fr-ref: [FR-UP-08]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '../common/parameters.yaml#/IdPathParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fullName:
+                  type: string
+                phone:
+                  $ref: '../common/schemas.yaml#/PhoneString'
+      responses:
+        '200':
+          $ref: '../common/responses.yaml#/Success'
+        '404':
+          $ref: '../common/responses.yaml#/NotFound'
+
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'

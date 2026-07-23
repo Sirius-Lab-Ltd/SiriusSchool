@@ -1,0 +1,89 @@
+openapi: 3.1.0
+info:
+  title: SiriusSchool — Audit Logging
+  version: 1.0.0
+  x-sirius-module: audit
+  x-sirius-build-order: 14
+  x-sirius-depends-on: [platform]
+paths:
+  /api/v1/audit-logs:
+    get:
+      tags: [Audit]
+      summary: View audit logs (School Admin / Manager)
+      operationId: auditListLogs
+      x-sirius-fr-ref: [FR-AUD-07]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '../common/parameters.yaml#/PageParam'
+        - $ref: '../common/parameters.yaml#/LimitParam'
+        - name: action
+          in: query
+          schema:
+            type: string
+            enum: [CREATE, UPDATE, DELETE, PUBLISH, UNPUBLISH, SUBMIT, APPROVE, REJECT, PERMISSION_CHANGE]
+          description: Filter by action type
+        - name: entityType
+          in: query
+          schema:
+            type: string
+          description: Filter by entity type (e.g. student, attendance, result)
+        - name: entityId
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: Filter by entity ID
+        - name: userId
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: Filter by actor user ID
+        - name: startDate
+          in: query
+          schema:
+            $ref: '../common/schemas.yaml#/DateTimeString'
+        - name: endDate
+          in: query
+          schema:
+            $ref: '../common/schemas.yaml#/DateTimeString'
+      responses:
+        '200':
+          $ref: '../common/responses.yaml#/Success'
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'
+
+  /api/v1/admin/audit-logs:
+    get:
+      tags: [Audit]
+      summary: View cross-tenant audit logs (Platform Admin)
+      operationId: auditListAdminLogs
+      x-sirius-fr-ref: [FR-AUD-08]
+      security:
+        - PlatformAdminAuth: []
+      parameters:
+        - $ref: '../common/parameters.yaml#/PageParam'
+        - $ref: '../common/parameters.yaml#/LimitParam'
+        - $ref: '../common/parameters.yaml#/TenantIdParam'
+        - name: action
+          in: query
+          schema:
+            type: string
+        - name: entityType
+          in: query
+          schema:
+            type: string
+        - name: startDate
+          in: query
+          schema:
+            $ref: '../common/schemas.yaml#/DateTimeString'
+        - name: endDate
+          in: query
+          schema:
+            $ref: '../common/schemas.yaml#/DateTimeString'
+      responses:
+        '200':
+          $ref: '../common/responses.yaml#/Success'
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'

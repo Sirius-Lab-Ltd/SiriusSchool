@@ -1,0 +1,281 @@
+openapi: 3.1.0
+info:
+  title: SiriusSchool — Academic Structure
+  version: 1.0.0
+  x-sirius-module: academic
+  x-sirius-build-order: 3
+  x-sirius-depends-on: []
+paths:
+  /api/v1/academic-years:
+    post:
+      tags: [AcademicYears]
+      summary: Create academic year
+      operationId: academicCreateAcademicYear
+      x-sirius-fr-ref: [FR-ACA-01]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, startDate, endDate]
+              properties:
+                name:
+                  type: string
+                  example: '2026-2027'
+                startDate:
+                  $ref: '../common/schemas.yaml#/DateString'
+                endDate:
+                  $ref: '../common/schemas.yaml#/DateString'
+                isCurrent:
+                  type: boolean
+                  default: false
+      responses:
+        '201':
+          $ref: '../common/responses.yaml#/Created'
+        '400':
+          $ref: '../common/responses.yaml#/BadRequest'
+        '409':
+          $ref: '../common/responses.yaml#/Conflict'
+    get:
+      tags: [AcademicYears]
+      summary: List academic years
+      operationId: academicListAcademicYears
+      x-sirius-fr-ref: [FR-ACA-09]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '../common/parameters.yaml#/PageParam'
+        - $ref: '../common/parameters.yaml#/LimitParam'
+      responses:
+        '200':
+          $ref: '../common/responses.yaml#/Success'
+
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'
+  /api/v1/academic-years/{id}:
+    patch:
+      tags: [AcademicYears]
+      summary: Update academic year (set current, rename)
+      operationId: academicUpdateAcademicYear
+      x-sirius-fr-ref: [FR-ACA-08]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '../common/parameters.yaml#/IdPathParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                isCurrent:
+                  type: boolean
+                startDate:
+                  $ref: '../common/schemas.yaml#/DateString'
+                endDate:
+                  $ref: '../common/schemas.yaml#/DateString'
+      responses:
+        '200':
+          $ref: '../common/responses.yaml#/Success'
+        '400':
+          $ref: '../common/responses.yaml#/BadRequest'
+        '404':
+          $ref: '../common/responses.yaml#/NotFound'
+
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'
+  /api/v1/academic-years/{id}/close:
+    post:
+      tags: [AcademicYears]
+      summary: Close an academic year (read-only)
+      operationId: academicCloseAcademicYear
+      x-sirius-fr-ref: [FR-ACA-10]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '../common/parameters.yaml#/IdPathParam'
+      responses:
+        '200':
+          $ref: '../common/responses.yaml#/Success'
+        '400':
+          $ref: '../common/responses.yaml#/BadRequest'
+        '404':
+          $ref: '../common/responses.yaml#/NotFound'
+
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'
+  /api/v1/academic-years/{id}/reopen:
+    post:
+      tags: [AcademicYears]
+      summary: Reopen a closed academic year
+      operationId: academicReopenAcademicYear
+      x-sirius-fr-ref: [FR-ACA-10]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '../common/parameters.yaml#/IdPathParam'
+      responses:
+        '200':
+          $ref: '../common/responses.yaml#/Success'
+        '404':
+          $ref: '../common/responses.yaml#/NotFound'
+
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'
+  /api/v1/classes:
+    post:
+      tags: [Classes]
+      summary: Create a class
+      operationId: academicCreateClass
+      x-sirius-fr-ref: [FR-ACA-04]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, academicYearId]
+              properties:
+                name:
+                  type: string
+                  example: Class 6
+                academicYearId:
+                  $ref: '../common/schemas.yaml#/UUID'
+      responses:
+        '201':
+          $ref: '../common/responses.yaml#/Created'
+        '409':
+          $ref: '../common/responses.yaml#/Conflict'
+
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'
+  /api/v1/classes/{classId}/shifts:
+    post:
+      tags: [Shifts]
+      summary: Create a shift for a class
+      operationId: academicCreateShift
+      x-sirius-fr-ref: [FR-ACA-05]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                  example: Morning
+      responses:
+        '201':
+          $ref: '../common/responses.yaml#/Created'
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'
+        '409':
+          $ref: '../common/responses.yaml#/Conflict'
+    get:
+      tags: [Shifts]
+      summary: List shifts for a class
+      operationId: academicListShifts
+      x-sirius-fr-ref: [FR-ACA-09]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          $ref: '../common/responses.yaml#/Success'
+
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'
+  /api/v1/shifts/{shiftId}/sections:
+    post:
+      tags: [Sections]
+      summary: Create a section for a shift
+      operationId: academicCreateSection
+      x-sirius-fr-ref: [FR-ACA-06]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: shiftId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                  example: Section A
+      responses:
+        '201':
+          $ref: '../common/responses.yaml#/Created'
+
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'
+  /api/v1/classes/{classId}/subjects:
+    post:
+      tags: [Subjects]
+      summary: Create a subject for a class
+      operationId: academicCreateSubject
+      x-sirius-fr-ref: [FR-ACA-07]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, code]
+              properties:
+                name:
+                  type: string
+                  example: Mathematics
+                code:
+                  type: string
+                  example: MATH-06
+      responses:
+        '201':
+          $ref: '../common/responses.yaml#/Created'
+        '409':
+          $ref: '../common/responses.yaml#/Conflict'
+
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'

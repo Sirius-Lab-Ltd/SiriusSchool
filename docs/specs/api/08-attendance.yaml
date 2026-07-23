@@ -1,0 +1,174 @@
+openapi: 3.1.0
+info:
+  title: SiriusSchool — Attendance Management
+  version: 1.0.0
+  x-sirius-module: attendance
+  x-sirius-build-order: 8
+  x-sirius-depends-on: [academic, student]
+paths:
+  /api/v1/attendance/sessions/init:
+    get:
+      tags: [Attendance]
+      summary: Initialize attendance session (get student list for section + date)
+      operationId: attendanceInitSession
+      x-sirius-fr-ref: [FR-ATT-01]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '../common/parameters.yaml#/SectionIdParam'
+        - name: date
+          in: query
+          required: true
+          schema:
+            $ref: '../common/schemas.yaml#/DateString'
+      responses:
+        '200':
+          $ref: '../common/responses.yaml#/Success'
+        '409':
+          $ref: '../common/responses.yaml#/Conflict'
+
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'
+  /api/v1/attendance/sessions:
+    post:
+      tags: [Attendance]
+      summary: Create or save draft attendance session
+      operationId: attendanceCreateSession
+      x-sirius-fr-ref: [FR-ATT-03]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [sectionId, date, records]
+              properties:
+                sectionId:
+                  $ref: '../common/schemas.yaml#/UUID'
+                date:
+                  $ref: '../common/schemas.yaml#/DateString'
+                records:
+                  type: array
+                  items:
+                    type: object
+                    required: [studentId, status]
+                    properties:
+                      studentId:
+                        $ref: '../common/schemas.yaml#/UUID'
+                      status:
+                        $ref: '../common/schemas.yaml#/AttendanceStatusEnum'
+      responses:
+        '201':
+          $ref: '../common/responses.yaml#/Created'
+        '409':
+          $ref: '../common/responses.yaml#/Conflict'
+
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'
+  /api/v1/attendance/sessions/{id}/submit:
+    post:
+      tags: [Attendance]
+      summary: Submit attendance session (finalize)
+      operationId: attendanceSubmitSession
+      x-sirius-fr-ref: [FR-ATT-04]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '../common/parameters.yaml#/IdPathParam'
+      responses:
+        '200':
+          $ref: '../common/responses.yaml#/Success'
+        '409':
+          $ref: '../common/responses.yaml#/Conflict'
+        '404':
+          $ref: '../common/responses.yaml#/NotFound'
+
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'
+  /api/v1/attendance/sessions/{id}/records:
+    patch:
+      tags: [Attendance]
+      summary: Edit attendance records in a draft/submitted session
+      operationId: attendanceUpdateRecords
+      x-sirius-fr-ref: [FR-ATT-05]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '../common/parameters.yaml#/IdPathParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [records]
+              properties:
+                records:
+                  type: array
+                  items:
+                    type: object
+                    required: [studentId, status]
+                    properties:
+                      studentId:
+                        $ref: '../common/schemas.yaml#/UUID'
+                      status:
+                        $ref: '../common/schemas.yaml#/AttendanceStatusEnum'
+      responses:
+        '200':
+          $ref: '../common/responses.yaml#/Success'
+        '404':
+          $ref: '../common/responses.yaml#/NotFound'
+
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'
+  /api/v1/attendance/sessions/{id}/send-sms:
+    post:
+      tags: [Attendance]
+      summary: Send SMS notifications for absent students
+      operationId: attendanceSendSms
+      x-sirius-fr-ref: [FR-ATT-06]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '../common/parameters.yaml#/IdPathParam'
+      responses:
+        '200':
+          $ref: '../common/responses.yaml#/Success'
+        '402':
+          $ref: '../common/responses.yaml#/PaymentRequired'
+        '404':
+          $ref: '../common/responses.yaml#/NotFound'
+
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'
+  /api/v1/attendance/reports:
+    get:
+      tags: [Attendance]
+      summary: Get attendance reports
+      operationId: attendanceGetReports
+      x-sirius-fr-ref: [FR-ATT-07]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '../common/parameters.yaml#/SectionIdParam'
+        - $ref: '../common/parameters.yaml#/AcademicYearIdParam'
+        - name: startDate
+          in: query
+          schema:
+            $ref: '../common/schemas.yaml#/DateString'
+        - name: endDate
+          in: query
+          schema:
+            $ref: '../common/schemas.yaml#/DateString'
+        - name: studentId
+          in: query
+          schema:
+            $ref: '../common/schemas.yaml#/UUID'
+      responses:
+        '200':
+          $ref: '../common/responses.yaml#/Success'
+
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'

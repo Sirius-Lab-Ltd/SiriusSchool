@@ -1,0 +1,157 @@
+openapi: 3.1.0
+info:
+  title: SiriusSchool — Authentication & Profile
+  version: 1.0.0
+  x-sirius-module: auth
+  x-sirius-build-order: 2
+  x-sirius-depends-on: [platform]
+paths:
+  /api/v1/admin/auth/login:
+    post:
+      tags: [Authentication]
+      summary: Platform Admin login
+      operationId: adminAuthLogin
+      x-sirius-fr-ref: [FR-AUTH-01]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  $ref: '../common/schemas.yaml#/EmailString'
+                password:
+                  type: string
+      responses:
+        '200':
+          $ref: '../common/responses.yaml#/Success'
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'
+        '429':
+          $ref: '../common/responses.yaml#/TooManyRequests'
+
+  /api/v1/auth/login:
+    post:
+      tags: [Authentication]
+      summary: Tenant user login (School Admin or Manager)
+      operationId: tenantAuthLogin
+      x-sirius-fr-ref: [FR-AUTH-02]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password, subdomain]
+              properties:
+                email:
+                  $ref: '../common/schemas.yaml#/EmailString'
+                password:
+                  type: string
+                subdomain:
+                  type: string
+                  description: Tenant subdomain for routing
+      responses:
+        '200':
+          $ref: '../common/responses.yaml#/Success'
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'
+        '403':
+          $ref: '../common/responses.yaml#/Forbidden'
+        '429':
+          $ref: '../common/responses.yaml#/TooManyRequests'
+
+  /api/v1/auth/logout:
+    post:
+      tags: [Authentication]
+      summary: Logout — revoke refresh token
+      operationId: authLogout
+      x-sirius-fr-ref: [FR-AUTH-06]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken:
+                  type: string
+      responses:
+        '200':
+          $ref: '../common/responses.yaml#/Success'
+
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'
+  /api/v1/auth/refresh:
+    post:
+      tags: [Authentication]
+      summary: Refresh access token
+      operationId: authRefresh
+      x-sirius-fr-ref: [FR-AUTH-07]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken:
+                  type: string
+      responses:
+        '200':
+          $ref: '../common/responses.yaml#/Success'
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'
+
+  /api/v1/auth/change-password:
+    post:
+      tags: [Authentication]
+      summary: Change own password (School Admin / Platform Admin only)
+      operationId: authChangePassword
+      x-sirius-fr-ref: [FR-AUTH-08]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [currentPassword, newPassword]
+              properties:
+                currentPassword:
+                  type: string
+                newPassword:
+                  $ref: '../common/schemas.yaml#/PasswordString'
+      responses:
+        '200':
+          $ref: '../common/responses.yaml#/Success'
+        '400':
+          $ref: '../common/responses.yaml#/BadRequest'
+        '403':
+          $ref: '../common/responses.yaml#/Forbidden'
+
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'
+  /api/v1/auth/me:
+    get:
+      tags: [Authentication]
+      summary: Get current user profile
+      operationId: authGetMe
+      x-sirius-fr-ref: [FR-AUTH-09]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          $ref: '../common/responses.yaml#/Success'
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'

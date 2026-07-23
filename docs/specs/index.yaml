@@ -1,0 +1,188 @@
+openapi: 3.1.0
+info:
+  title: SiriusSchool API
+  version: 1.0.0
+  description: School Management System API
+  license:
+    name: Proprietary
+    identifier: Proprietary
+  x-sirius-modules: 14
+  x-sirius-endpoints: 80
+servers:
+  - url: http://localhost:4000
+    description: Development
+  - url: https://api.sirius-skool.com
+    description: Production
+
+paths:
+  # Platform (01)
+  /api/v1/admin/tenants:
+    $ref: './api/01-platform.yaml#/paths/~1api~1v1~1admin~1tenants'
+  /api/v1/admin/tenants/{id}:
+    $ref: './api/01-platform.yaml#/paths/~1api~1v1~1admin~1tenants~1{id}'
+  /api/v1/admin/tenants/{id}/sms-balance:
+    $ref: './api/01-platform.yaml#/paths/~1api~1v1~1admin~1tenants~1{id}~1sms-balance'
+  /api/v1/admin/notifications:
+    $ref: './api/01-platform.yaml#/paths/~1api~1v1~1admin~1notifications'
+  /api/v1/admin/users/{id}/reset-password:
+    $ref: './api/01-platform.yaml#/paths/~1api~1v1~1admin~1users~1{id}~1reset-password'
+  /api/v1/admin/analytics:
+    $ref: './api/01-platform.yaml#/paths/~1api~1v1~1admin~1analytics'
+  /api/v1/admin/settings:
+    $ref: './api/01-platform.yaml#/paths/~1api~1v1~1admin~1settings'
+
+  # Auth (02)
+  /api/v1/admin/auth/login:
+    $ref: './api/02-auth.yaml#/paths/~1api~1v1~1admin~1auth~1login'
+  /api/v1/auth/login:
+    $ref: './api/02-auth.yaml#/paths/~1api~1v1~1auth~1login'
+  /api/v1/auth/logout:
+    $ref: './api/02-auth.yaml#/paths/~1api~1v1~1auth~1logout'
+  /api/v1/auth/refresh:
+    $ref: './api/02-auth.yaml#/paths/~1api~1v1~1auth~1refresh'
+  /api/v1/auth/change-password:
+    $ref: './api/02-auth.yaml#/paths/~1api~1v1~1auth~1change-password'
+  /api/v1/auth/me:
+    $ref: './api/02-auth.yaml#/paths/~1api~1v1~1auth~1me'
+
+  # Academic (03)
+  /api/v1/academic-years:
+    $ref: './api/03-academic.yaml#/paths/~1api~1v1~1academic-years'
+  /api/v1/academic-years/{id}:
+    $ref: './api/03-academic.yaml#/paths/~1api~1v1~1academic-years~1{id}'
+  /api/v1/academic-years/{id}/close:
+    $ref: './api/03-academic.yaml#/paths/~1api~1v1~1academic-years~1{id}~1close'
+  /api/v1/academic-years/{id}/reopen:
+    $ref: './api/03-academic.yaml#/paths/~1api~1v1~1academic-years~1{id}~1reopen'
+  /api/v1/classes:
+    $ref: './api/03-academic.yaml#/paths/~1api~1v1~1classes'
+  /api/v1/classes/{classId}/shifts:
+    $ref: './api/03-academic.yaml#/paths/~1api~1v1~1classes~1{classId}~1shifts'
+  /api/v1/shifts/{shiftId}/sections:
+    $ref: './api/03-academic.yaml#/paths/~1api~1v1~1shifts~1{shiftId}~1sections'
+  /api/v1/classes/{classId}/subjects:
+    $ref: './api/03-academic.yaml#/paths/~1api~1v1~1classes~1{classId}~1subjects'
+
+  # Settings (04)
+  /api/v1/settings:
+    $ref: './api/04-settings.yaml#/paths/~1api~1v1~1settings'
+  /api/v1/settings/notifications:
+    $ref: './api/04-settings.yaml#/paths/~1api~1v1~1settings~1notifications'
+
+  # User & Permission (05)
+  /api/v1/managers:
+    $ref: './api/05-user-permission.yaml#/paths/~1api~1v1~1managers'
+  /api/v1/managers/{id}:
+    $ref: './api/05-user-permission.yaml#/paths/~1api~1v1~1managers~1{id}'
+  /api/v1/managers/{id}/permissions:
+    $ref: './api/05-user-permission.yaml#/paths/~1api~1v1~1managers~1{id}~1permissions'
+  /api/v1/permissions/available-modules:
+    $ref: './api/05-user-permission.yaml#/paths/~1api~1v1~1permissions~1available-modules'
+  /api/v1/managers/{id}/reset-password:
+    $ref: './api/05-user-permission.yaml#/paths/~1api~1v1~1managers~1{id}~1reset-password'
+  /api/v1/managers/{id}/profile:
+    $ref: './api/05-user-permission.yaml#/paths/~1api~1v1~1managers~1{id}~1profile'
+
+  # Module Management (06)
+  /api/v1/tenant-modules:
+    $ref: './api/06-module-management.yaml#/paths/~1api~1v1~1tenant-modules'
+  /api/v1/tenant-modules/{module}:
+    $ref: './api/06-module-management.yaml#/paths/~1api~1v1~1tenant-modules~1{module}'
+
+  # Student (07)
+  /api/v1/applications:
+    $ref: './api/07-student.yaml#/paths/~1api~1v1~1applications'
+  /api/v1/applications/{id}/approve:
+    $ref: './api/07-student.yaml#/paths/~1api~1v1~1applications~1{id}~1approve'
+  /api/v1/applications/{id}/reject:
+    $ref: './api/07-student.yaml#/paths/~1api~1v1~1applications~1{id}~1reject'
+  /api/v1/students:
+    $ref: './api/07-student.yaml#/paths/~1api~1v1~1students'
+  /api/v1/students/{id}:
+    $ref: './api/07-student.yaml#/paths/~1api~1v1~1students~1{id}'
+  /api/v1/students/promote:
+    $ref: './api/07-student.yaml#/paths/~1api~1v1~1students~1promote'
+  /api/v1/students/{id}/outcome:
+    $ref: './api/07-student.yaml#/paths/~1api~1v1~1students~1{id}~1outcome'
+  /api/v1/students/import:
+    $ref: './api/07-student.yaml#/paths/~1api~1v1~1students~1import'
+  /api/v1/students/import/template:
+    $ref: './api/07-student.yaml#/paths/~1api~1v1~1students~1import~1template'
+  /api/v1/students/export:
+    $ref: './api/07-student.yaml#/paths/~1api~1v1~1students~1export'
+
+  # Attendance (08)
+  /api/v1/attendance/sessions/init:
+    $ref: './api/08-attendance.yaml#/paths/~1api~1v1~1attendance~1sessions~1init'
+  /api/v1/attendance/sessions:
+    $ref: './api/08-attendance.yaml#/paths/~1api~1v1~1attendance~1sessions'
+  /api/v1/attendance/sessions/{id}/submit:
+    $ref: './api/08-attendance.yaml#/paths/~1api~1v1~1attendance~1sessions~1{id}~1submit'
+  /api/v1/attendance/sessions/{id}/records:
+    $ref: './api/08-attendance.yaml#/paths/~1api~1v1~1attendance~1sessions~1{id}~1records'
+  /api/v1/attendance/sessions/{id}/send-sms:
+    $ref: './api/08-attendance.yaml#/paths/~1api~1v1~1attendance~1sessions~1{id}~1send-sms'
+  /api/v1/attendance/reports:
+    $ref: './api/08-attendance.yaml#/paths/~1api~1v1~1attendance~1reports'
+
+  # Result (09)
+  /api/v1/exams:
+    $ref: './api/09-result.yaml#/paths/~1api~1v1~1exams'
+  /api/v1/exams/{id}/subjects:
+    $ref: './api/09-result.yaml#/paths/~1api~1v1~1exams~1{id}~1subjects'
+  /api/v1/exams/{id}/marks:
+    $ref: './api/09-result.yaml#/paths/~1api~1v1~1exams~1{id}~1marks'
+  /api/v1/exams/{id}/publish:
+    $ref: './api/09-result.yaml#/paths/~1api~1v1~1exams~1{id}~1publish'
+  /api/v1/exams/{id}/unpublish:
+    $ref: './api/09-result.yaml#/paths/~1api~1v1~1exams~1{id}~1unpublish'
+  /api/v1/exams/{id}/rank-list:
+    $ref: './api/09-result.yaml#/paths/~1api~1v1~1exams~1{id}~1rank-list'
+  /api/v1/exams/{id}/results:
+    $ref: './api/09-result.yaml#/paths/~1api~1v1~1exams~1{id}~1results'
+  /api/v1/grade-scales:
+    $ref: './api/09-result.yaml#/paths/~1api~1v1~1grade-scales'
+
+  # Notice (10)
+  /api/v1/notices:
+    $ref: './api/10-notice.yaml#/paths/~1api~1v1~1notices'
+  /api/v1/notices/{id}:
+    $ref: './api/10-notice.yaml#/paths/~1api~1v1~1notices~1{id}'
+  /api/v1/notices/{id}/archive:
+    $ref: './api/10-notice.yaml#/paths/~1api~1v1~1notices~1{id}~1archive'
+
+  # Notification (11)
+  /api/v1/notifications/send:
+    $ref: './api/11-notification.yaml#/paths/~1api~1v1~1notifications~1send'
+  /api/v1/notifications:
+    $ref: './api/11-notification.yaml#/paths/~1api~1v1~1notifications'
+
+  # Reports (12)
+  /api/v1/reports/students/{id}/progress:
+    $ref: './api/12-reports.yaml#/paths/~1api~1v1~1reports~1students~1{id}~1progress'
+  /api/v1/reports/students/{id}/tc:
+    $ref: './api/12-reports.yaml#/paths/~1api~1v1~1reports~1students~1{id}~1tc'
+  /api/v1/reports/attendance:
+    $ref: './api/12-reports.yaml#/paths/~1api~1v1~1reports~1attendance'
+  /api/v1/reports/results:
+    $ref: './api/12-reports.yaml#/paths/~1api~1v1~1reports~1results'
+  /api/v1/reports/load:
+    $ref: './api/12-reports.yaml#/paths/~1api~1v1~1reports~1load'
+
+  # Dashboard (13)
+  /api/v1/dashboard/school-admin:
+    $ref: './api/13-dashboard.yaml#/paths/~1api~1v1~1dashboard~1school-admin'
+  /api/v1/dashboard/manager:
+    $ref: './api/13-dashboard.yaml#/paths/~1api~1v1~1dashboard~1manager'
+  /api/v1/admin/dashboard:
+    $ref: './api/13-dashboard.yaml#/paths/~1api~1v1~1admin~1dashboard'
+
+  # Audit (14)
+  /api/v1/audit-logs:
+    $ref: './api/14-audit.yaml#/paths/~1api~1v1~1audit-logs'
+  /api/v1/admin/audit-logs:
+    $ref: './api/14-audit.yaml#/paths/~1api~1v1~1admin~1audit-logs'
+
+components:
+  securitySchemes:
+    $ref: './common/security.yaml#/components/securitySchemes'

@@ -1,0 +1,19 @@
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT access token. Include as: `Authorization: Bearer <token>`
+        Access tokens expire in 15 minutes. Use `/api/v1/auth/refresh` to obtain a new one.
+
+    PlatformAdminAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        Platform Admin JWT token (authenticated via `admin.sirius-skool.com` login).
+        Required for all `/api/v1/admin/*` endpoints.
+
+

@@ -1,0 +1,19 @@
+{
+  "name": "siriusschool",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@redocly/cli": "^2.40.0",
+    "swagger-cli": "^4.0.4"
+  }
+}

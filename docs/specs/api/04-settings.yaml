@@ -1,0 +1,116 @@
+openapi: 3.1.0
+info:
+  title: SiriusSchool — Settings
+  version: 1.0.0
+  x-sirius-module: settings
+  x-sirius-build-order: 4
+  x-sirius-depends-on: [platform]
+paths:
+  /api/v1/settings:
+    get:
+      tags: [Settings]
+      summary: Get school settings
+      operationId: settingsGetSettings
+      x-sirius-fr-ref: [FR-SET-01]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          $ref: '../common/responses.yaml#/Success'
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'
+    patch:
+      tags: [Settings]
+      summary: Update school settings
+      operationId: settingsUpdateSettings
+      x-sirius-fr-ref: [FR-SET-02]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                schoolName:
+                  type: string
+                  maxLength: 200
+                address:
+                  type: string
+                phone:
+                  $ref: '../common/schemas.yaml#/PhoneString'
+                email:
+                  $ref: '../common/schemas.yaml#/EmailString'
+                logo:
+                  type: string
+                  format: uri
+                  description: Cloudinary URL for school logo
+                website:
+                  type: string
+                  format: uri
+                dateFormat:
+                  type: string
+                  default: DD/MM/YYYY
+                timezone:
+                  type: string
+                  default: Asia/Dhaka
+                language:
+                  type: string
+                  default: en
+                attendanceBackdateLimit:
+                  type: integer
+                  minimum: 0
+                  default: 1
+                  description: Days allowed for backdated attendance entry
+                monthClosureEnabled:
+                  type: boolean
+                  default: false
+                  description: Enable read-only mode for past month attendance
+      responses:
+        '200':
+          $ref: '../common/responses.yaml#/Success'
+        '422':
+          $ref: '../common/responses.yaml#/UnprocessableEntity'
+
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'
+  /api/v1/settings/notifications:
+    patch:
+      tags: [Settings]
+      summary: Update notification preferences
+      operationId: settingsUpdateNotificationPrefs
+      x-sirius-fr-ref: [FR-NOT-09]
+      description: Cross-module — this endpoint controls notification behavior but lives in Settings per API path convention
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                smsEnabled:
+                  type: boolean
+                  default: true
+                emailEnabled:
+                  type: boolean
+                  default: true
+                smsProvider:
+                  type: string
+                emailProvider:
+                  type: string
+                notificationTemplates:
+                  type: object
+                  description: Key-value map of notification templates
+                  additionalProperties:
+                    type: string
+      responses:
+        '200':
+          $ref: '../common/responses.yaml#/Success'
+        '422':
+          $ref: '../common/responses.yaml#/UnprocessableEntity'
+
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'

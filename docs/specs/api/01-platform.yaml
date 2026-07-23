@@ -1,0 +1,226 @@
+openapi: 3.1.0
+info:
+  title: SiriusSchool — Platform & Multi-Tenant Foundation
+  version: 1.0.0
+  x-sirius-module: platform
+  x-sirius-build-order: 1
+  x-sirius-depends-on: []
+paths:
+  /api/v1/admin/tenants:
+    post:
+      tags: [Platform]
+      summary: Create a new tenant
+      operationId: platformCreateTenant
+      x-sirius-fr-ref: [FR-PLT-01, FR-PLT-02, FR-PLT-03, FR-PLT-04, FR-PLT-05]
+      security:
+        - PlatformAdminAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, subdomain, modules, smsQuota, startingSequence, schoolAdmin]
+              properties:
+                name:
+                  type: string
+                  maxLength: 200
+                subdomain:
+                  type: string
+                  minLength: 3
+                  maxLength: 50
+                  pattern: '^[a-z0-9-]+$'
+                modules:
+                  type: array
+                  items:
+                    $ref: '../common/schemas.yaml#/ModuleEnum'
+                smsQuota:
+                  type: integer
+                  minimum: 0
+                startingSequence:
+                  type: integer
+                  minimum: 1
+                schoolAdmin:
+                  type: object
+                  required: [fullName, email, password]
+                  properties:
+                    fullName:
+                      type: string
+                      minLength: 1
+                    email:
+                      $ref: '../common/schemas.yaml#/EmailString'
+                    password:
+                      $ref: '../common/schemas.yaml#/PasswordString'
+      responses:
+        '201':
+          $ref: '../common/responses.yaml#/Created'
+        '409':
+          $ref: '../common/responses.yaml#/Conflict'
+        '422':
+          $ref: '../common/responses.yaml#/UnprocessableEntity'
+    get:
+      tags: [Platform]
+      summary: List all tenants (Platform Admin)
+      operationId: platformListTenants
+      x-sirius-fr-ref: [FR-PLT-08]
+      security:
+        - PlatformAdminAuth: []
+      parameters:
+        - $ref: '../common/parameters.yaml#/PageParam'
+        - $ref: '../common/parameters.yaml#/LimitParam'
+        - $ref: '../common/parameters.yaml#/SearchParam'
+      responses:
+        '200':
+          $ref: '../common/responses.yaml#/Success'
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'
+
+  /api/v1/admin/tenants/{id}:
+    patch:
+      tags: [Platform]
+      summary: Activate or deactivate a tenant
+      operationId: platformUpdateTenant
+      x-sirius-fr-ref: [FR-PLT-06]
+      security:
+        - PlatformAdminAuth: []
+      parameters:
+        - $ref: '../common/parameters.yaml#/IdPathParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [isActive]
+              properties:
+                isActive:
+                  type: boolean
+      responses:
+        '200':
+          $ref: '../common/responses.yaml#/Success'
+        '404':
+          $ref: '../common/responses.yaml#/NotFound'
+
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'
+  /api/v1/admin/tenants/{id}/sms-balance:
+    patch:
+      tags: [Platform]
+      summary: Adjust tenant SMS balance
+      operationId: platformUpdateTenantSmsBalance
+      x-sirius-fr-ref: [FR-PLT-09]
+      security:
+        - PlatformAdminAuth: []
+      parameters:
+        - $ref: '../common/parameters.yaml#/IdPathParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [adjustment]
+              properties:
+                adjustment:
+                  type: integer
+                  description: Positive to add, negative to deduct
+      responses:
+        '200':
+          $ref: '../common/responses.yaml#/Success'
+        '400':
+          $ref: '../common/responses.yaml#/BadRequest'
+        '404':
+          $ref: '../common/responses.yaml#/NotFound'
+
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'
+  /api/v1/admin/notifications:
+    get:
+      tags: [Platform]
+      summary: View cross-tenant notification logs
+      operationId: platformListNotifications
+      x-sirius-fr-ref: [FR-PLT-10]
+      security:
+        - PlatformAdminAuth: []
+      parameters:
+        - $ref: '../common/parameters.yaml#/PageParam'
+        - $ref: '../common/parameters.yaml#/LimitParam'
+        - $ref: '../common/parameters.yaml#/TenantIdParam'
+      responses:
+        '200':
+          $ref: '../common/responses.yaml#/Success'
+
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'
+  /api/v1/admin/users/{id}/reset-password:
+    patch:
+      tags: [Platform]
+      summary: Reset any tenant user's password
+      operationId: platformResetUserPassword
+      x-sirius-fr-ref: [FR-PLT-11]
+      security:
+        - PlatformAdminAuth: []
+      parameters:
+        - $ref: '../common/parameters.yaml#/IdPathParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [newPassword]
+              properties:
+                newPassword:
+                  $ref: '../common/schemas.yaml#/PasswordString'
+      responses:
+        '200':
+          $ref: '../common/responses.yaml#/Success'
+        '404':
+          $ref: '../common/responses.yaml#/NotFound'
+        '422':
+          $ref: '../common/responses.yaml#/UnprocessableEntity'
+
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'
+  /api/v1/admin/analytics:
+    get:
+      tags: [Platform]
+      summary: View platform analytics
+      operationId: platformGetAnalytics
+      x-sirius-fr-ref: [FR-PLT-12]
+      security:
+        - PlatformAdminAuth: []
+      responses:
+        '200':
+          $ref: '../common/responses.yaml#/Success'
+
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'
+  /api/v1/admin/settings:
+    patch:
+      tags: [Platform]
+      summary: Update platform-wide settings
+      operationId: platformUpdateSettings
+      x-sirius-fr-ref: [FR-PLT-13]
+      security:
+        - PlatformAdminAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                defaultSmsQuota:
+                  type: integer
+                  minimum: 0
+                allowedDomains:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          $ref: '../common/responses.yaml#/Success'
+
+        '401':
+          $ref: '../common/responses.yaml#/Unauthorized'
